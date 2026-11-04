@@ -330,8 +330,8 @@ function salespersonDashboard(){
   const opportunities=REGISTER['PG-010'].rows.filter(r=>r[3]==='Salesperson A'&&!['Won','Lost','Closed'].includes(r[4]));
   const approvals=REGISTER['PG-080'].rows.filter(r=>r[3]==='Salesperson A'&&r[5]==='Pending');
   const vendorPending=REGISTER['PG-070'].rows.filter(r=>r[2]==='QT-2026-014'&&r[4]==='Unverified');
-  const draftOrders=REGISTER['PG-030'].rows.filter(r=>r[5]==='Draft');
-  const registeredOrders=REGISTER['PG-030'].rows.filter(r=>r[5]==='Registered');
+  const draftOrders=REGISTER['PG-030'].rows.filter(r=>r[1]==='Direct Order'&&r[5]==='Draft');
+  const registeredOrders=REGISTER['PG-030'].rows.filter(r=>r[1]==='Direct Order'&&r[5]==='Registered');
   const entity=memory.forms['PG-003::Entity']||COMPANY[0];
   const branch=memory.forms['PG-003::Branch']||'Main Branch';
   const metrics=[
@@ -341,7 +341,7 @@ function salespersonDashboard(){
     ['My Sent Quotations',num(quotes.filter(r=>r[5]==='Sent').length),'Actually dispatched offers','PG-020','my-sent'],
     ['My Won / Lost',`${quotes.filter(r=>r[5]==='Won').length} / ${quotes.filter(r=>r[5]==='Lost').length}`,'Won / Lost outcomes','PG-020','my-won-lost'],
     ['Draft Direct Orders',num(draftOrders.length),'Not yet registered','PG-030','draft-orders'],
-    ['Registered Orders',num(registeredOrders.length),'Registered is not revenue','PG-030','registered-orders'],
+    ['Registered Direct Orders',num(registeredOrders.length),'Registered is not revenue','PG-030','registered-orders'],
     ['Vendor Evidence Follow-up',num(vendorPending.length),'Status only; source rates restricted','PG-070','vendor-followup']
   ];
   const cards=metrics.map(([label,value,detail,to,filter])=>`<button class="metric sales-metric" type="button" data-go="${to}" data-dash-filter="${filter}" data-dash-label="${esc(label)}"><div class="metric-label">${esc(label)}</div><div class="metric-value">${esc(value)}</div><div class="metric-foot">${esc(detail)} ↗</div></button>`).join('');
@@ -359,7 +359,6 @@ function salespersonDashboard(){
   ].map(([date,title,record,to])=>`<div class="sales-event"><div><div class="sales-event-date">${esc(date)}</div><b>${esc(title)}</b><small>${esc(record)}</small></div>${button('Open',to)}</div>`).join('');
   const orderSummary=`<div class="help">Draft is not Registered. Customer-agreed order values do not automatically mean recognized accounting revenue.</div>
     <div class="sales-order-row"><div><b>DO-DRAFT-008</b><small>Sunrise Manufacturing · Direct Order · 03 Nov 2026</small></div><span class="status warn">Draft</span>${button('Continue','PG-031')}</div>
-    <div class="sales-order-row"><div><b>ORD-2026-021</b><small>ABC Industries · Accepted Quotation · 02 Nov 2026</small></div><span class="status">Registered</span>${button('Open','PG-032')}</div>
     <div class="sales-order-row"><div><b>ORD-2026-019</b><small>Greenfield Facility · Direct Order · 01 Nov 2026</small></div><span class="status">Registered</span>${button('Open','PG-032')}</div>
     <div class="actionbar">${button('Open order register','PG-030')}</div>`;
   return `<section class="sales-context" aria-label="Working company and branch"><div class="sales-context-heading"><strong>Salesperson dashboard</strong><small>Salesperson A · My assigned records only (demo)</small></div>
@@ -396,8 +395,8 @@ filterRows=function(){
     if(f==='my-sent')match=t[4]==='Salesperson A'&&t[5]==='Sent';
     if(f==='my-won-lost')match=t[4]==='Salesperson A'&&['Won','Lost'].includes(t[5]);
     if(f==='awaiting-approval')match=t[3]==='Salesperson A'&&t[5]==='Pending';
-    if(f==='draft-orders')match=t[5]==='Draft';
-    if(f==='registered-orders')match=t[5]==='Registered';
+    if(f==='draft-orders')match=t[1]==='Direct Order'&&t[5]==='Draft';
+    if(f==='registered-orders')match=t[1]==='Direct Order'&&t[5]==='Registered';
     if(f==='vendor-followup')match=t[2]==='QT-2026-014'&&t[4]==='Unverified';
     if(!match)row.hidden=true;
     if(!row.hidden)visible++;
