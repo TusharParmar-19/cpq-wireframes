@@ -10,6 +10,14 @@
 @media(max-width:600px){.topbar{height:59px;padding:0 13px;gap:8px}.global-search{padding:9px 8px;font-size:10px}.global-search kbd{display:none}.top-select{max-width:113px;font-size:9px}.profile{height:30px;width:30px;font-size:11px;flex:0 0 30px}.main{padding:19px 13px 58px}.banner{padding:8px 13px;font-size:10px}.page-header{display:block}.header-actions{justify-content:flex-start;margin-top:13px}.page-header h2{font-size:23px}.page-header p{font-size:11px}.four-col,.three-col,.split,.grid-forms,.grid-forms.two{grid-template-columns:1fr}.panel{padding:15px}.metric{min-height:99px}.two-col{grid-template-columns:1fr}.explorer-grid{grid-template-columns:1fr}.searchfilters input{min-width:100%;flex:1}.searchfilters select{flex:1;min-width:130px}.report-card{min-height:110px}.modal{padding:19px}.page-id{margin-top:5px}.actionbar{justify-content:flex-start}.actionbar>div{flex-wrap:wrap}}
 /* A desktop-only mobile preview simulates a narrow viewport; normal responsive mode still works. */
 body.mobile-preview{background:#dce0e4}body.mobile-preview .app{max-width:430px;min-height:92vh;margin:24px auto;border:9px solid #4a5059;border-radius:28px;box-shadow:0 22px 70px #0003;overflow:hidden;display:grid;grid-template-columns:1fr;background:#f3f4f6}body.mobile-preview .sidebar{position:fixed;left:50%;margin-left:-206px;top:33px;bottom:auto;height:min(87vh,760px);width:250px;transform:translateX(-450%);visibility:hidden;z-index:75}body.mobile-preview .sidebar.open{transform:translateX(0);visibility:visible}body.mobile-preview .sidebar-close,body.mobile-preview .menu-button{display:block}body.mobile-preview .main{padding:15px 12px 50px}body.mobile-preview .topbar{height:60px;padding:0 10px;gap:8px}body.mobile-preview .top-title{display:none}body.mobile-preview .global-search{padding:8px;max-width:none;flex:1;width:auto;margin-left:0;font-size:10px}body.mobile-preview .global-search kbd{display:none}body.mobile-preview .top-select{max-width:105px;font-size:9px}body.mobile-preview .banner{padding:8px 12px;font-size:10px}body.mobile-preview .banner .badge{display:none}body.mobile-preview .page-header{display:block}body.mobile-preview .page-header h2{font-size:21px}body.mobile-preview .header-actions{justify-content:flex-start;margin-top:12px}body.mobile-preview .panel{padding:14px}body.mobile-preview .four-col,body.mobile-preview .three-col,body.mobile-preview .split,body.mobile-preview .grid-forms,body.mobile-preview .grid-forms.two{grid-template-columns:1fr}body.mobile-preview .two-col{grid-template-columns:1fr}body.mobile-preview .metric{min-height:100px}body.mobile-preview .searchfilters input{min-width:100%}body.mobile-preview .explorer-grid{grid-template-columns:1fr}body.mobile-preview .mobile-frame-note{display:block;position:fixed;top:6px;left:0;width:100%;text-align:center;font-size:11px;color:#58616a}body.mobile-preview .page-id{margin-top:5px}
+.sales-context{display:flex;align-items:end;gap:15px;flex-wrap:wrap;padding:16px 18px;background:#fff;border:1px solid var(--line);border-radius:10px}
+.sales-context-heading{flex:1;min-width:220px;display:flex;flex-direction:column;gap:3px}.sales-context-heading strong{font-size:15px}.sales-context-heading small{font-size:11px;color:var(--muted)}
+.sales-context-control{display:flex;flex-direction:column;gap:4px;min-width:175px;flex:0 1 235px}.sales-context-control label{font-size:10px;font-weight:700;color:#6f7781}.sales-context-control select{width:100%;min-width:0;padding:9px 8px;border-radius:7px;background:#f8f9fa;border:1px solid var(--line);font-size:12px;color:#3d4650}
+.sales-context-note{margin:8px 0 18px;font-size:10px;color:#7b838c}.sales-cards{margin-bottom:1px}.sales-metric{min-height:128px}.sales-metric:focus-visible{outline:3px solid #a8b4c2}
+.sales-event{display:flex;justify-content:space-between;align-items:center;gap:9px;padding:12px 0;border-bottom:1px solid var(--line2)}.sales-event:last-child{border-bottom:0}.sales-event div{min-width:0;display:flex;flex-direction:column;gap:3px}.sales-event b{font-size:12px}.sales-event small{font-size:10px;color:var(--muted)}.sales-event-date{font-size:10px;color:#818992}
+.sales-columns .step-main small{display:block}.sales-columns .panel{min-width:0}.sales-order-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:13px 0;border-bottom:1px solid var(--line2)}.sales-order-row>div{display:flex;flex-direction:column;gap:3px}.sales-order-row small{font-size:10px;color:var(--muted)}.sales-filter-banner{margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+@media(max-width:1050px){.sales-columns{grid-template-columns:1fr}.sales-context-control{flex:1 1 190px}}
+@media(max-width:600px){.sales-context{padding:12px}.sales-context-heading{min-width:100%}.sales-context-control{min-width:100%;flex:1}.sales-order-row{grid-template-columns:1fr auto}.sales-order-row .btn{grid-column:1/-1;justify-self:start}.sales-event{align-items:flex-start}.sales-columns .step{flex-wrap:wrap}}
 </style></head><body><div id="root"></div>
 <script>window.CPQ_BATCH="1";</script><script>// CPQ Wireframes: user-interface prototype only. All examples fictional.
 const SCREEN_ROWS = [
@@ -310,6 +318,122 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();closeS
 if(batch==='5')document.body.classList.add('mobile-preview');
 // Ensure all local option lists used by specific views exist.
 OPTIONS.lineTypes=['Product','Service','Custom'];OPTIONS.verification=['Values match original evidence','Discrepancy found / correction required','Exception under approved policy'];OPTIONS.documentCategory=['Customer Enquiry','Customer PO / WO / LOI','Customer BOQ','Vendor Quotation','Technical Datasheet','Drawing','Approval Evidence'];OPTIONS.documentSource=['Customer','Supplier','Employee / Internal','System-generated'];OPTIONS.visibility=['Assigned Record Team','Authorized Management','Restricted / Confidential'];OPTIONS.packageType=['Commercial Quotation PDF','Technical PDF Package','Combined Package'];OPTIONS.activityType=['Call','Email','WhatsApp','Meeting','Record Correction','Internal Note'];
+let dashboardDrilldown=null;
+const previousDashboard=dashboard;
+const previousRegisterPage=registerPage;
+const previousFilterRows=filterRows;
+const previousNavigate=navigate;
+
+function salespersonDashboard(){
+  const num=n=>String(n).padStart(2,'0');
+  const quotes=REGISTER['PG-020'].rows.filter(r=>r[4]==='Salesperson A');
+  const opportunities=REGISTER['PG-010'].rows.filter(r=>r[3]==='Salesperson A'&&!['Won','Lost','Closed'].includes(r[4]));
+  const approvals=REGISTER['PG-080'].rows.filter(r=>r[3]==='Salesperson A'&&r[5]==='Pending');
+  const vendorPending=REGISTER['PG-070'].rows.filter(r=>r[2]==='QT-2026-014'&&r[4]==='Unverified');
+  const draftOrders=REGISTER['PG-030'].rows.filter(r=>r[5]==='Draft');
+  const registeredOrders=REGISTER['PG-030'].rows.filter(r=>r[5]==='Registered');
+  const entity=memory.forms['PG-003::Entity']||COMPANY[0];
+  const branch=memory.forms['PG-003::Branch']||'Main Branch';
+  const metrics=[
+    ['My Open Opportunities',num(opportunities.length),'Open / in preparation','PG-010','my-opportunities'],
+    ['My Draft Quotations',num(quotes.filter(r=>r[5]==='Draft').length),'Finish and review drafts','PG-020','my-drafts'],
+    ['Awaiting Approval',num(approvals.length),'My requests, not decisions','PG-080','awaiting-approval'],
+    ['My Sent Quotations',num(quotes.filter(r=>r[5]==='Sent').length),'Actually dispatched offers','PG-020','my-sent'],
+    ['My Won / Lost',`${quotes.filter(r=>r[5]==='Won').length} / ${quotes.filter(r=>r[5]==='Lost').length}`,'Won / Lost outcomes','PG-020','my-won-lost'],
+    ['Draft Direct Orders',num(draftOrders.length),'Not yet registered','PG-030','draft-orders'],
+    ['Registered Orders',num(registeredOrders.length),'Registered is not revenue','PG-030','registered-orders'],
+    ['Vendor Evidence Follow-up',num(vendorPending.length),'Status only; source rates restricted','PG-070','vendor-followup']
+  ];
+  const cards=metrics.map(([label,value,detail,to,filter])=>`<button class="metric sales-metric" type="button" data-go="${to}" data-dash-filter="${filter}" data-dash-label="${esc(label)}"><div class="metric-label">${esc(label)}</div><div class="metric-value">${esc(value)}</div><div class="metric-foot">${esc(detail)} ↗</div></button>`).join('');
+  const myWork=[
+    ['Q','Continue quotation BOQ','QT-2026-014 · ABC Industries · Draft R1','03 Nov 2026 · Draft','PG-021'],
+    ['O','Review open enquiry','OP-2026-008 · ABC Industries · In Discussion','03 Nov 2026 · Assigned','PG-012'],
+    ['D','Complete Direct Order draft','DO-DRAFT-008 · Sunrise Manufacturing · Customer WO','03 Nov 2026 · Evidence required','PG-031'],
+    ['A','Track requested approval','APR-TEST-021 · QT-2026-014 · Manager review','02 Nov 2026 · Pending approval','PG-082']
+  ].map(([tag,title,ref,detail,to])=>`<div class="step"><span class="step-number">${tag}</span><div class="step-main"><b>${esc(title)}</b><small>${esc(ref)}</small><small>${esc(detail)}</small></div>${button('Open',to)}</div>`).join('');
+  const activity=[
+    ['03 Nov 2026 · 11:20 AM','Quotation R1 draft updated','QT-2026-014 · Salesperson A','PG-022'],
+    ['03 Nov 2026 · 10:40 AM','Direct Order draft saved','DO-DRAFT-008 · Salesperson A','PG-032'],
+    ['02 Nov 2026 · 04:30 PM','Approval request recorded','APR-TEST-021 · Salesperson A','PG-082'],
+    ['02 Nov 2026 · 02:15 PM','Quotation dispatch recorded','QT-2026-011 · R0 · Salesperson A','PG-024']
+  ].map(([date,title,record,to])=>`<div class="sales-event"><div><div class="sales-event-date">${esc(date)}</div><b>${esc(title)}</b><small>${esc(record)}</small></div>${button('Open',to)}</div>`).join('');
+  const orderSummary=`<div class="help">Draft is not Registered. Customer-agreed order values do not automatically mean recognized accounting revenue.</div>
+    <div class="sales-order-row"><div><b>DO-DRAFT-008</b><small>Sunrise Manufacturing · Direct Order · 03 Nov 2026</small></div><span class="status warn">Draft</span>${button('Continue','PG-031')}</div>
+    <div class="sales-order-row"><div><b>ORD-2026-021</b><small>ABC Industries · Accepted Quotation · 02 Nov 2026</small></div><span class="status">Registered</span>${button('Open','PG-032')}</div>
+    <div class="sales-order-row"><div><b>ORD-2026-019</b><small>Greenfield Facility · Direct Order · 01 Nov 2026</small></div><span class="status">Registered</span>${button('Open','PG-032')}</div>
+    <div class="actionbar">${button('Open order register','PG-030')}</div>`;
+  return `<section class="sales-context" aria-label="Working company and branch"><div class="sales-context-heading"><strong>Salesperson dashboard</strong><small>Salesperson A · My assigned records only (demo)</small></div>
+    <div class="sales-context-control"><label for="sales-entity">Working company</label><select id="sales-entity">${COMPANY.map(x=>`<option value="${esc(x)}" ${x===entity?'selected':''}>${esc(x)}</option>`).join('')}</select></div>
+    <div class="sales-context-control"><label for="sales-branch">Current branch</label><select id="sales-branch">${['Main Branch','Secondary Branch'].map(x=>`<option ${x===branch?'selected':''}>${x}</option>`).join('')}</select></div></section>
+    <p class="sales-context-note">Fictional authorized examples. Company/branch selection is UI preview only; it does not change permissions or sample totals.</p>
+    <div class="four-col sales-cards">${cards}</div>
+    <div class="split section sales-columns">${panel('My Work · Priority Actions',myWork+`<div class="actionbar">${button('See My Work','PG-004')}</div>`)}
+    ${panel('Recent Activity',activity+`<div class="actionbar">${button('View Activity Timeline','PG-120')}</div>`)}</div>
+    <div class="section">${panel('My Direct Orders · Draft vs Registered',orderSummary)}</div>
+    <div class="section">${panel('Quick Actions',`<div class="flex-actions">${primary('New Opportunity','PG-011')}${button('New Quotation','PG-021')}${button('New Direct Order','PG-031')}${button('My Work','PG-004')}</div>`)}</div>
+    <div class="footnote">Real dashboard totals and links must follow tenant, entity, branch, role and individual record-assignment rules. This wireframe uses sample data and does not perform real authorization.</div>`;
+}
+
+dashboard=function(){
+  if(role!=='Salesperson')return `<div class="warning">This review updates only the Salesperson dashboard. Manager / Owner and other role layouts will be reviewed separately; these sample cards are not final role specifications.</div><div class="section">${previousDashboard()}</div>`;
+  return salespersonDashboard();
+};
+registerPage=function(page){
+  const base=previousRegisterPage(page);
+  if(!dashboardDrilldown||dashboardDrilldown.target!==page)return base;
+  return `<div class="help sales-filter-banner"><b>From Dashboard:</b> ${esc(dashboardDrilldown.label)} — showing matching fictional sample records. Real access must be enforced on the server. <button type="button" class="btn small" data-dash-clear="1">Clear dashboard filter</button></div>${base}`;
+};
+filterRows=function(){
+  previousFilterRows();
+  if(!dashboardDrilldown||dashboardDrilldown.target!==screen)return;
+  const f=dashboardDrilldown.filter;
+  let visible=0;
+  $('#table-body tr').forEach(row=>{
+    const t=[...row.querySelectorAll('td')].map(x=>x.textContent.trim());
+    let match=true;
+    if(f==='my-opportunities')match=t[3]==='Salesperson A'&&!['Closed','Lost'].includes(t[4]);
+    if(f==='my-drafts')match=t[4]==='Salesperson A'&&t[5]==='Draft';
+    if(f==='my-sent')match=t[4]==='Salesperson A'&&t[5]==='Sent';
+    if(f==='my-won-lost')match=t[4]==='Salesperson A'&&['Won','Lost'].includes(t[5]);
+    if(f==='awaiting-approval')match=t[3]==='Salesperson A'&&t[5]==='Pending';
+    if(f==='draft-orders')match=t[5]==='Draft';
+    if(f==='registered-orders')match=t[5]==='Registered';
+    if(f==='vendor-followup')match=t[2]==='QT-2026-014'&&t[4]==='Unverified';
+    if(!match)row.hidden=true;
+    if(!row.hidden)visible++;
+  });
+  if($('#row-count'))$('#row-count').textContent=visible+' matching sample record(s)';
+  if($('#table-empty'))$('#table-empty').classList.toggle('hide',visible!==0);
+};
+navigate=function(to){
+  if(!dashboardDrilldown||dashboardDrilldown.target!==to)dashboardDrilldown=null;
+  previousNavigate(to);
+  if(REGISTER[to])filterRows();
+};
+document.addEventListener('click',e=>{
+  const card=e.target.closest('[data-dash-filter]');
+  if(card){
+    e.stopImmediatePropagation();
+    dashboardDrilldown={target:card.dataset.go,filter:card.dataset.dashFilter,label:card.dataset.dashLabel};
+    navigate(card.dataset.go);
+    return;
+  }
+  const clear=e.target.closest('[data-dash-clear], [data-act="clear-filters"]');
+  if(clear&&dashboardDrilldown){
+    e.stopImmediatePropagation();
+    dashboardDrilldown=null;
+    render();
+    filterRows();
+  }
+},true);
+document.addEventListener('change',e=>{
+  if(e.target.id==='sales-entity'||e.target.id==='sales-branch'){
+    memory.forms[e.target.id==='sales-entity'?'PG-003::Entity':'PG-003::Branch']=e.target.value;
+    persist();
+    toast('Company/branch preview updated. Sample counts and permissions have not changed.');
+  }
+},true);
+
 render();
 })();
 </script></body></html>
