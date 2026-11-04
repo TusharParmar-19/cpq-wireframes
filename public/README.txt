@@ -1,0 +1,1 @@
+CPQ Platform wireframe review site. All sample data are fictional. Prototype actions are for demonstration only. No real business records are created or changed. Open index.html to browse the complete 59-screen prototype.
