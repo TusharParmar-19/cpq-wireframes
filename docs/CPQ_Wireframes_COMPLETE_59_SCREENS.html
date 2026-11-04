@@ -28,6 +28,9 @@ body.mobile-preview{background:#dce0e4}body.mobile-preview .app{max-width:430px;
 .pg004-activity-intro{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}.pg004-activity-intro p{font-size:11px;color:var(--muted);margin:0}.pg004-event{position:relative;display:flex;gap:15px;align-items:center;padding:14px 5px 14px 19px;border-bottom:1px solid var(--line2)}.pg004-event:before{content:'';position:absolute;left:5px;top:0;bottom:0;border-left:1px solid var(--line)}.pg004-event-marker{position:absolute;left:0;top:25px;width:11px;height:11px;background:#c9cdd2;border:2px solid white;border-radius:50%;box-shadow:0 0 0 1px var(--line)}.pg004-event-main{display:flex;flex:1;min-width:0;flex-direction:column;gap:3px}.pg004-event-main>b{font-size:12px}.pg004-event-main small{font-size:10px;color:var(--muted)}.pg004-event-main .pg004-event-time{color:#8a9199}.pg004-event button{white-space:nowrap}
 @media(max-width:760px){.pg004-filters>.field{flex:1 1 40%}.pg004-filters .pg004-search{flex-basis:100%}.pg004-table-wrap{border:none;overflow:visible}.pg004-table{min-width:0;display:block}.pg004-table thead{display:none}.pg004-table tbody{display:grid;gap:10px}.pg004-table tr{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:#fff;border:1px solid var(--line);border-radius:9px;padding:11px}.pg004-table td{padding:4px 2px!important;border:0!important;min-width:0!important;white-space:normal!important}.pg004-table td:first-child,.pg004-table td:nth-child(2),.pg004-table td:last-child{grid-column:1/-1}.pg004-table td[data-label]:before{content:attr(data-label);display:block;font-size:9px;text-transform:uppercase;color:var(--muted);letter-spacing:.045em;margin-bottom:3px}.pg004-activity-intro{flex-wrap:wrap}.pg004-results{flex-wrap:wrap}.pg004-event{align-items:flex-start}}
 @media(max-width:460px){.pg004-filters>.field{flex-basis:100%}.pg004-overview{width:100%}.pg004-event button{font-size:10px;padding:5px 7px}.pg004-event{gap:7px}}
+.pg010-banner{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px;border:1px solid var(--line);border-radius:8px;margin-bottom:12px}
+.pg010-filter-row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;border-top:1px solid var(--line2);padding-top:12px;margin-top:14px}.pg010-filter-row span{font-size:11px;color:var(--muted)}.pg010-table tbody tr{cursor:pointer}.pg010-table tbody tr:hover{background:#f8f9fa}.pg010-table tbody tr[hidden]{display:none!important}.pg010-table td{font-size:11px}.pg010-table td:nth-child(2){min-width:170px}.pg010-table td:nth-child(7){white-space:nowrap}.pg010-actions{display:flex;gap:5px}.pg010-actions button{font-size:10px;padding:5px 7px}.pg010-filters .field{flex:1 1 150px}.pg010-filters .pg004-search{flex:2 1 265px}.pg010-table td[data-label="Actions"]{white-space:nowrap}
+@media(max-width:760px){.pg010-table td{white-space:normal!important}.pg010-table td:nth-child(1),.pg010-table td:nth-child(2),.pg010-table td:nth-child(8){grid-column:1/-1}.pg010-table td[data-label="Actions"] .pg010-actions{gap:8px}}
 </style></head><body><div id="root"></div>
 <script>window.CPQ_BATCH="all";</script><script>// CPQ Wireframes: user-interface prototype only. All examples fictional.
 const SCREEN_ROWS = [
@@ -454,7 +457,7 @@ filterRows=function(){
   if(!dashboardDrilldown||dashboardDrilldown.target!==screen)return;
   const f=dashboardDrilldown.filter;
   let visible=0;
-  $('#table-body tr').forEach(row=>{
+  $$('#table-body tr').forEach(row=>{
     const t=[...row.querySelectorAll('td')].map(x=>x.textContent.trim());
     let match=true;
     if(f==='my-opportunities')match=t[3]==='Salesperson A'&&!['Closed','Lost'].includes(t[4]);
@@ -500,6 +503,71 @@ document.addEventListener('change',e=>{
   }
 },true);
 
+const PG010_EXTRAS={
+ 'OP-2026-008':{source:'Email Enquiry',company:COMPANY[0],branch:'Main Branch',date:'2026-11-03',updated:'03 Nov 2026 · 11:20 AM'},
+ 'OP-2026-011':{source:'Client Referral',company:COMPANY[1],branch:'Secondary Branch',date:'2026-11-02',updated:'02 Nov 2026 · 03:05 PM'},
+ 'OP-2026-012':{source:'Website Enquiry',company:COMPANY[2],branch:'Main Branch',date:'2026-11-01',updated:'01 Nov 2026 · 10:15 AM'}
+};
+const PG010_DATA=REGISTER['PG-010'].rows.map(r=>({id:r[0],customer:r[1],workType:r[2],owner:r[3],status:r[4],...PG010_EXTRAS[r[0]]}));
+const pg010BaseRegister=registerPage,pg010BaseFilter=filterRows,pg010BaseHeader=headerButtons;
+function pg010Mine(){return role==='Salesperson'?PG010_DATA.filter(r=>r.owner==='Salesperson A'):[]}
+function pg010Options(id,items,label){return `<select id="${id}" aria-label="${esc(label)}"><option value="">${esc(label)}</option>${[...new Set(items)].map(v=>option(v)).join('')}</select>`}
+function pg010Register(){
+ if(role!=='Salesperson')return `<div class="warning">This PG-010 preview is scoped to Salesperson A. Other roles' opportunity access has not been reviewed; changing demo roles cannot grant access.</div>${panel('Navigation',button('Back to Dashboard','PG-003'))}`;
+ const r=pg010Mine();
+ const counts=[['My Opportunities',r.length],['In Discussion',r.filter(x=>x.status==='In Discussion').length],['Quote Preparation',r.filter(x=>x.status==='Quote Preparation').length]].map(([label,n])=>`<span><strong>${String(n).padStart(2,'0')}</strong> ${esc(label)}</span>`).join('');
+ const banner=dashboardDrilldown?.target==='PG-010'?`<div class="help pg010-banner"><b>From Dashboard: ${esc(dashboardDrilldown.label)}</b> · Authorized sample records only. <button class="btn small" data-pg010-reset>Clear dashboard filter</button></div>`:'';
+ const rows=r.map(o=>`<tr tabindex="0" data-pg010-id="${esc(o.id)}" title="Open opportunity details">
+ <td data-label="Opportunity"><strong>${esc(o.id)}</strong></td>
+ <td data-label="Customer / Company"><b>${esc(o.customer)}</b><small class="pg004-secondary">${esc(o.company)} · ${esc(o.branch)}</small></td>
+ <td data-label="Enquiry Source">${esc(o.source)}</td>
+ <td data-label="Work Type">${esc(o.workType)}</td>
+ <td data-label="Responsible">${esc(o.owner)}</td>
+ <td data-label="Status">${badge(o.status)}</td>
+ <td data-label="Last Updated">${esc(o.updated)}</td>
+ <td data-label="Actions"><div class="pg010-actions">${button('View','PG-012')}${button('Edit','PG-011')}</div></td></tr>`).join('');
+ const filters=`<div class="pg004-filters pg010-filters">
+ <div class="field pg004-search"><label for="pg010-query">Search opportunity or customer</label><input id="pg010-query" type="search" placeholder="OP-2026-008 or ABC Industries"></div>
+ <div class="field"><label for="pg010-company">Legal entity</label>${pg010Options('pg010-company',r.map(x=>x.company),'All authorized entities')}</div>
+ <div class="field"><label for="pg010-branch">Branch</label>${pg010Options('pg010-branch',r.map(x=>x.branch),'All assigned branches')}</div>
+ <div class="field"><label for="pg010-customer">Customer</label>${pg010Options('pg010-customer',r.map(x=>x.customer),'All customers')}</div>
+ <div class="field"><label for="pg010-worktype">Work type</label>${pg010Options('pg010-worktype',r.map(x=>x.workType),'All work types')}</div>
+ <div class="field"><label for="pg010-status">Status</label>${pg010Options('pg010-status',r.map(x=>x.status),'All statuses')}</div>
+ <div class="field"><label for="pg010-date">Last updated date</label><input type="date" id="pg010-date"></div></div>
+ <div class="pg010-filter-row"><span><b>Owner:</b> Assigned to me (Salesperson A) · access scope cannot be broadened by filters.</span><button class="btn" data-pg010-reset>Clear filters</button></div>`;
+ const table=`<div class="pg004-results"><b>Opportunity Register</b><span id="pg010-count">${r.length} of ${r.length} accessible sample record(s)</span></div>
+ <div class="pg004-table-wrap"><table class="data-table pg004-table pg010-table"><thead><tr><th>Opportunity</th><th>Customer / Company</th><th>Enquiry Source</th><th>Work Type</th><th>Responsible</th><th>Status</th><th>Last Updated</th><th>Action</th></tr></thead><tbody id="pg010-rows">${rows}</tbody></table>
+ <div id="pg010-empty" class="empty hide"><strong>No Opportunities Found</strong>Try clearing filters. <button class="btn" data-pg010-reset>Clear filters</button> ${button('New Opportunity','PG-011')}</div></div>
+ <div class="pg004-help">Row click and View open PG-012; Edit opens PG-011. Authorized export is planned, not active in the sample wireframe. No actual permissions or records are enforced in the browser.</div>`;
+ return `${banner}<div class="pg004-intro"><div><b>My Opportunity Register</b><small>Salesperson A · Fictional assigned records only</small></div><div class="pg004-overview">${counts}</div></div><div class="section">${panel('Search & Filter Opportunities',filters)}</div><div class="section">${panel('My Opportunities',table)}</div>`;
+}
+function pg010RunFilters(){
+ if(screen!=='PG-010')return;
+ const tbody=document.getElementById('pg010-rows');if(!tbody)return;
+ const data=pg010Mine(),look=new Map(data.map(x=>[x.id,x])),val=id=>document.getElementById(id)?.value||'';
+ const q=val('pg010-query').toLowerCase().trim(),co=val('pg010-company'),br=val('pg010-branch'),cu=val('pg010-customer'),wo=val('pg010-worktype'),st=val('pg010-status'),date=val('pg010-date');
+ const dash=dashboardDrilldown?.target==='PG-010'&&dashboardDrilldown.filter==='my-opportunities';
+ let visible=0;
+ tbody.querySelectorAll('tr[data-pg010-id]').forEach(tr=>{
+  const x=look.get(tr.dataset.pg010Id);
+  const terms=x?[x.id,x.customer,x.company,x.branch,x.source,x.workType,x.owner,x.status].join(' ').toLowerCase():'';
+  const okay=!!x&&(!q||terms.includes(q))&&(!co||co===x.company)&&(!br||br===x.branch)&&(!cu||cu===x.customer)&&(!wo||wo===x.workType)&&(!st||st===x.status)&&(!date||date===x.date)&&(!dash||!['Won','Lost','Closed'].includes(x.status));
+  tr.hidden=!okay;if(okay)visible++;
+ });
+ const cnt=document.getElementById('pg010-count');if(cnt)cnt.textContent=visible+' of '+data.length+' accessible sample record(s)';
+ const empty=document.getElementById('pg010-empty');if(empty)empty.classList.toggle('hide',visible!==0);
+}
+registerPage=function(page){return page==='PG-010'?pg010Register():pg010BaseRegister(page)};
+filterRows=function(){return screen==='PG-010'?pg010RunFilters():pg010BaseFilter()};
+headerButtons=function(s){if(s.id==='PG-010')return role==='Salesperson'?`<button class="btn" data-pg010-reset>↻ Reset filters</button>${primary('+ New Opportunity','PG-011')}`:button('Back to Dashboard','PG-003');return pg010BaseHeader(s)};
+document.addEventListener('input',e=>{if(e.target.id==='pg010-query')pg010RunFilters()});
+document.addEventListener('change',e=>{if(['pg010-company','pg010-branch','pg010-customer','pg010-worktype','pg010-status','pg010-date'].includes(e.target.id))pg010RunFilters()});
+document.addEventListener('click',e=>{
+ if(screen!=='PG-010')return;
+ if(e.target.closest('[data-pg010-reset]')){dashboardDrilldown=null;render();return}
+ if(e.target.closest('tr[data-pg010-id]')&&!e.target.closest('button,a,input,select'))navigate('PG-012');
+});
+document.addEventListener('keydown',e=>{if(screen==='PG-010'&&e.key==='Enter'&&e.target.matches('tr[data-pg010-id]')){e.preventDefault();navigate('PG-012')}});
 render();
 })();
 </script></body></html>
