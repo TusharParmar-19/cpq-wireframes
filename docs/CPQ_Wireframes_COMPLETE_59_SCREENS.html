@@ -29,7 +29,10 @@ body.mobile-preview{background:#dce0e4}body.mobile-preview .app{max-width:430px;
 @media(max-width:760px){.pg004-filters>.field{flex:1 1 40%}.pg004-filters .pg004-search{flex-basis:100%}.pg004-table-wrap{border:none;overflow:visible}.pg004-table{min-width:0;display:block}.pg004-table thead{display:none}.pg004-table tbody{display:grid;gap:10px}.pg004-table tr{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:#fff;border:1px solid var(--line);border-radius:9px;padding:11px}.pg004-table td{padding:4px 2px!important;border:0!important;min-width:0!important;white-space:normal!important}.pg004-table td:first-child,.pg004-table td:nth-child(2),.pg004-table td:last-child{grid-column:1/-1}.pg004-table td[data-label]:before{content:attr(data-label);display:block;font-size:9px;text-transform:uppercase;color:var(--muted);letter-spacing:.045em;margin-bottom:3px}.pg004-activity-intro{flex-wrap:wrap}.pg004-results{flex-wrap:wrap}.pg004-event{align-items:flex-start}}
 @media(max-width:460px){.pg004-filters>.field{flex-basis:100%}.pg004-overview{width:100%}.pg004-event button{font-size:10px;padding:5px 7px}.pg004-event{gap:7px}}
 .pg010-banner{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px;border:1px solid var(--line);border-radius:8px;margin-bottom:12px}
-.pg010-filter-row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;border-top:1px solid var(--line2);padding-top:12px;margin-top:14px}.pg010-filter-row span{font-size:11px;color:var(--muted)}.pg010-table tbody tr{cursor:pointer}.pg010-table tbody tr:hover{background:#f8f9fa}.pg010-table tbody tr[hidden]{display:none!important}.pg010-table td{font-size:11px}.pg010-table td:nth-child(2){min-width:170px}.pg010-table td:nth-child(7){white-space:nowrap}.pg010-actions{display:flex;gap:5px}.pg010-actions button{font-size:10px;padding:5px 7px}.pg010-filters .field{flex:1 1 150px}.pg010-filters .pg004-search{flex:2 1 265px}.pg010-table td[data-label="Actions"]{white-space:nowrap}
+.pg010-filter-row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;border-top:1px solid var(--line2);padding-top:12px;margin-top:14px}.pg010-filter-row span{font-size:11px;color:var(--muted)}.pg010-table tbody tr{cursor:pointer}.pg010-table tbody tr:hover{background:#f8f9fa}.pg010-table tbody tr[hidden]{display:none!important}.pg010-table td{font-size:11px}.pg010-table td:nth-child(2){min-width:170px}.pg010-table td:nth-child(7){white-space:nowrap}.pg010-actions{display:flex;gap:5px}.pg010-actions button{font-size:10px;padding:5px 7px}.pg010-filters{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));align-items:end;gap:12px;margin-bottom:0}.pg010-filters .field{min-width:0}.pg010-filters .pg004-search{grid-column:span 2}.pg010-filters .field input,.pg010-filters .field select{width:100%}
+@media(max-width:1180px){.pg010-filters{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:760px){.pg010-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.pg010-filters .pg004-search{grid-column:1/-1}}
+@media(max-width:460px){.pg010-filters{grid-template-columns:1fr}.pg010-filters .pg004-search{grid-column:auto}}.pg010-table td[data-label="Actions"]{white-space:nowrap}
 @media(max-width:760px){.pg010-table td{white-space:normal!important}.pg010-table td:nth-child(1),.pg010-table td:nth-child(2),.pg010-table td:nth-child(8){grid-column:1/-1}.pg010-table td[data-label="Actions"] .pg010-actions{gap:8px}}
 </style></head><body><div id="root"></div>
 <script>window.CPQ_BATCH="all";</script><script>// CPQ Wireframes: user-interface prototype only. All examples fictional.
@@ -531,7 +534,9 @@ function pg010Register(){
  <div class="field"><label for="pg010-company">Legal entity</label>${pg010Options('pg010-company',r.map(x=>x.company),'All authorized entities')}</div>
  <div class="field"><label for="pg010-branch">Branch</label>${pg010Options('pg010-branch',r.map(x=>x.branch),'All assigned branches')}</div>
  <div class="field"><label for="pg010-customer">Customer</label>${pg010Options('pg010-customer',r.map(x=>x.customer),'All customers')}</div>
+ <div class="field"><label for="pg010-source">Enquiry source</label>${pg010Options('pg010-source',r.map(x=>x.source),'All sources')}</div>
  <div class="field"><label for="pg010-worktype">Work type</label>${pg010Options('pg010-worktype',r.map(x=>x.workType),'All work types')}</div>
+ <div class="field"><label for="pg010-owner">Responsible employee</label>${pg010Options('pg010-owner',r.map(x=>x.owner),'All permitted owners')}</div>
  <div class="field"><label for="pg010-status">Status</label>${pg010Options('pg010-status',r.map(x=>x.status),'All statuses')}</div>
  <div class="field"><label for="pg010-date">Last updated date</label><input type="date" id="pg010-date"></div></div>
  <div class="pg010-filter-row"><span><b>Owner:</b> Assigned to me (Salesperson A) · access scope cannot be broadened by filters.</span><button class="btn" data-pg010-reset>Clear filters</button></div>`;
@@ -545,13 +550,13 @@ function pg010RunFilters(){
  if(screen!=='PG-010')return;
  const tbody=document.getElementById('pg010-rows');if(!tbody)return;
  const data=pg010Mine(),look=new Map(data.map(x=>[x.id,x])),val=id=>document.getElementById(id)?.value||'';
- const q=val('pg010-query').toLowerCase().trim(),co=val('pg010-company'),br=val('pg010-branch'),cu=val('pg010-customer'),wo=val('pg010-worktype'),st=val('pg010-status'),date=val('pg010-date');
+ const q=val('pg010-query').toLowerCase().trim(),co=val('pg010-company'),br=val('pg010-branch'),cu=val('pg010-customer'),src=val('pg010-source'),wo=val('pg010-worktype'),owner=val('pg010-owner'),st=val('pg010-status'),date=val('pg010-date');
  const dash=dashboardDrilldown?.target==='PG-010'&&dashboardDrilldown.filter==='my-opportunities';
  let visible=0;
  tbody.querySelectorAll('tr[data-pg010-id]').forEach(tr=>{
   const x=look.get(tr.dataset.pg010Id);
   const terms=x?[x.id,x.customer,x.company,x.branch,x.source,x.workType,x.owner,x.status].join(' ').toLowerCase():'';
-  const okay=!!x&&(!q||terms.includes(q))&&(!co||co===x.company)&&(!br||br===x.branch)&&(!cu||cu===x.customer)&&(!wo||wo===x.workType)&&(!st||st===x.status)&&(!date||date===x.date)&&(!dash||!['Won','Lost','Closed'].includes(x.status));
+  const okay=!!x&&(!q||terms.includes(q))&&(!co||co===x.company)&&(!br||br===x.branch)&&(!cu||cu===x.customer)&&(!src||src===x.source)&&(!wo||wo===x.workType)&&(!owner||owner===x.owner)&&(!st||st===x.status)&&(!date||date===x.date)&&(!dash||!['Won','Lost','Closed'].includes(x.status));
   tr.hidden=!okay;if(okay)visible++;
  });
  const cnt=document.getElementById('pg010-count');if(cnt)cnt.textContent=visible+' of '+data.length+' accessible sample record(s)';
@@ -559,9 +564,9 @@ function pg010RunFilters(){
 }
 registerPage=function(page){return page==='PG-010'?pg010Register():pg010BaseRegister(page)};
 filterRows=function(){return screen==='PG-010'?pg010RunFilters():pg010BaseFilter()};
-headerButtons=function(s){if(s.id==='PG-010')return role==='Salesperson'?`<button class="btn" data-pg010-reset>↻ Reset filters</button>${primary('+ New Opportunity','PG-011')}`:button('Back to Dashboard','PG-003');return pg010BaseHeader(s)};
+headerButtons=function(s){if(s.id==='PG-010')return role==='Salesperson'?primary('+ New Opportunity','PG-011'):button('Back to Dashboard','PG-003');return pg010BaseHeader(s)};
 document.addEventListener('input',e=>{if(e.target.id==='pg010-query')pg010RunFilters()});
-document.addEventListener('change',e=>{if(['pg010-company','pg010-branch','pg010-customer','pg010-worktype','pg010-status','pg010-date'].includes(e.target.id))pg010RunFilters()});
+document.addEventListener('change',e=>{if(['pg010-company','pg010-branch','pg010-customer','pg010-source','pg010-worktype','pg010-owner','pg010-status','pg010-date'].includes(e.target.id))pg010RunFilters()});
 document.addEventListener('click',e=>{
  if(screen!=='PG-010')return;
  if(e.target.closest('[data-pg010-reset]')){dashboardDrilldown=null;render();return}
