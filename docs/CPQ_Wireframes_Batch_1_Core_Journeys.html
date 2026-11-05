@@ -1154,7 +1154,7 @@ document.addEventListener('click',e=>{
   const current=Array.isArray(memory.forms['PG-020.localDuplicates'])?memory.forms['PG-020.localDuplicates']:[];
   let n=1;while(current.some(x=>x.id==='LOCAL-QT-'+String(n).padStart(3,'0')))n++;
   const id='LOCAL-QT-'+String(n).padStart(3,'0');
-  current.push({...q,id,rev:'—',status:'Draft',sent:'Not sent',sentISO:'',updated:'Local demo only',updatedISO:new Date().toISOString().slice(0,10),local:true,opportunity:q.opportunity});
+  current.push({...q,id,rev:'—',status:'Draft',sent:'Not sent',sentISO:'',updated:'Local demo only',updatedISO:new Date().toISOString().slice(0,10),local:true,opportunity:q.opportunity,sourceDraftId:q.id});
   memory.forms['PG-020.localDuplicates']=current;persist();pg020DuplicatingId=null;closeModal();render();toast(id+' created in browser demo only. Original draft unchanged.');return;
  }
  if(screen==='PG-020'){
@@ -1170,7 +1170,7 @@ document.addEventListener('keydown',e=>{
 });
 // Leave any previous edit preview when a fresh PG-021 navigation originates elsewhere.
 document.addEventListener('click',e=>{
- if(e.target.closest('[data-go="PG-021"]')||e.target.closest('[data-pg012-new-quote]'))pg020EditingQuoteId=null;
+ if((e.target.closest('[data-go="PG-021"]')&&!e.target.closest('.pg021-contextbar'))||e.target.closest('[data-pg012-new-quote]'))pg020EditingQuoteId=null;
 },true);
 
 
@@ -1354,7 +1354,9 @@ navigate=function(to){
   const ctx=pg021Context();
   if(ctx)pg021RelatedWorkspace={target:to,identity:ctx.id||'New quotation (not allocated)'};
  }
- if(to==='PG-020')pg021RelatedWorkspace=null;
+ if(to==='PG-020'||(to!=='PG-021'&&!PG021_RELATED.has(to)&&(screen==='PG-021'||PG021_RELATED.has(screen)))){
+  pg021RelatedWorkspace=null;pg020EditingQuoteId=null;pg012QuoteContext=null;
+ }
  return pg021RealNavigate(to);
 };
 document.addEventListener('click',function(e){
@@ -1370,7 +1372,7 @@ document.addEventListener('click',function(e){
  if(e.target.closest('[data-pg021-preview]')){navigate('PG-023');return}
 });
 document.addEventListener('change',function(e){
- if(e.target.id==='role-selector'){pg021PendingNavigation=null;pg021RelatedWorkspace=null;}
+ if(e.target.id==='role-selector'){pg021PendingNavigation=null;pg021RelatedWorkspace=null;pg012QuoteContext=null;}
 },true);
 
 render();
