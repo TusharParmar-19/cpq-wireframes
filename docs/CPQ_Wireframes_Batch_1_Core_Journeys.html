@@ -28,6 +28,16 @@ body.mobile-preview{background:#dce0e4}body.mobile-preview .app{max-width:430px;
 .pg004-activity-intro{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}.pg004-activity-intro p{font-size:11px;color:var(--muted);margin:0}.pg004-event{position:relative;display:flex;gap:15px;align-items:center;padding:14px 5px 14px 19px;border-bottom:1px solid var(--line2)}.pg004-event:before{content:'';position:absolute;left:5px;top:0;bottom:0;border-left:1px solid var(--line)}.pg004-event-marker{position:absolute;left:0;top:25px;width:11px;height:11px;background:#c9cdd2;border:2px solid white;border-radius:50%;box-shadow:0 0 0 1px var(--line)}.pg004-event-main{display:flex;flex:1;min-width:0;flex-direction:column;gap:3px}.pg004-event-main>b{font-size:12px}.pg004-event-main small{font-size:10px;color:var(--muted)}.pg004-event-main .pg004-event-time{color:#8a9199}.pg004-event button{white-space:nowrap}
 @media(max-width:760px){.pg004-filters>.field{flex:1 1 40%}.pg004-filters .pg004-search{flex-basis:100%}.pg004-table-wrap{border:none;overflow:visible}.pg004-table{min-width:0;display:block}.pg004-table thead{display:none}.pg004-table tbody{display:grid;gap:10px}.pg004-table tr{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:#fff;border:1px solid var(--line);border-radius:9px;padding:11px}.pg004-table td{padding:4px 2px!important;border:0!important;min-width:0!important;white-space:normal!important}.pg004-table td:first-child,.pg004-table td:nth-child(2),.pg004-table td:last-child{grid-column:1/-1}.pg004-table td[data-label]:before{content:attr(data-label);display:block;font-size:9px;text-transform:uppercase;color:var(--muted);letter-spacing:.045em;margin-bottom:3px}.pg004-activity-intro{flex-wrap:wrap}.pg004-results{flex-wrap:wrap}.pg004-event{align-items:flex-start}}
 @media(max-width:460px){.pg004-filters>.field{flex-basis:100%}.pg004-overview{width:100%}.pg004-event button{font-size:10px;padding:5px 7px}.pg004-event{gap:7px}}
+
+.pg012-layout{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:16px;align-items:start}
+.pg012-layout .section{margin-top:16px}.pg012-identity{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid var(--line2)}.pg012-identity div{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}.pg012-identity b{font-size:18px}.pg012-identity span:not(.status){font-size:12px;color:var(--muted)}
+.pg012-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.pg012-item{min-width:0;display:flex;flex-direction:column;gap:5px}.pg012-item span{font-size:10px;text-transform:uppercase;color:var(--muted);font-weight:700;letter-spacing:.04em}.pg012-item strong{font-size:12px;font-weight:600;overflow-wrap:anywhere}
+.pg012-tabbar{display:flex;align-items:center;gap:4px;overflow:auto;border-bottom:1px solid var(--line);margin:4px 0 15px}.pg012-tabbar button{background:transparent;border:0;border-bottom:2px solid transparent;padding:12px;color:var(--muted);white-space:nowrap;font-size:11px;font-weight:700}.pg012-tabbar button.active{border-bottom-color:var(--dark);color:var(--ink);background:var(--subtle)}
+.pg012-tab-content{min-height:130px}.pg012-description{margin-top:15px;border:1px solid var(--line2);border-radius:7px;padding:14px}.pg012-description b{font-size:12px}.pg012-description p{font-size:12px;white-space:pre-wrap;margin:8px 0 0}.pg012-hint{font-size:11px;color:var(--muted);padding:12px;border:1px dashed var(--line);border-radius:7px;background:var(--subtle);margin:12px 0}.pg012-action-list{display:flex;flex-direction:column;gap:8px}.pg012-action-list button{justify-content:center;width:100%}.pg012-status{display:flex;align-items:center;gap:10px}.pg012-status>div{display:flex;flex-direction:column;gap:4px}.pg012-status b{font-size:12px}.pg012-status small{color:var(--muted);font-size:11px}
+.pg012-table-wrap{overflow-x:auto}.pg012-quotes{width:100%}.pg012-quotes td,.pg012-quotes th{font-size:11px}.pg012-inline-actions{margin-top:16px}.pg012-doc-list{display:grid;gap:9px}.pg012-doc{display:flex;gap:8px;align-items:center;flex-wrap:wrap;border:1px solid var(--line2);border-radius:7px;padding:10px}.pg012-doc b{font-size:12px}.pg012-doc span,.pg012-doc small{font-size:10px;color:var(--muted)}.pg012-attach,.pg012-editor{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line2);margin-top:17px;padding-top:15px}.pg012-attach label,.pg012-editor label{font-size:11px;font-weight:700}.pg012-attach select,.pg012-attach input,.pg012-editor select,.pg012-editor input,.pg012-editor textarea{max-width:100%;padding:9px;border:1px solid var(--line);border-radius:6px}.pg012-editor textarea{min-height:86px}.pg012-attach button,.pg012-editor button{align-self:flex-start}
+.pg012-history-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.pg012-history-head b{font-size:12px}.pg012-history-head label{font-size:11px;color:var(--muted)}.pg012-history-head select{margin-left:5px;padding:6px;border:1px solid var(--line);border-radius:6px}.pg012-timeline{margin-top:10px}.pg012-event{padding:12px 4px 12px 13px;border-left:2px solid var(--line);margin-left:4px;border-bottom:1px solid var(--line2)}.pg012-event b{font-size:11px}.pg012-event p{margin:5px 0;font-size:12px;white-space:pre-wrap}.pg012-event small{color:var(--muted);font-size:10px}.pg012-quote-context{margin-bottom:14px}
+@media(max-width:1020px){.pg012-layout{grid-template-columns:1fr}.pg012-fields{grid-template-columns:1fr 1fr}}
+
 .pg011-form .pg011-intro{margin-bottom:16px}.pg011-form .pg011-required{color:#a84b44;font-weight:800}.pg011-form [aria-invalid="true"]{border-color:#b34b43!important;background:#fff9f8}.pg011-form .pg011-upload-row{display:flex;align-items:end;gap:12px;flex-wrap:wrap}.pg011-form .pg011-upload-row .field{flex:1;min-width:210px}.pg011-form .pg011-file-list{padding-left:20px;color:var(--ink);font-size:12px}.pg011-form .pg011-file-list li{margin:5px 0}.pg011-form .pg011-file-list small{color:var(--muted)}.pg011-form .pg011-actions{margin-top:16px}.pg011-form .pg011-actions .keys{max-width:620px;line-height:1.7}
 .pg010-mobile-filter-toggle{display:none}
 @media(max-width:760px){.pg010-mobile-filter-toggle{display:block;margin-bottom:10px}.pg010-mobile-filter-toggle button{width:100%}.pg010-filter-panel{display:none}.pg010-filter-panel.is-open{display:block;border:1px solid var(--line);border-radius:9px;padding:12px}}
@@ -710,12 +720,13 @@ function pg011Save(open){
  }
  if(warning)warning.classList.add('hide');
  pg011Controls().forEach(el=>memory.forms[el.dataset.formKey]=el.value);
+ memory.forms['PG-011.saved.'+pg011Key()]=true;
  const recordText=pg011EditingId||'new opportunity draft';
  memory.events.unshift('Opportunity '+recordText+' saved in local UI demo (no backend)');
  memory.events=memory.events.slice(0,8);
  persist();
  pg011Baseline=pg011Signature();
- if(open){navigate('PG-012');toast('Saved sample locally. PG-012 is a representative details screen, not a live saved record.')}
+ if(open){pg012SelectedId=pg011EditingId||'PG011-LOCAL';pg012Tab='parties';navigate('PG-012');toast('Saved sample locally and opened its detail preview. No official opportunity number was created.')}
  else toast('Opportunity sample saved locally. No real record or quotation was created.');
 }
 function pg011Cancel(){
@@ -732,7 +743,7 @@ render=function(){
 };
 document.addEventListener('click',function(e){
  const link=e.target.closest('[data-go="PG-011"]');
- if(link)pg011EditingId=screen==='PG-012'&&/^Edit\b/i.test(link.textContent.trim())?'OP-2026-008':null;
+ if(link)pg011EditingId=screen==='PG-012'&&/^Edit\b/i.test(link.textContent.trim())?(pg012Record()?.local?null:pg012Record()?.id||null):null;
 },true);
 document.addEventListener('click',function(e){
  const edit=e.target.closest('[data-pg011-edit]');
@@ -761,6 +772,211 @@ document.addEventListener('click',function(e){
 document.addEventListener('change',function(e){
  if(screen!=='PG-011')return;
  if(e.target.dataset.formKey===pg011Key()+'::Legal entity'||e.target.dataset.formKey===pg011Key()+'::Billing customer')pg011SyncChoices();
+});
+
+
+// PG-012: record-specific, access-scoped opportunity detail wireframe. Fictional and browser-only.
+let pg012SelectedId=null,pg012Tab='parties',pg012HistoryFilter='All',pg012QuoteContext=null;
+const PG012_EXTRAS={
+ 'OP-2026-008':{contractor:'Test Contractor',endClient:'Factory Owner',site:'ABC Factory Site (sample)',description:'Panel installation and related electrical works (fictional enquiry)',ref:'ENQ-ABC-008',priority:'Normal',created:'03 Nov 2026 · 09:00 AM'},
+ 'OP-2026-011':{contractor:'',endClient:'Greenfield Facility',site:'Greenfield Solar Site (sample)',description:'Solar EPC requirement and preliminary quotation discussion (fictional enquiry)',ref:'ENQ-GF-011',priority:'High',created:'02 Nov 2026 · 10:00 AM'},
+ 'OP-2026-012':{contractor:'',endClient:'',site:'Sunrise Plant (sample)',description:'Maintenance services enquiry (fictional sample)',ref:'',priority:'Normal',created:'01 Nov 2026 · 09:30 AM'}
+};
+const PG012_QUOTES={
+ 'OP-2026-008':[{id:'QT-2026-014',rev:'R1',date:'03 Nov 2026',status:'Draft'}],
+ 'OP-2026-011':[{id:'QT-2026-011',rev:'R0',date:'02 Nov 2026',status:'Sent'}]
+};
+const PG012_QUOTE_GRANTS={
+ 'Salesperson':['QT-2026-014','QT-2026-011'],
+ 'Sales Manager':['QT-2026-014','QT-2026-011'],
+ 'Pre-Sales / Technical':[],
+ 'View-Only':[]
+};
+const PG012_DOC_GRANTS={
+ 'Salesperson':['OP-2026-008','OP-2026-011'],
+ 'Sales Manager':['OP-2026-008','OP-2026-011'],
+ 'Pre-Sales / Technical':['OP-2026-008'],
+ 'View-Only':[]
+};
+const PG012_SAMPLE_DOCS={
+ 'OP-2026-008':[{name:'customer_enquiry.pdf',category:'Customer Enquiry'},{name:'electrical_drawing.pdf',category:'Drawing'}],
+ 'OP-2026-011':[{name:'solar_request.pdf',category:'Customer Enquiry'}]
+};
+function pg012Record(){
+ const access=pg010Access();
+ if(!access)return null;
+ if(pg012SelectedId==='PG011-LOCAL'){
+  if(!access.create||memory.forms['PG-011.saved.PG-011.new']!==true)return null;
+  const get=(label,defaultValue='')=>memory.forms['PG-011.new::'+label]??defaultValue;
+  return {id:'PG011-LOCAL',displayId:'Local opportunity sample (no allocated number)',local:true,customer:get('Billing customer'),company:get('Legal entity'),branch:get('Branch'),workType:get('Business domain / work type'),owner:get('Responsible salesperson'),status:memory.forms['PG-012.status.PG011-LOCAL']||get('Opportunity status (sample)','New'),source:get('Enquiry source'),site:get('Project site'),contractor:get('Main contractor'),endClient:get('End client'),description:get('Requirement summary'),ref:get('Customer enquiry reference'),tender:get('Tender / NIT reference (optional)'),po:get('Customer PO / WO reference (optional)'),expected:get('Expected opportunity value (₹, optional)'),priority:get('Priority'),date:get('Enquiry received date'),targetDate:get('Customer target date (optional)'),technical:get('Technical assignee'),notes:get('Internal notes'),updated:'Saved in this browser only',created:'Local draft only'};
+ }
+ const scoped=pg010Mine();
+ const base=pg012SelectedId?scoped.find(o=>o.id===pg012SelectedId):scoped[0];
+ if(!base)return null;
+ const extras=PG012_EXTRAS[base.id]||{};
+ const key='PG-011.edit.'+base.id;
+ const isSaved=memory.forms['PG-011.saved.'+key]===true;
+ const get=(label,defaultValue='')=>isSaved?(memory.forms[key+'::'+label]??defaultValue):defaultValue;
+ return {...base,...extras,displayId:base.id,local:false,
+  customer:get('Billing customer',base.customer),company:get('Legal entity',base.company),branch:get('Branch',base.branch),
+  workType:get('Business domain / work type',base.workType),owner:get('Responsible salesperson',base.owner),
+  status:memory.forms['PG-012.status.'+base.id]||get('Opportunity status (sample)',base.status),
+  source:get('Enquiry source',base.source),site:get('Project site',extras.site),contractor:get('Main contractor',extras.contractor),endClient:get('End client',extras.endClient),
+  description:get('Requirement summary',extras.description),ref:get('Customer enquiry reference',extras.ref),
+  tender:get('Tender / NIT reference (optional)'),po:get('Customer PO / WO reference (optional)'),expected:get('Expected opportunity value (₹, optional)'),
+  priority:get('Priority',extras.priority),date:get('Enquiry received date',base.date),targetDate:get('Customer target date (optional)'),
+  technical:get('Technical assignee'),notes:get('Internal notes'),updated:isSaved?'Saved in browser demo · '+base.updated:base.updated,
+  created:extras.created
+ };
+}
+function pg012CanEdit(r){return !!r&&!!pg010Access()?.edit&&!r.local}
+function pg012CanQuote(r){return !!r&&!r.local&&role==='Salesperson'&&!!pg010Access()?.create}
+function pg012CanWrite(r){return !!r&&role==='Salesperson'&&!!pg010Access()?.edit}
+function pg012QuoteList(r){
+ return (PG012_QUOTES[r.id]||[]).filter(q=>(PG012_QUOTE_GRANTS[role]||[]).includes(q.id));
+}
+function pg012DocList(r){
+ if(!r)return [];
+ if(r.local)return Array.isArray(memory.forms['PG-011.new::File names'])?memory.forms['PG-011.new::File names']:[];
+ if(!(PG012_DOC_GRANTS[role]||[]).includes(r.id))return [];
+ const list=Array.isArray(memory.forms['PG-011.edit.'+r.id+'::File names'])?memory.forms['PG-011.edit.'+r.id+'::File names']:[];
+ const other=Array.isArray(memory.forms['PG-012.files.'+r.id])?memory.forms['PG-012.files.'+r.id]:[];
+ return [...(PG012_SAMPLE_DOCS[r.id]||[]),...list,...other];
+}
+function pg012Read(label,value){
+ return '<div class="pg012-item"><span>'+esc(label)+'</span><strong>'+esc(value===null||value===undefined||value===''?'Not specified':value)+'</strong></div>';
+}
+function pg012LocalEvents(r){
+ const values=memory.forms['PG-012.events.'+r.id];
+ return Array.isArray(values)?values:[];
+}
+function pg012AddEvent(r,type,description){
+ const events=pg012LocalEvents(r);
+ events.unshift({type,description,time:new Date().toLocaleString('en-IN'),actor:role+' (demo)'});
+ memory.forms['PG-012.events.'+r.id]=events.slice(0,25);
+ persist();
+}
+function pg012Tabs(r){
+ const tabs=[['parties','Project parties'],['enquiry','Enquiry & site'],['quotes','Linked quotations'],['documents','Documents'],['activity','Notes & activity']];
+ const bar='<div class="pg012-tabbar" role="tablist" aria-label="Opportunity information">'+tabs.map(([id,label])=>'<button type="button" role="tab" data-pg012-tab="'+id+'" aria-selected="'+String(pg012Tab===id)+'" class="'+(pg012Tab===id?'active':'')+'">'+esc(label)+'</button>').join('')+'</div>';
+ let body='';
+ if(pg012Tab==='parties'){
+  body='<div class="pg012-fields">'+pg012Read('Billing customer',r.customer)+pg012Read('Main contractor',r.contractor)+pg012Read('End client',r.endClient)+pg012Read('Project site',r.site)+pg012Read('Legal entity',r.company)+pg012Read('Branch',r.branch)+'</div><div class="pg012-hint">The billing customer, contractor and end client are distinct parties; none is copied automatically from another.</div>';
+ }else if(pg012Tab==='enquiry'){
+  body='<div class="pg012-fields">'+pg012Read('Enquiry source',r.source)+pg012Read('Customer enquiry reference',r.ref)+pg012Read('Tender / NIT reference (optional)',r.tender)+pg012Read('Customer PO / WO reference (optional)',r.po)+pg012Read('Enquiry received date',r.date)+pg012Read('Customer target date',r.targetDate)+pg012Read('Priority',r.priority)+pg012Read('Technical assignee',r.technical)+pg012Read('Expected opportunity value (illustrative)',r.expected)+pg012Read('Project site',r.site)+'</div><div class="pg012-description"><b>Requirement summary</b><p>'+esc(r.description||'No requirement summary has been recorded in this sample.')+'</p></div>';
+ }else if(pg012Tab==='quotes'){
+  const quotes=pg012QuoteList(r);
+  body='<div class="pg012-hint">Linked quotation access is checked separately from opportunity access. Values and margins are omitted because no financial viewing grant is configured for this example.</div>';
+  body+=quotes.length?'<div class="pg012-table-wrap"><table class="data-table pg012-quotes"><thead><tr><th>Quotation</th><th>Revision</th><th>Date</th><th>Status</th><th>Action</th></tr></thead><tbody>'+quotes.map(q=>'<tr><td><strong>'+esc(q.id)+'</strong></td><td>'+esc(q.rev)+'</td><td>'+esc(q.date)+'</td><td>'+badge(q.status)+'</td><td>'+(q.id==='QT-2026-014'?'<button type="button" class="btn small" data-pg012-open-quote="'+esc(q.id)+'">Open quote example</button>':'<span class="smallnote">Record-specific PG-022 view pending review</span>')+'</td></tr>').join('')+'</tbody></table></div>':'<div class="empty"><strong>No linked quotations available</strong>No quotation is visible within this demo role and record scope.</div>';
+  if(pg012CanQuote(r))body+='<div class="pg012-inline-actions"><button type="button" class="btn primary" data-pg012-new-quote>+ New Quotation (demo)</button></div>';
+ }else if(pg012Tab==='documents'){
+  const allowed=r.local||(PG012_DOC_GRANTS[role]||[]).includes(r.id);
+  const docs=allowed?pg012DocList(r):[];
+  body='<div class="pg012-hint">Document access is checked separately. File names below are fictional or locally chosen; no private document has been uploaded or downloaded.</div>';
+  body+=!allowed?'<div class="empty"><strong>No document access in this role preview</strong>File names are not shown without a separate sample document grant.</div>':docs.length?'<div class="pg012-doc-list">'+docs.map(f=>'<div class="pg012-doc"><b>'+esc(f.name)+'</b><span>'+esc(f.category||'Supporting Document')+'</span><small>Metadata only · No download</small></div>').join('')+'</div>':'<div class="empty"><strong>No documents available</strong>No file names are attached to this opportunity sample.</div>';
+  if(pg012CanWrite(r)&&allowed){
+   body+='<div class="pg012-attach"><label for="pg012-category">Document category</label><select id="pg012-category"><option>Customer Enquiry</option><option>Customer BOQ</option><option>Drawing</option><option>Other Supporting Document</option></select><label for="pg012-file">Select a sample file</label><input id="pg012-file" type="file"><button type="button" class="btn" data-pg012-add-file>Record filename (demo)</button></div>';
+  }
+ }else{
+  const events=pg012LocalEvents(r);
+  const history=[...events,{type:'Update',description:r.local?'New opportunity fields saved locally. No official opportunity was created.':'Illustrative opportunity record created / updated.',time:r.created||r.updated,actor:r.local?'Salesperson (demo)':r.owner}];
+  const filtered=pg012HistoryFilter==='All'?history:history.filter(x=>x.type===pg012HistoryFilter);
+  body='<div class="pg012-history-head"><b>Activity history</b><label>Show <select id="pg012-history-filter"><option '+(pg012HistoryFilter==='All'?'selected':'')+'>All</option><option '+(pg012HistoryFilter==='Note'?'selected':'')+'>Note</option><option '+(pg012HistoryFilter==='Status'?'selected':'')+'>Status</option><option '+(pg012HistoryFilter==='Update'?'selected':'')+'>Update</option></select></label></div>';
+  body+=filtered.length?'<div class="pg012-timeline">'+filtered.map(x=>'<div class="pg012-event"><b>'+esc(x.type)+'</b><p>'+esc(x.description)+'</p><small>'+esc(x.actor)+' · '+esc(x.time)+'</small></div>').join('')+'</div>':'<div class="empty"><strong>No matching activity</strong>Try a different activity filter.</div>';
+  if(r.notes)body+='<div class="pg012-description"><b>Internal enquiry notes</b><p>'+esc(r.notes)+'</p></div>';
+  if(pg012CanWrite(r)){
+   body+='<div class="pg012-editor"><label for="pg012-new-note">Add a communication note (sample)</label><textarea id="pg012-new-note" placeholder="What did the customer or employee communicate?"></textarea><button class="btn" type="button" data-pg012-add-note>Record note (demo)</button></div>';
+   body+='<div class="pg012-editor"><label for="pg012-new-status">Update opportunity outcome/status (sample labels)</label><select id="pg012-new-status">'+['New','In Discussion','Requirements Pending','Quote Preparation','Won','Lost'].map(x=>'<option value="'+esc(x)+'" '+(x===r.status?'selected':'')+'>'+esc(x)+'</option>').join('')+'</select><label for="pg012-status-note">Reason / customer response (optional)</label><input id="pg012-status-note" placeholder="Add a short outcome note"><button class="btn" type="button" data-pg012-save-status>Record status update (demo)</button><p class="smallnote">Status labels are proposed examples, not an approved transition policy. This cannot register a customer order.</p></div>';
+  }
+ }
+ return bar+'<div class="pg012-tab-content" role="tabpanel">'+body+'</div>';
+}
+function pg012Detail(){
+ const r=pg012Record();
+ if(!r)return '<div class="warning"><b>Opportunity access unavailable in this demo role.</b> The selected record is not within the illustrative assignment grant, or no opportunity was selected. No confidential details are shown.</div>'+button('Back to Opportunity Register','PG-010');
+ const title='<div class="pg012-identity"><div><b>'+esc(r.displayId)+'</b><span>'+esc(r.customer)+'</span></div>'+badge(r.status)+'</div>';
+ const overview=title+'<div class="pg012-fields">'+pg012Read('Billing customer',r.customer)+pg012Read('Legal entity / branch',(r.company||'—')+' / '+(r.branch||'—'))+pg012Read('Work type',r.workType)+pg012Read('Responsible employee',r.owner)+pg012Read('Opportunity status',r.status)+pg012Read('Last updated',r.updated)+'</div>';
+ let actions='<div class="pg012-action-list">'+button('Back to Opportunity Register','PG-010');
+ if(pg012CanEdit(r))actions+=button('Edit Opportunity','PG-011');
+ if(pg012CanQuote(r))actions+='<button type="button" class="btn" data-pg012-new-quote>+ New Quotation</button>';
+ actions+='<button type="button" class="btn" data-pg012-tab="quotes">Linked Quotations</button>';
+ actions+='<button type="button" class="btn" data-pg012-tab="documents">View Documents</button>';
+ actions+='<button type="button" class="btn" data-pg012-tab="activity">Notes &amp; Activity</button></div>';
+ const tip='<div class="pg012-hint"><b>Permission preview only.</b> Opportunity, quotation and document grants are independent fictional examples. No real access checks, emails, file downloads or backend changes occur here.</div>';
+ const right=panel('Related actions',actions)+'<div class="section">'+panel('History & status','<div class="pg012-status">'+badge(r.status)+'<div><b>'+esc(r.owner)+'</b><small>Last updated: '+esc(r.updated)+'</small></div></div><div class="pg012-hint">Original and later updates are preserved by the real system. This page displays fictional history and browser-only edits.</div>')+'</div>';
+ return '<div class="pg012-layout"><div>'+panel('Opportunity overview',overview)+'<div class="section">'+panel('Details & related information',pg012Tabs(r))+'</div>'+tip+'</div><aside>'+right+'</aside></div>';
+}
+const pg012PreviousDetail=detailPage;
+detailPage=function(page){return page==='PG-012'?pg012Detail():pg012PreviousDetail(page)};
+const pg012PreviousHeader=headerButtons;
+headerButtons=function(s){
+ if(s.id==='PG-012'){
+  const r=pg012Record();if(!r)return '';
+  return (pg012CanEdit(r)?button('Edit Opportunity','PG-011'):'')+(pg012CanQuote(r)?'<button type="button" class="btn primary" data-pg012-new-quote>+ New Quotation</button>':'');
+ }
+ return pg012PreviousHeader(s);
+};
+const pg012PreviousAppBody=appBody;
+appBody=function(){
+ const body=pg012PreviousAppBody();
+ if(screen==='PG-021'&&pg012QuoteContext)return '<div class="help pg012-quote-context"><b>Opportunity link preview:</b> A new quotation would be linked to '+esc(pg012QuoteContext)+'. No quotation or official database relationship has been created. The PG-021 form remains a representative wireframe.</div>'+body;
+ return body;
+};
+// Capture the record context before the existing PG-010 row/View handler navigates.
+document.addEventListener('click',e=>{
+ if(screen!=='PG-010')return;
+ const row=e.target.closest('tr[data-pg010-id]');
+ if(row&&pg010Mine().some(x=>x.id===row.dataset.pg010Id)){pg012SelectedId=row.dataset.pg010Id;pg012Tab='parties';pg012HistoryFilter='All'}
+},true);
+document.addEventListener('keydown',e=>{
+ if(screen==='PG-010'&&e.key==='Enter'&&e.target.matches('tr[data-pg010-id]')){
+  if(pg010Mine().some(x=>x.id===e.target.dataset.pg010Id)){pg012SelectedId=e.target.dataset.pg010Id;pg012Tab='parties';pg012HistoryFilter='All'}
+ }
+},true);
+document.addEventListener('change',e=>{
+ if(e.target.id==='role-selector'){pg012SelectedId=null;pg012QuoteContext=null;pg012Tab='parties';pg012HistoryFilter='All'}
+ if(screen==='PG-012'&&e.target.id==='pg012-history-filter'){pg012HistoryFilter=e.target.value;render()}
+},true);
+document.addEventListener('click',e=>{
+ if(screen!=='PG-012')return;
+ const tab=e.target.closest('[data-pg012-tab]');
+ if(tab){pg012Tab=tab.dataset.pg012Tab;render();return}
+ const r=pg012Record();if(!r)return;
+ if(e.target.closest('[data-pg012-new-quote]')){
+  if(!pg012CanQuote(r)){toast('New quotation requires a separate authorized opportunity grant.');return}
+  pg012QuoteContext=r.id;navigate('PG-021');return;
+ }
+ const quote=e.target.closest('[data-pg012-open-quote]');
+ if(quote){
+  if(!pg012QuoteList(r).some(x=>x.id===quote.dataset.pg012OpenQuote)){toast('This quote is not in the example quote grant.');return}
+  navigate('PG-022');return;
+ }
+ if(e.target.closest('[data-pg012-add-note]')){
+  if(!pg012CanWrite(r))return;
+  const el=document.getElementById('pg012-new-note'),v=el?.value.trim();
+  if(!v){toast('Enter a sample communication note.');el?.focus();return}
+  pg012AddEvent(r,'Note',v.slice(0,1000));render();toast('Note stored in browser demo only.');return;
+ }
+ if(e.target.closest('[data-pg012-save-status]')){
+  if(!pg012CanWrite(r))return;
+  const status=document.getElementById('pg012-new-status')?.value;
+  if(!['New','In Discussion','Requirements Pending','Quote Preparation','Won','Lost'].includes(status))return;
+  const reason=document.getElementById('pg012-status-note')?.value.trim()||'';
+  memory.forms['PG-012.status.'+r.id]=status;
+  pg012AddEvent(r,'Status','Status set to '+status+(reason?' · '+reason.slice(0,500):'')+' (illustrative)');
+  render();toast('Sample status saved locally; no production status or order changed.');return;
+ }
+ if(e.target.closest('[data-pg012-add-file]')){
+  if(!pg012CanWrite(r)||!(PG012_DOC_GRANTS[role]||[]).includes(r.id))return;
+  const input=document.getElementById('pg012-file');
+  if(!input?.files?.length){toast('Choose a sample file first.');return}
+  const category=document.getElementById('pg012-category')?.value||'Supporting Document';
+  const docs=Array.isArray(memory.forms['PG-012.files.'+r.id])?memory.forms['PG-012.files.'+r.id]:[];
+  docs.push({name:input.files[0].name,category});
+  memory.forms['PG-012.files.'+r.id]=docs;
+  pg012AddEvent(r,'Update','A sample filename was recorded in the document list (no upload).');
+  render();toast('Filename recorded locally. No document bytes were uploaded.');
+ }
 });
 
 render();
