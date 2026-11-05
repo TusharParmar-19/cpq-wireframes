@@ -307,7 +307,7 @@ function work(){
  <div class="pg004-event-main"><small class="pg004-event-time">${esc(ev.date)}</small><b>${esc(ev.event)}</b><small>${esc(ev.record)} · ${esc(ev.actor)}</small><small>${esc(ev.info)}</small></div>
  <button class="btn tiny" type="button" data-go="${ev.target}">Open record</button></div>`).join('');
  return `<div class="pg004-intro"><div><b>My assigned work</b><small>Salesperson A · Fictional sample tasks only. Real records must be access-scoped.</small></div>
- <div class="pg004-overview"><span><strong>${String(PG004_TASKS.length).padStart(2,'0')}</strong> My tasks</span><span><strong>${String(PG004_TASKS.filter(t=>t.priority==='High').length).padStart(2,'0')}</strong> High priority</span><span><strong>02</strong> Pending follow-up</span></div></div>
+ <div class="pg004-overview"><span><strong>${String(PG004_TASKS.length).padStart(2,'0')}</strong> My tasks</span><span><strong>${String(PG004_TASKS.filter(t=>t.priority==='High').length).padStart(2,'0')}</strong> High priority</span><span><strong>${String(PG004_TASKS.filter(t=>['Pending Approval','Evidence Pending'].includes(t.state)).length).padStart(2,'0')}</strong> Awaiting Updates</span></div></div>
  <section class="section">${panel('My Work Queue',`<div class="pg004-filters">
  <div class="field pg004-search"><label for="pg004-search">Search task, record or customer</label><input id="pg004-search" type="search" placeholder="e.g. QT-2026-014 or ABC Industries" autocomplete="off"></div>
  <div class="field"><label for="pg004-type">Record type</label><select id="pg004-type"><option value="">All types</option>${['Quotation','Direct Order','Approval','Vendor Evidence','Opportunity'].map(x=>option(x)).join('')}</select></div>
