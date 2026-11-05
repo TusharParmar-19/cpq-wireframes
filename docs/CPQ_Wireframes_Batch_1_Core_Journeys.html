@@ -680,7 +680,7 @@ function pg011SelectOptions(label,items,placeholder){
 function pg011SyncChoices(){
  const legal=pg011LiveValue('Legal entity'),customer=pg011LiveValue('Billing customer');
  pg011SelectOptions('Branch',PG011_BRANCHES[legal]||[],'Select permitted branch...');
- pg011SelectOptions('Project site',PG011_SITES[customer]||[],'Select customer first / optional site...');
+ pg011SelectOptions('Project site',PG011_SITES[customer]||[],customer?'Select project site (optional)...':'Select billing customer first...');
 }
 function pg011DecorateLabels(){
  const base=['Legal entity','Billing customer','Responsible salesperson'];
