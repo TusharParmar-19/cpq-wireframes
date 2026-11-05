@@ -28,6 +28,7 @@ body.mobile-preview{background:#dce0e4}body.mobile-preview .app{max-width:430px;
 .pg004-activity-intro{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}.pg004-activity-intro p{font-size:11px;color:var(--muted);margin:0}.pg004-event{position:relative;display:flex;gap:15px;align-items:center;padding:14px 5px 14px 19px;border-bottom:1px solid var(--line2)}.pg004-event:before{content:'';position:absolute;left:5px;top:0;bottom:0;border-left:1px solid var(--line)}.pg004-event-marker{position:absolute;left:0;top:25px;width:11px;height:11px;background:#c9cdd2;border:2px solid white;border-radius:50%;box-shadow:0 0 0 1px var(--line)}.pg004-event-main{display:flex;flex:1;min-width:0;flex-direction:column;gap:3px}.pg004-event-main>b{font-size:12px}.pg004-event-main small{font-size:10px;color:var(--muted)}.pg004-event-main .pg004-event-time{color:#8a9199}.pg004-event button{white-space:nowrap}
 @media(max-width:760px){.pg004-filters>.field{flex:1 1 40%}.pg004-filters .pg004-search{flex-basis:100%}.pg004-table-wrap{border:none;overflow:visible}.pg004-table{min-width:0;display:block}.pg004-table thead{display:none}.pg004-table tbody{display:grid;gap:10px}.pg004-table tr{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:#fff;border:1px solid var(--line);border-radius:9px;padding:11px}.pg004-table td{padding:4px 2px!important;border:0!important;min-width:0!important;white-space:normal!important}.pg004-table td:first-child,.pg004-table td:nth-child(2),.pg004-table td:last-child{grid-column:1/-1}.pg004-table td[data-label]:before{content:attr(data-label);display:block;font-size:9px;text-transform:uppercase;color:var(--muted);letter-spacing:.045em;margin-bottom:3px}.pg004-activity-intro{flex-wrap:wrap}.pg004-results{flex-wrap:wrap}.pg004-event{align-items:flex-start}}
 @media(max-width:460px){.pg004-filters>.field{flex-basis:100%}.pg004-overview{width:100%}.pg004-event button{font-size:10px;padding:5px 7px}.pg004-event{gap:7px}}
+.pg011-form .pg011-intro{margin-bottom:16px}.pg011-form .pg011-required{color:#a84b44;font-weight:800}.pg011-form [aria-invalid="true"]{border-color:#b34b43!important;background:#fff9f8}.pg011-form .pg011-upload-row{display:flex;align-items:end;gap:12px;flex-wrap:wrap}.pg011-form .pg011-upload-row .field{flex:1;min-width:210px}.pg011-form .pg011-file-list{padding-left:20px;color:var(--ink);font-size:12px}.pg011-form .pg011-file-list li{margin:5px 0}.pg011-form .pg011-file-list small{color:var(--muted)}.pg011-form .pg011-actions{margin-top:16px}.pg011-form .pg011-actions .keys{max-width:620px;line-height:1.7}
 .pg010-mobile-filter-toggle{display:none}
 @media(max-width:760px){.pg010-mobile-filter-toggle{display:block;margin-bottom:10px}.pg010-mobile-filter-toggle button{width:100%}.pg010-filter-panel{display:none}.pg010-filter-panel.is-open{display:block;border:1px solid var(--line);border-radius:9px;padding:12px}}
 .pg010-banner{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px;border:1px solid var(--line);border-radius:8px;margin-bottom:12px}
@@ -152,10 +153,11 @@ const REGISTER={
 };
 const FORM_SECTIONS={
 'PG-011':[
-['Organization & customer',[['Legal entity','select','company'],['Branch','select','branches'],['Billing customer','select','customer']]],
-['Project parties',[['Main contractor','text'],['End client','text'],['Project site','text']]],
-['Enquiry details',[['Enquiry source','select','sources'],['Business domain / work type','select','work'],['Customer enquiry reference','text'],['Requirement summary','textarea']]],
-['Responsibility & notes',[['Responsible salesperson','select','people'],['Technical assignee','select','people'],['Priority','select','priority'],['Internal notes','textarea']]]],
+['Organization & customer',[['Legal entity','select','company'],['Branch','select','pg011Branches'],['Billing customer','select','customer']]],
+['Project parties',[['Main contractor','text'],['End client','text'],['Project site','select','pg011Sites']]],
+['Enquiry details',[['Enquiry source','select','pg011Sources'],['Business domain / work type','select','work'],['Customer enquiry reference','text'],['Tender / NIT reference (optional)','text'],['Customer PO / WO reference (optional)','text'],['Expected opportunity value (₹, optional)','number'],['Enquiry received date','date'],['Customer target date (optional)','date'],['Requirement summary','textarea']]],
+['Responsibility & status',[['Responsible salesperson','select','pg011Sales'],['Technical assignee','select','pg011Technical'],['Priority','select','priority'],['Opportunity status (sample)','select','pg011Statuses']]],
+['Documents & notes',[['Internal notes','textarea']]]],
 'PG-024':[
 ['Quotation & recipient',[['Quotation revision','text','QT-2026-011 / R0'],['Recipient name / company','text'],['Communication channel','select','channels']]],
 ['Actual communication',[['Dispatch date','date'],['Dispatch time','time'],['Recorded by','text','Salesperson A'],['Customer response / remarks','textarea']]]],
@@ -539,7 +541,7 @@ function pg010Register(){
  <td data-label="Responsible">${esc(o.owner)}</td>
  <td data-label="Status">${badge(o.status)}</td>
  <td data-label="Last Updated">${esc(o.updated)}</td>
- <td data-label="Actions"><div class="pg010-actions">${button('View','PG-012')}${access.edit?button('Edit','PG-011'):''}</div></td></tr>`).join('');
+ <td data-label="Actions"><div class="pg010-actions">${button('View','PG-012')}${access.edit?'<button type="button" class="btn tiny" data-pg011-edit="'+esc(o.id)+'">Edit</button>':''}</div></td></tr>`).join('');
  const filters=`<div class="pg010-mobile-filter-toggle"><button type="button" class="btn" data-pg010-filter-toggle aria-expanded="false" aria-controls="pg010-filter-panel">Show filters</button></div><div class="pg010-filter-panel" id="pg010-filter-panel"><div class="pg004-filters pg010-filters">
  <div class="field pg004-search"><label for="pg010-query">Search opportunity or customer</label><input id="pg010-query" type="search" placeholder="OP-2026-008 or ABC Industries"></div>
  <div class="field"><label for="pg010-company">Legal entity</label>${pg010Options('pg010-company',r.map(x=>x.company),'All authorized entities')}</div>
@@ -586,6 +588,181 @@ document.addEventListener('click',e=>{
  if(e.target.closest('tr[data-pg010-id]')&&!e.target.closest('button,a,input,select'))navigate('PG-012');
 });
 document.addEventListener('keydown',e=>{if(screen==='PG-010'&&e.key==='Enter'&&e.target.matches('tr[data-pg010-id]')){e.preventDefault();navigate('PG-012')}});
+
+// PG-011: opportunity-specific browser-only wireframe (no backend, uploads or real permissions).
+const PG011_BRANCHES={
+ 'Test Electrical Trading Co.':['Main Branch'],
+ 'Test Solar EPC Co.':['Secondary Branch'],
+ 'Test Contracting Services Co.':['Main Branch']
+};
+const PG011_SITES={
+ 'ABC Industries':['ABC Factory Site (sample)','ABC Project Site 2 (sample)'],
+ 'Sunrise Manufacturing':['Sunrise Plant (sample)'],
+ 'Greenfield Facility':['Greenfield Solar Site (sample)']
+};
+OPTIONS.pg011Sources=['Email Enquiry','Client Referral','Website Enquiry','WhatsApp','Telephone','Meeting','Tender Portal','Direct Customer Contact'];
+OPTIONS.pg011Statuses=['New','In Discussion','Requirements Pending','Quote Preparation','Won','Lost'];
+OPTIONS.pg011Sales=['Salesperson A','Salesperson B','Sales Manager'];
+OPTIONS.pg011Technical=['Technical Employee'];
+OPTIONS.pg011Branches=[];
+OPTIONS.pg011Sites=[];
+let pg011EditingId=null,pg011Baseline=null;
+function pg011Key(){return pg011EditingId?'PG-011.edit.'+pg011EditingId:'PG-011.new'}
+function pg011Val(label){return memory.forms[pg011Key()+'::'+label]||''}
+function pg011Default(label,value){
+ const key=pg011Key()+'::'+label;
+ if(memory.forms[key]===undefined)memory.forms[key]=value;
+}
+function pg011Prepare(){
+ if(pg011EditingId){
+  const record=PG010_DATA.find(r=>r.id===pg011EditingId);
+  if(!record){pg011EditingId=null;return pg011Prepare()}
+  pg011Default('Legal entity',record.company);
+  pg011Default('Branch',record.branch);
+  pg011Default('Billing customer',record.customer);
+  pg011Default('Enquiry source',record.source);
+  pg011Default('Business domain / work type',record.workType);
+  pg011Default('Responsible salesperson',record.owner);
+  pg011Default('Opportunity status (sample)',record.status);
+  pg011Default('Enquiry received date',record.date);
+  pg011Default('Requirement summary','Sample '+record.workType+' enquiry. Confirm original customer scope before editing.');
+ }else{
+  const preferred=memory.forms['PG-003::Entity'];
+  const company=COMPANY.includes(preferred)?preferred:COMPANY[0];
+  pg011Default('Legal entity',company);
+  const branches=PG011_BRANCHES[company]||[];
+  const preferredBranch=memory.forms['PG-003::Branch'];
+  pg011Default('Branch',branches.includes(preferredBranch)?preferredBranch:(branches[0]||''));
+  pg011Default('Responsible salesperson','Salesperson A');
+  pg011Default('Opportunity status (sample)','New');
+ }
+ OPTIONS.pg011Branches=PG011_BRANCHES[pg011Val('Legal entity')]||[];
+ OPTIONS.pg011Sites=PG011_SITES[pg011Val('Billing customer')]||[];
+}
+function pg011Files(){
+ const value=memory.forms[pg011Key()+'::File names'];
+ return Array.isArray(value)?value:[];
+}
+function pg011FileMarkup(){
+ const files=pg011Files();
+ return files.length?'<ul class="pg011-file-list">'+files.map(f=>'<li>'+esc(f.category)+' — '+esc(f.name)+' <small>(name only; not uploaded)</small></li>').join('')+'</ul>':'<p class="smallnote" id="pg011-file-empty">No customer documents attached in this browser demo.</p>';
+}
+function pg011Form(){
+ const access=pg010Access();
+ if(!(access&&(access.create||(pg011EditingId&&access.edit)))){
+  return panel('Opportunity form access — demo preview','<div class="warning">The selected demo role has no configured opportunity create/edit grant. This is NOT a production role policy; access must be approved and enforced on the server.</div>'+button('Back to Opportunity Register','PG-010'));
+ }
+ pg011Prepare();
+ const mode=pg011EditingId?'Edit sample '+pg011EditingId:'New opportunity (sample)';
+ const intro='<div class="help pg011-intro"><b>'+esc(mode)+'</b> · This page records a customer enquiry, NOT a confirmed customer order. Numbering, statuses, assignments and access are illustrative. Work Type and Requirement Summary are needed before opening the completed example.</div>';
+ const docs=panel('Original customer enquiry documents','<p class="smallnote">Select a document category and file(s) to preview the required attachment workflow. Only file names are remembered locally; actual file contents are never uploaded.</p><div class="pg011-upload-row"><div class="field"><label for="pg011-file-category">Document category</label><select id="pg011-file-category"><option>Customer Enquiry</option><option>Customer BOQ</option><option>Drawing</option><option>Other Supporting Document</option></select></div><div class="field"><label for="pg011-file-input">Select files</label><input type="file" multiple id="pg011-file-input"></div><button type="button" class="btn" data-pg011-files>Add filenames (demo)</button></div><div id="pg011-attached-list">'+pg011FileMarkup()+'</div>');
+ const footer='<div class="actionbar pg011-actions"><div class="keys">Required to save: Legal Entity, Branch (where applicable), Billing Customer, Responsible Salesperson. Also required for Save &amp; Open: Work Type and Requirement Summary.<div class="smallnote">Tender/PO references are optional information only. This does not implement tender processing, a Direct Order, real file uploads or approved status automation.</div></div><div class="flex-actions"><button type="button" class="btn" data-pg011-cancel>Cancel</button><button type="button" class="btn" data-pg011-save>Save (demo)</button><button type="button" class="btn primary" data-pg011-save-open>Save &amp; Open (demo)</button></div></div>';
+ return '<div class="pg011-form">'+intro+'<div id="pg011-errors" class="warning hide" role="alert"></div>'+sections(pg011Key(),FORM_SECTIONS['PG-011'])+docs+footer+'</div>';
+}
+const pg011OriginalForm=formScreen;
+formScreen=function(page){return page==='PG-011'?pg011Form():pg011OriginalForm(page)};
+function pg011Controls(){return Array.from(document.querySelectorAll('.pg011-form [data-form-key]'))}
+function pg011LiveValue(label){
+ const field=pg011Controls().find(el=>el.dataset.formKey===pg011Key()+'::'+label);
+ return field?field.value.trim():'';
+}
+function pg011Signature(){
+ return JSON.stringify(pg011Controls().map(el=>[el.dataset.formKey,el.value]).concat([['files',JSON.stringify(pg011Files())]]));
+}
+function pg011SelectOptions(label,items,placeholder){
+ const el=pg011Controls().find(x=>x.dataset.formKey===pg011Key()+'::'+label);
+ if(!el)return;
+ const old=el.value;
+ el.innerHTML='<option value="">'+esc(placeholder)+'</option>'+items.map(x=>option(x)).join('');
+ el.disabled=items.length===0;
+ el.value=items.includes(old)?old:'';
+}
+function pg011SyncChoices(){
+ const legal=pg011LiveValue('Legal entity'),customer=pg011LiveValue('Billing customer');
+ pg011SelectOptions('Branch',PG011_BRANCHES[legal]||[],'Select permitted branch...');
+ pg011SelectOptions('Project site',PG011_SITES[customer]||[],'Select customer first / optional site...');
+}
+function pg011DecorateLabels(){
+ const base=['Legal entity','Billing customer','Responsible salesperson'];
+ const final=['Business domain / work type','Requirement summary'];
+ pg011Controls().forEach((el,i)=>{
+  const label=el.closest('.field')?.querySelector('label');
+  if(!label)return;
+  const id='pg011-control-'+i;
+  el.id=id;label.setAttribute('for',id);
+  const name=el.dataset.formKey.split('::').slice(-1)[0];
+  if(base.includes(name)||final.includes(name))label.insertAdjacentHTML('beforeend',' <span class="pg011-required" title="'+(final.includes(name)?'Required for Save & Open':'Required for Save')+'">*</span>');
+ });
+}
+function pg011Save(open){
+ const base=['Legal entity','Billing customer','Responsible salesperson'];
+ const full=['Business domain / work type','Requirement summary'];
+ const required=base.concat(open?full:[]);
+ if(pg011LiveValue('Legal entity')&&(PG011_BRANCHES[pg011LiveValue('Legal entity')]||[]).length)required.push('Branch');
+ const missing=required.filter(k=>!pg011LiveValue(k));
+ pg011Controls().forEach(el=>el.removeAttribute('aria-invalid'));
+ const warning=document.getElementById('pg011-errors');
+ if(missing.length){
+  if(warning){warning.innerHTML='<b>Please complete the following before '+(open?'Save &amp; Open':'Save')+':</b> '+missing.map(esc).join(', ')+'. The values you entered have been retained.';warning.classList.remove('hide')}
+  pg011Controls().forEach(el=>{if(missing.some(k=>el.dataset.formKey===pg011Key()+'::'+k))el.setAttribute('aria-invalid','true')});
+  pg011Controls().find(el=>el.dataset.formKey===pg011Key()+'::'+missing[0])?.focus();
+  return;
+ }
+ if(warning)warning.classList.add('hide');
+ pg011Controls().forEach(el=>memory.forms[el.dataset.formKey]=el.value);
+ const recordText=pg011EditingId||'new opportunity draft';
+ memory.events.unshift('Opportunity '+recordText+' saved in local UI demo (no backend)');
+ memory.events=memory.events.slice(0,8);
+ persist();
+ pg011Baseline=pg011Signature();
+ if(open){navigate('PG-012');toast('Saved sample locally. PG-012 is a representative details screen, not a live saved record.')}
+ else toast('Opportunity sample saved locally. No real record or quotation was created.');
+}
+function pg011Cancel(){
+ if(pg011Signature()!==pg011Baseline){
+  openModal('Discard unsaved opportunity changes?','<p>Your unsubmitted form edits will not be saved. Previously saved local demo information remains.</p>','<button class="btn" data-act="close-modal">Keep editing</button><button class="btn primary" data-pg011-discard>Discard and return</button>');
+ }else navigate('PG-010');
+}
+const pg011OriginalRender=render;
+render=function(){
+ pg011OriginalRender();
+ if(screen==='PG-011'&&document.querySelector('.pg011-form')){
+  pg011SyncChoices();pg011DecorateLabels();pg011Baseline=pg011Signature();
+ }
+};
+document.addEventListener('click',function(e){
+ const link=e.target.closest('[data-go="PG-011"]');
+ if(link)pg011EditingId=screen==='PG-012'&&/^Edit\b/i.test(link.textContent.trim())?'OP-2026-008':null;
+},true);
+document.addEventListener('click',function(e){
+ const edit=e.target.closest('[data-pg011-edit]');
+ if(edit){
+  const id=edit.getAttribute('data-pg011-edit');
+  if(!pg010Access()?.edit||!pg010Mine().some(x=>x.id===id)){toast('No illustrative edit grant for this sample opportunity.');return}
+  pg011EditingId=id;navigate('PG-011');return;
+ }
+ if(e.target.closest('[data-pg011-cancel]')){pg011Cancel();return}
+ if(e.target.closest('[data-pg011-save-open]')){pg011Save(true);return}
+ if(e.target.closest('[data-pg011-save]')){pg011Save(false);return}
+ if(e.target.closest('[data-pg011-discard]')){closeModal();pg011EditingId=null;navigate('PG-010');return}
+ if(e.target.closest('[data-pg011-files]')){
+  const input=document.getElementById('pg011-file-input');
+  if(!input?.files?.length){toast('Select at least one sample file first.');return}
+  const category=document.getElementById('pg011-file-category')?.value||'Customer Enquiry';
+  const list=pg011Files();
+  for(const file of input.files)list.push({name:file.name,category:category});
+  memory.forms[pg011Key()+'::File names']=list;
+  persist();
+  document.getElementById('pg011-attached-list').innerHTML=pg011FileMarkup();
+  input.value='';
+  toast('Filenames recorded locally. No document was uploaded.');
+ }
+});
+document.addEventListener('change',function(e){
+ if(screen!=='PG-011')return;
+ if(e.target.dataset.formKey===pg011Key()+'::Legal entity'||e.target.dataset.formKey===pg011Key()+'::Billing customer')pg011SyncChoices();
+});
+
 render();
 })();
 </script></body></html>
