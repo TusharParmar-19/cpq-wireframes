@@ -535,7 +535,7 @@ const PG010_DEMO_ACCESS={
  'View-Only':{ids:['OP-2026-011'],create:false,edit:false,label:'Illustrative explicitly shared read-only record'}
 };
 function pg010Access(){return PG010_DEMO_ACCESS[role]||null}
-function pg010Mine(){const access=pg010Access();return access?PG010_DATA.filter(r=>access.ids.includes(r.id)):[]}
+function pg010Mine(){const access=pg010Access();return access?PG010_DATA.filter(r=>access.ids.includes(r.id)).map(r=>({...r,status:memory.forms['PG-012.status.'+r.id]||r.status})):[]}
 function pg010Options(id,items,label){return `<select id="${id}" aria-label="${esc(label)}"><option value="">${esc(label)}</option>${[...new Set(items)].map(v=>option(v)).join('')}</select>`}
 function pg010Register(){
  const access=pg010Access();
@@ -625,7 +625,7 @@ function pg011Default(label,value){
 }
 function pg011Prepare(){
  if(pg011EditingId){
-  const record=PG010_DATA.find(r=>r.id===pg011EditingId);
+  const record=pg010Mine().find(r=>r.id===pg011EditingId);
   if(!record){pg011EditingId=null;return pg011Prepare()}
   pg011Default('Legal entity',record.company);
   pg011Default('Branch',record.branch);
@@ -895,7 +895,7 @@ function pg012Detail(){
  const r=pg012Record();
  if(!r)return '<div class="warning"><b>Opportunity access unavailable in this demo role.</b> The selected record is not within the illustrative assignment grant, or no opportunity was selected. No confidential details are shown.</div>'+button('Back to Opportunity Register','PG-010');
  const title='<div class="pg012-identity"><div><b>'+esc(r.displayId)+'</b><span>'+esc(r.customer)+'</span></div>'+badge(r.status)+'</div>';
- const overview=title+'<div class="pg012-fields">'+pg012Read('Billing customer',r.customer)+pg012Read('Legal entity / branch',(r.company||'—')+' / '+(r.branch||'—'))+pg012Read('Work type',r.workType)+pg012Read('Responsible employee',r.owner)+pg012Read('Opportunity status',r.status)+pg012Read('Last updated',r.updated)+'</div>';
+ const overview=title+'<div class="pg012-fields">'+pg012Read('Billing customer',r.customer)+pg012Read('Legal entity / branch',(r.company||'—')+' / '+(r.branch||'—'))+pg012Read('Work type',r.workType)+pg012Read('Responsible employee',r.owner)+pg012Read('Opportunity status',r.status)+pg012Read('Created',r.created)+pg012Read('Last updated',r.updated)+'</div>';
  let actions='<div class="pg012-action-list">'+button('Back to Opportunity Register','PG-010');
  if(pg012CanEdit(r))actions+=button('Edit Opportunity','PG-011');
  if(pg012CanQuote(r))actions+='<button type="button" class="btn" data-pg012-new-quote>+ New Quotation</button>';
@@ -963,6 +963,7 @@ document.addEventListener('click',e=>{
   if(!['New','In Discussion','Requirements Pending','Quote Preparation','Won','Lost'].includes(status))return;
   const reason=document.getElementById('pg012-status-note')?.value.trim()||'';
   memory.forms['PG-012.status.'+r.id]=status;
+  if(!r.local)memory.forms['PG-011.edit.'+r.id+'::Opportunity status (sample)']=status;
   pg012AddEvent(r,'Status','Status set to '+status+(reason?' · '+reason.slice(0,500):'')+' (illustrative)');
   render();toast('Sample status saved locally; no production status or order changed.');return;
  }
