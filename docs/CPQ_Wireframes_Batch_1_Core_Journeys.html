@@ -1040,7 +1040,7 @@ function pg020Register(){
  '<div class="field"><label for="pg020-date">Last updated date</label><input type="date" id="pg020-date"></div>'+
  '<div class="field"><label for="pg020-sort">Sort by</label><select id="pg020-sort"><option value="updated-desc">Recently updated</option><option value="updated-asc">Oldest updated</option><option value="number">Quotation number</option><option value="customer">Customer</option></select></div></div>'+
  '<div class="pg020-scope"><span><b>Access:</b> '+esc(caps.label)+' · Filters cannot expand record permissions.</span><button type="button" class="btn" data-pg020-clear>Clear filters</button></div>';
- const table='<div class="pg004-results"><b>My authorized quotations</b><span id="pg020-count">'+visible.length+' of '+visible.length+' accessible sample record(s)</span></div>'+
+ const table='<div class="pg004-results"><b>Accessible quotations</b><span id="pg020-count">'+visible.length+' of '+visible.length+' accessible sample record(s)</span></div>'+
  '<div class="pg020-table-wrap"><table class="data-table pg020-table"><thead><tr><th>Quotation</th><th>Revision</th><th>Customer</th><th>Work Type</th><th>Legal Entity / Branch</th><th>Owner</th><th>Status</th><th>Last Sent</th><th>Actions</th></tr></thead>'+
  '<tbody id="pg020-rows">'+visible.slice().sort((a,b)=>(b.updatedISO||'').localeCompare(a.updatedISO||'')).map(pg020Row).join('')+'</tbody></table></div>'+
  '<div class="empty '+(visible.length?'hide':'')+'" id="pg020-empty"><strong>'+(visible.length?'No quotations match your filters':'No accessible sample quotations for this role')+'</strong><span id="pg020-empty-message">'+(visible.length?'Clear or adjust filters.':'An explicit quotation grant is required; a shared branch or opportunity alone is not sufficient.')+'</span>'+(caps.create?'<button type="button" class="btn" data-pg020-new>New Quotation (demo)</button>':'')+'</div>';
@@ -1110,6 +1110,9 @@ document.addEventListener('input',e=>{
 document.addEventListener('change',e=>{
  if(['pg020-customer','pg020-entity','pg020-branch','pg020-owner','pg020-type','pg020-status','pg020-date','pg020-sort'].includes(e.target.id))pg020RunFilters();
 });
+document.addEventListener('change',e=>{
+ if(e.target.id==='role-selector'){pg020SelectedQuoteId=null;pg020EditingQuoteId=null;pg020DuplicatingId=null;}
+},true);
 // Capture a linked quotation selected on PG-012 before its existing navigation handler.
 document.addEventListener('click',e=>{
  if(screen==='PG-012'){
