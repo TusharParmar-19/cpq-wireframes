@@ -1066,6 +1066,7 @@ registerPage=function(page){return page==='PG-020'?pg020Register():pg020BaseRegi
 filterRows=function(){return screen==='PG-020'?pg020RunFilters():pg020BaseFilter()};
 headerButtons=function(s){
  if(s.id==='PG-020')return '<button type="button" class="btn" data-pg020-clear>Reset filters</button>'+(pg020Capabilities().create?'<button type="button" class="btn primary" data-pg020-new>+ New Quotation</button>':'');
+ if(s.id==='PG-022'){const q=pg020Selected();return button('Quotation Register','PG-020')+(pg020CanEdit(q)?'<button type="button" class="btn primary" data-pg020-edit="'+esc(q.id)+'">Edit Draft (demo)</button>':'')}
  return pg020BaseHeader(s);
 };
 function pg020Selected(){
