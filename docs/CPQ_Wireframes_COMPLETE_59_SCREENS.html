@@ -30,6 +30,11 @@ body.mobile-preview{background:#dce0e4}body.mobile-preview .app{max-width:430px;
 @media(max-width:460px){.pg004-filters>.field{flex-basis:100%}.pg004-overview{width:100%}.pg004-event button{font-size:10px;padding:5px 7px}.pg004-event{gap:7px}}
 
 
+
+.pg021-context{display:flex;align-items:center;gap:9px;padding:14px;border:1px solid var(--line);border-radius:9px;background:#fff;margin-bottom:8px;flex-wrap:wrap}.pg021-context>div{display:flex;flex-direction:column;gap:2px;flex:1;min-width:200px}.pg021-context b{font-size:15px}.pg021-context small{font-size:11px;color:var(--muted)}
+.pg021-hint{font-size:11px;color:var(--muted);line-height:1.65;border:1px dashed var(--line);border-radius:7px;padding:11px;background:var(--subtle);margin:10px 0 15px}.pg021-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}.pg021-grid .field{min-width:0}.pg021-grid input,.pg021-grid textarea{width:100%;max-width:100%}.pg021-grid input[readonly]{background:#f7f8f9;color:#46505c;cursor:default}.pg021-grid .pg021-locked{font-size:9px;font-weight:400;text-transform:none;color:var(--soft)}.pg021-grid .pg021-wide{grid-column:1/-1}.pg021-tabs{margin-bottom:18px;overflow-x:auto}.pg021-tabs button{white-space:nowrap}.pg021-boq-actions{margin-top:11px}.pg021-next{display:flex;gap:7px;flex-wrap:wrap}.pg021-footer{margin-top:16px}.pg021-footer .keys{max-width:560px;line-height:1.6}.pg021-contextbar{margin-bottom:15px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}.pg021-contextbar button{margin-left:auto}.pg021-check-lead{font-size:12px}.pg021-check{display:flex;justify-content:space-between;align-items:center;gap:12px;border-bottom:1px solid var(--line2);padding:10px 0;font-size:12px}
+@media(max-width:760px){.pg021-grid{grid-template-columns:1fr}.pg021-grid .pg021-wide{grid-column:auto}}
+
 .pg020-filters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:end}.pg020-filters .field{min-width:0}.pg020-filters label{font-size:10px}.pg020-filters input,.pg020-filters select{width:100%;min-width:0}.pg020-search{grid-column:span 2}
 .pg020-scope{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding-top:14px;margin-top:16px;border-top:1px solid var(--line2)}.pg020-scope span{font-size:11px;color:var(--muted)}
 .pg020-table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:7px}.pg020-table{min-width:1130px;width:100%;border:0}.pg020-table th{font-size:10px;white-space:nowrap}.pg020-table td{font-size:11px}.pg020-table tr[data-pg020-id]{cursor:pointer}.pg020-table tbody tr:hover{background:var(--subtle)}.pg020-sub{display:block;font-size:10px;color:var(--muted);margin-top:3px}.pg020-actions{display:flex;gap:5px;align-items:center;flex-wrap:wrap}.pg020-actions .btn{font-size:10px;padding:5px 7px;min-height:30px}.pg020-notice{font-size:11px;line-height:1.6;color:var(--muted);background:var(--subtle);border:1px dashed var(--line);border-radius:7px;margin-top:14px;padding:12px}.pg020-table-wrap + .empty{margin-top:12px}.pg020-selected{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line2);padding-bottom:12px;margin-bottom:12px;gap:12px}.pg020-selected div{display:flex;flex-direction:column}.pg020-selected b{font-size:19px}.pg020-selected small{font-size:11px;color:var(--muted)}.pg020-edit-context{margin-bottom:15px}
@@ -1166,6 +1171,206 @@ document.addEventListener('keydown',e=>{
 // Leave any previous edit preview when a fresh PG-021 navigation originates elsewhere.
 document.addEventListener('click',e=>{
  if(e.target.closest('[data-go="PG-021"]')||e.target.closest('[data-pg012-new-quote]'))pg020EditingQuoteId=null;
+},true);
+
+
+// PG-021 — document-backed quotation workspace preview. No financial calculations or backend.
+let pg021Baseline='',pg021PendingNavigation=null,pg021AllowNavigation=false,pg021RelatedWorkspace=null;
+const PG021_RELATED=new Set(['PG-100','PG-101','PG-102','PG-103','PG-104','PG-105','PG-070','PG-071','PG-072','PG-080','PG-081','PG-082','PG-090','PG-091','PG-092','PG-023','PG-110','PG-111','PG-120']);
+function pg021Context(){
+ const caps=pg020Capabilities();
+ if(!caps.create&&!caps.editDraft)return null;
+ if(pg020EditingQuoteId){
+  const quote=pg020Visible().find(x=>x.id===pg020EditingQuoteId);
+  if(!quote||!pg020CanEdit(quote))return null;
+  const opp=pg010Mine().find(x=>x.id===quote.opportunity);
+  if(!opp)return null;
+  return {kind:'edit',quote,opp,id:quote.id,key:'quote-'+quote.id,revision:quote.rev,owner:quote.owner};
+ }
+ if(pg012QuoteContext){
+  const opp=pg010Mine().find(x=>x.id===pg012QuoteContext);
+  if(!caps.create||!opp||['Won','Lost','Cancelled'].includes(opp.status))return null;
+  return {kind:'new',quote:null,opp,id:null,key:'new-'+opp.id,revision:'Not allocated',owner:'Salesperson A'};
+ }
+ const own=pg020Visible().find(q=>q.id==='QT-2026-014'&&pg020CanEdit(q))||
+           pg020Visible().find(q=>pg020CanEdit(q));
+ if(!own)return null;
+ const opp=pg010Mine().find(x=>x.id===own.opportunity);
+ if(!opp)return null;
+ return {kind:'edit',quote:own,opp,id:own.id,key:'quote-'+own.id,revision:own.rev,owner:own.owner,openedFromMenu:true};
+}
+function pg021Key(ctx,label){return 'PG-021.'+ctx.key+'::'+label}
+function pg021OriginalPart(opp,label,alternative=''){
+ if(!opp)return alternative;
+ const edited=memory.forms['PG-011.saved.PG-011.edit.'+opp.id]===true;
+ const key='PG-011.edit.'+opp.id+'::'+label;
+ return edited?(memory.forms[key]??alternative):alternative;
+}
+function pg021Defaults(ctx){
+ const e=PG012_EXTRAS[ctx.opp.id]||{};
+ return {
+  'Linked opportunity':ctx.opp.id,
+  'Issuing legal entity':ctx.quote?.entity||ctx.opp.company,
+  'Branch':ctx.quote?.branch||ctx.opp.branch,
+  'Billing customer':ctx.quote?.customer||ctx.opp.customer,
+  'Business domain / work type':ctx.quote?.workType||ctx.opp.workType,
+  'Main contractor':pg021OriginalPart(ctx.opp,'Main contractor',e.contractor||''),
+  'End client':pg021OriginalPart(ctx.opp,'End client',e.endClient||''),
+  'Project site':pg021OriginalPart(ctx.opp,'Project site',e.site||''),
+  'Quotation date (sample)':ctx.quote?.updatedISO||new Date().toISOString().slice(0,10),
+  'Prepared by':ctx.owner,
+  'Valid until (optional)':'',
+  'Payment terms':'',
+  'Delivery / execution terms':'',
+  'Internal notes':''
+ };
+}
+const PG021_LOCKED=new Set(['Linked opportunity','Issuing legal entity','Branch','Billing customer','Business domain / work type','Prepared by','Quotation date (sample)']);
+function pg021Field(ctx,label,type='text',wide=false){
+ const def=pg021Defaults(ctx)[label]??'';
+ const saved=memory.forms[pg021Key(ctx,label)];
+ const val=PG021_LOCKED.has(label)?def:saved===undefined?def:saved;
+ const id='pg021-'+label.toLowerCase().replace(/[^a-z0-9]+/g,'-');
+ const readonly=PG021_LOCKED.has(label);
+ const ctl=type==='textarea'
+  ?'<textarea id="'+id+'" data-pg021-field="'+esc(label)+'" rows="3" placeholder="Enter '+esc(label.toLowerCase())+'">'+esc(val)+'</textarea>'
+  :'<input id="'+id+'" data-pg021-field="'+esc(label)+'" type="'+type+'" value="'+esc(val)+'" '+(readonly?'readonly aria-readonly="true"':'')+' placeholder="Enter '+esc(label.toLowerCase())+'">';
+ return '<div class="field '+(wide?'pg021-wide':'')+'"><label for="'+id+'">'+esc(label)+(readonly?' <span class="pg021-locked">(from opportunity / system)</span>':'')+'</label>'+ctl+'</div>';
+}
+function pg021Summary(ctx){
+ const preview=ctx.quote?.id==='QT-2026-014'||ctx.quote?.sourceDraftId==='QT-2026-014';
+ const amount=preview?'₹ 1,10,000 (illustrative)':'Not calculated';
+ const body='<div class="sum-row"><span>BOQ subtotal</span><b>'+amount+'</b></div>'+
+ '<div class="sum-row"><span>Seller discount</span><b>Approved policy pending</b></div>'+
+ '<div class="sum-row"><span>Applicable GST</span><b>Finance review</b></div>'+
+ '<div class="sum-row"><span>Additional charges</span><b>As applicable</b></div>'+
+ '<div class="sum-row total"><span>Customer quotation total</span><b>Not finalized</b></div>'+
+ '<div class="pg021-hint">This is not a calculation or an approved tax rule. Rates, taxes, round-off and authority checks are reviewed in PG-102/103. Supplier costs and internal margins are not shown here.</div>'+
+ '<button type="button" class="btn" data-go="PG-102">Review calculations workspace</button>';
+ return panel('Quotation commercial summary',body);
+}
+function pg021BOQ(ctx){
+ const sample=ctx.quote?.id==='QT-2026-014'||ctx.quote?.sourceDraftId==='QT-2026-014';
+ const preview=sample?'<div class="step"><span class="step-number">1</span><div class="step-main"><b>Electrical Cable</b><small>Product · Quantity 100 · Illustrative draft line</small></div></div><div class="step"><span class="step-number">2</span><div class="step-main"><b>Cable Installation</b><small>Service · Quantity 100 · Illustrative draft line</small></div></div>':'<div class="empty"><strong>No quotation-specific BOQ lines shown</strong>Open the BOQ workspace to prepare product, service or custom lines. Changes there are a separate generic wireframe, not linked database items.</div>';
+ return panel('BOQ preview',preview+'<div class="actionbar pg021-boq-actions"><div class="flex-actions"><button class="btn" type="button" data-go="PG-100">Open BOQ Grid</button><button class="btn" type="button" data-go="PG-101">Add BOQ Line</button></div></div><p class="smallnote">All amounts and sample lines require approved commercial validation. No master price or vendor evidence is automatically applied.</p>');
+}
+function pg021Tabs(){
+ const tabs=[['Overview','PG-021'],['BOQ','PG-100'],['Vendor Quotations','PG-070'],['Discount / Subsidy','PG-103'],['Scope / Terms','PG-105'],['Documents','PG-090'],['Approvals','PG-080'],['Preview / PDF','PG-023'],['Activity','PG-120']];
+ return '<div class="tabbar pg021-tabs">'+tabs.map(([label,id])=>'<button class="'+(id==='PG-021'?'active':'')+'" data-go="'+id+'">'+esc(label)+'</button>').join('')+'</div>';
+}
+function pg021Builder(){
+ const ctx=pg021Context();
+ if(!ctx)return '<div class="warning"><b>No authorized editable quotation selected.</b> Normal quotations must be linked to an accessible opportunity. Issued/sent quotations cannot be edited in place: open their history and start a permitted new revision instead. This demo grants no permissions through navigation.</div>'+panel('Choose a quotation',button('Open Quotation Register','PG-020')+' '+button('Open Opportunity Register','PG-010'));
+ const title=ctx.kind==='new'?'New quotation draft · No allocated number':ctx.id;
+ const context='<div class="pg021-context"><div><b>'+esc(title)+'</b><small>'+esc(ctx.opp.id)+' · '+esc(ctx.opp.customer)+'</small></div>'+badge(ctx.kind==='new'?'Draft / not saved':ctx.quote.status)+badge(ctx.revision)+'</div>'+
+ '<div class="pg021-hint">'+(ctx.openedFromMenu?'Opened from the sidebar: displaying your own accessible sample draft. Select a specific draft in PG-020 to open another. ':ctx.kind==='new'?'Creating a new draft linked to the selected opportunity. The first save creates a separate LOCAL demo ID. ':'Editing the specific draft selected in the register. ')+
+ 'Quotation identity, opportunity, legal entity and customer are locked to the selected record in this wireframe. No official quote is issued or revised here.</div>';
+ const overview='<div class="pg021-grid">'+[
+  ['Linked opportunity'],['Issuing legal entity'],['Branch'],['Billing customer'],['Business domain / work type'],['Prepared by'],
+  ['Main contractor'],['End client'],['Project site'],['Quotation date (sample)','date'],['Valid until (optional)','date'],['Payment terms'],
+  ['Delivery / execution terms','textarea',true],['Internal notes','textarea',true]
+ ].map(args=>pg021Field(ctx,...args)).join('')+'</div>';
+ const next=panel('Next steps','<div class="pg021-hint">Save incomplete drafts, review BOQ/tax calculations and applicable approvals, then use PG-023 for PDF preview. A preview is not an issued quotation; release remains blocked until the approved checks are met.</div><div class="pg021-next"><button type="button" class="btn" data-go="PG-080">Approvals workspace</button><button type="button" class="btn" data-pg021-preview>PDF preview workspace</button></div>');
+ const footer='<div class="actionbar pg021-footer"><div class="keys"><span id="pg021-saved-state">'+esc(memory.forms['PG-021.savedAt.'+ctx.key]?'Saved locally: '+memory.forms['PG-021.savedAt.'+ctx.key]:'No new draft changes saved in this preview.')+'</span><div class="smallnote">Save Draft allows incomplete work. Review checks completeness; it cannot issue PDF, send to customer, approve finances, or overwrite an issued revision.</div></div><div class="flex-actions"><button type="button" class="btn" data-pg021-cancel>Cancel / Back</button><button type="button" class="btn" data-pg021-save>Save Draft (demo)</button><button type="button" class="btn primary" data-pg021-review>Review Quotation</button></div></div>';
+ return '<div id="pg021-builder">'+context+pg021Tabs()+'<div class="two-col"><div>'+panel('Quotation overview',overview)+'<div class="section">'+pg021BOQ(ctx)+'</div><div id="pg021-review-result" aria-live="polite"></div></div><aside>'+pg021Summary(ctx)+'<div class="section">'+next+'</div></aside></div>'+footer+'</div>';
+}
+quoteBuilder=pg021Builder;
+const pg021OriginalHeaderButtons=headerButtons;
+headerButtons=function(s){
+ if(s.id==='PG-021'){
+  const ctx=pg021Context();
+  return button('Quotation Register','PG-020')+(ctx?'<button type="button" class="btn primary" data-pg021-review>Review Draft</button>':'');
+ }
+ return pg021OriginalHeaderButtons(s);
+};
+const pg021OriginalAppBody=appBody;
+appBody=function(){
+ if(screen==='PG-021'&&demoState==='normal')return pg021Builder();
+ const body=pg021OriginalAppBody();
+ if(PG021_RELATED.has(screen)&&pg021RelatedWorkspace?.target===screen){
+  return '<div class="help pg021-contextbar"><b>From Quotation Builder:</b> '+esc(pg021RelatedWorkspace.identity)+' · This is the related '+esc(SCREENS[screen].title)+' workspace. Its data is a separate sample, not a quotation-specific saved backend record. <button class="btn small" data-go="PG-021">Back to Quotation Builder</button></div>'+body;
+ }
+ return body;
+};
+function pg021Controls(){return Array.from(document.querySelectorAll('#pg021-builder [data-pg021-field]'))}
+function pg021Snapshot(){return JSON.stringify(pg021Controls().map(el=>[el.dataset.pg021Field,el.value]))}
+function pg021Dirty(){return !!document.getElementById('pg021-builder')&&pg021Snapshot()!==pg021Baseline}
+const pg021OriginalRender=render;
+render=function(){
+ pg021OriginalRender();
+ if(screen==='PG-021'&&document.getElementById('pg021-builder'))pg021Baseline=pg021Snapshot();
+};
+function pg021Save(){
+ const ctx=pg021Context();if(!ctx){toast('No authorized editable quotation draft is selected.');return}
+ const values=pg021Controls().map(el=>[el.dataset.pg021Field,el.value]);
+ if(!values.length){toast('Quotation fields are unavailable.');return}
+ for(const [k,v] of values)memory.forms[pg021Key(ctx,k)]=v;
+ const when=new Date().toLocaleString('en-IN');
+ memory.forms['PG-021.savedAt.'+ctx.key]=when;
+ if(ctx.kind==='new'){
+  const drafts=Array.isArray(memory.forms['PG-020.localDuplicates'])?memory.forms['PG-020.localDuplicates']:[];
+  let num=1;while(drafts.some(q=>q.id==='LOCAL-QT-'+String(num).padStart(3,'0')))num++;
+  const id='LOCAL-QT-'+String(num).padStart(3,'0');
+  const q={id,rev:'—',customer:ctx.opp.customer,workType:ctx.opp.workType,owner:'Salesperson A',status:'Draft',
+    entity:ctx.opp.company,branch:ctx.opp.branch,opportunity:ctx.opp.id,local:true,updatedISO:new Date().toISOString().slice(0,10),updated:'Local browser draft',sent:'Not sent',sentISO:''};
+  drafts.push(q);memory.forms['PG-020.localDuplicates']=drafts;
+  const oldPrefix='PG-021.'+ctx.key+'::',newPrefix='PG-021.quote-'+id+'::';
+  for(const k of Object.keys(memory.forms))if(k.startsWith(oldPrefix))memory.forms[newPrefix+k.slice(oldPrefix.length)]=memory.forms[k];
+  memory.forms['PG-021.savedAt.quote-'+id]=when;
+  pg020EditingQuoteId=id;pg012QuoteContext=null;pg020SelectedQuoteId=id;
+ }
+ memory.events.unshift('Quotation draft saved in browser demo ('+(ctx.id||'new local draft')+'); no PDF or approval was issued');
+ memory.events=memory.events.slice(0,8);persist();render();
+ toast('Draft saved locally. No official quotation, financial approval or PDF was issued.');
+}
+function pg021Review(){
+ const ctx=pg021Context();if(!ctx)return;
+ const val=(name)=>pg021Controls().find(el=>el.dataset.pg021Field===name)?.value.trim()||'';
+ const items=[
+  ['Accessible opportunity and draft record',Boolean(ctx.opp&&ctx.kind==='edit'||ctx.kind==='new'&&ctx.opp)],
+  ['Company, branch and customer linked correctly',Boolean(ctx.opp.company&&ctx.opp.branch&&ctx.opp.customer)],
+  ['Quotation date and work type present',Boolean(val('Quotation date (sample)')&&ctx.opp.workType)],
+  ['Validity / customer payment terms reviewed',Boolean(val('Payment terms'))],
+  ['BOQ and catalogue line verification',false],
+  ['Finance-approved tax, discount and total calculation',false],
+  ['Required approvals for this revision confirmed',false],
+  ['Approved PDF template and attachments checked',false]
+ ];
+ const count=items.filter(x=>x[1]).length;
+ const result=document.getElementById('pg021-review-result');
+ if(result)result.innerHTML=panel('Quotation review — demonstration checklist','<p class="pg021-check-lead"><b>'+count+' / '+items.length+' preliminarily satisfied</b> · This is not approval or permission to issue. Required-at-issue checks must run against the real saved revision.</p>'+
+ items.map(([label,ok])=>'<div class="pg021-check"><span>'+esc(label)+'</span>'+badge(ok?'Draft info present':'Requires review')+'</div>').join('')+
+ '<div class="pg021-hint">Review the BOQ (PG-100), commercial totals (PG-102), approvals (PG-080), and PDF workspace (PG-023). Generating, issuing and sending customer documents are not simulated by this action.</div>');
+ result?.scrollIntoView?.({block:'nearest',behavior:'smooth'});
+}
+const pg021RealNavigate=navigate;
+navigate=function(to){
+ if(screen==='PG-021'&&to!=='PG-021'&&!pg021AllowNavigation&&pg021Dirty()){
+  pg021PendingNavigation=to;
+  openModal('Unsaved quotation changes','<p>You have edited this draft without saving. Stay here, save the draft, or discard the unsaved values before opening another workspace.</p>','<button class="btn" data-act="close-modal">Stay and edit</button><button class="btn primary" data-pg021-discard>Discard and continue</button>');
+  return;
+ }
+ if(screen==='PG-021'&&PG021_RELATED.has(to)){
+  const ctx=pg021Context();
+  if(ctx)pg021RelatedWorkspace={target:to,identity:ctx.id||'New quotation (not allocated)'};
+ }
+ if(to==='PG-020')pg021RelatedWorkspace=null;
+ return pg021RealNavigate(to);
+};
+document.addEventListener('click',function(e){
+ if(e.target.closest('[data-pg021-discard]')){
+  const target=pg021PendingNavigation;pg021PendingNavigation=null;closeModal();
+  if(target){pg021AllowNavigation=true;try{navigate(target)}finally{pg021AllowNavigation=false}}
+  return;
+ }
+ if(screen!=='PG-021')return;
+ if(e.target.closest('[data-pg021-save]')){pg021Save();return}
+ if(e.target.closest('[data-pg021-review]')){pg021Review();return}
+ if(e.target.closest('[data-pg021-cancel]')){navigate('PG-020');return}
+ if(e.target.closest('[data-pg021-preview]')){navigate('PG-023');return}
+});
+document.addEventListener('change',function(e){
+ if(e.target.id==='role-selector'){pg021PendingNavigation=null;pg021RelatedWorkspace=null;}
 },true);
 
 render();
