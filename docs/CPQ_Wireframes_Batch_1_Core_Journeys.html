@@ -29,6 +29,12 @@ body.mobile-preview{background:#dce0e4}body.mobile-preview .app{max-width:430px;
 @media(max-width:760px){.pg004-filters>.field{flex:1 1 40%}.pg004-filters .pg004-search{flex-basis:100%}.pg004-table-wrap{border:none;overflow:visible}.pg004-table{min-width:0;display:block}.pg004-table thead{display:none}.pg004-table tbody{display:grid;gap:10px}.pg004-table tr{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:#fff;border:1px solid var(--line);border-radius:9px;padding:11px}.pg004-table td{padding:4px 2px!important;border:0!important;min-width:0!important;white-space:normal!important}.pg004-table td:first-child,.pg004-table td:nth-child(2),.pg004-table td:last-child{grid-column:1/-1}.pg004-table td[data-label]:before{content:attr(data-label);display:block;font-size:9px;text-transform:uppercase;color:var(--muted);letter-spacing:.045em;margin-bottom:3px}.pg004-activity-intro{flex-wrap:wrap}.pg004-results{flex-wrap:wrap}.pg004-event{align-items:flex-start}}
 @media(max-width:460px){.pg004-filters>.field{flex-basis:100%}.pg004-overview{width:100%}.pg004-event button{font-size:10px;padding:5px 7px}.pg004-event{gap:7px}}
 
+
+.pg020-filters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:end}.pg020-filters .field{min-width:0}.pg020-filters label{font-size:10px}.pg020-filters input,.pg020-filters select{width:100%;min-width:0}.pg020-search{grid-column:span 2}
+.pg020-scope{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding-top:14px;margin-top:16px;border-top:1px solid var(--line2)}.pg020-scope span{font-size:11px;color:var(--muted)}
+.pg020-table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:7px}.pg020-table{min-width:1130px;width:100%;border:0}.pg020-table th{font-size:10px;white-space:nowrap}.pg020-table td{font-size:11px}.pg020-table tr[data-pg020-id]{cursor:pointer}.pg020-table tbody tr:hover{background:var(--subtle)}.pg020-sub{display:block;font-size:10px;color:var(--muted);margin-top:3px}.pg020-actions{display:flex;gap:5px;align-items:center;flex-wrap:wrap}.pg020-actions .btn{font-size:10px;padding:5px 7px;min-height:30px}.pg020-notice{font-size:11px;line-height:1.6;color:var(--muted);background:var(--subtle);border:1px dashed var(--line);border-radius:7px;margin-top:14px;padding:12px}.pg020-table-wrap + .empty{margin-top:12px}.pg020-selected{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line2);padding-bottom:12px;margin-bottom:12px;gap:12px}.pg020-selected div{display:flex;flex-direction:column}.pg020-selected b{font-size:19px}.pg020-selected small{font-size:11px;color:var(--muted)}.pg020-edit-context{margin-bottom:15px}
+@media(max-width:1050px){.pg020-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.pg020-search{grid-column:span 2}}
+
 .pg012-layout{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:16px;align-items:start}
 .pg012-layout .section{margin-top:16px}.pg012-identity{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid var(--line2)}.pg012-identity div{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}.pg012-identity b{font-size:18px}.pg012-identity span:not(.status){font-size:12px;color:var(--muted)}
 .pg012-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.pg012-item{min-width:0;display:flex;flex-direction:column;gap:5px}.pg012-item span{font-size:10px;text-transform:uppercase;color:var(--muted);font-weight:700;letter-spacing:.04em}.pg012-item strong{font-size:12px;font-weight:600;overflow-wrap:anywhere}
@@ -784,11 +790,12 @@ const PG012_EXTRAS={
 };
 const PG012_QUOTES={
  'OP-2026-008':[{id:'QT-2026-014',rev:'R1',date:'03 Nov 2026',status:'Draft'}],
- 'OP-2026-011':[{id:'QT-2026-011',rev:'R0',date:'02 Nov 2026',status:'Sent'}]
+ 'OP-2026-011':[{id:'QT-2026-011',rev:'R0',date:'02 Nov 2026',status:'Sent'}],
+ 'OP-2026-012':[{id:'QT-2026-009',rev:'R0',date:'01 Nov 2026',status:'Won'}]
 };
 const PG012_QUOTE_GRANTS={
  'Salesperson':['QT-2026-014','QT-2026-011'],
- 'Sales Manager':['QT-2026-014','QT-2026-011'],
+ 'Sales Manager':['QT-2026-014','QT-2026-011','QT-2026-009'],
  'Pre-Sales / Technical':[],
  'View-Only':[]
 };
@@ -979,6 +986,183 @@ document.addEventListener('click',e=>{
   render();toast('Filename recorded locally. No document bytes were uploaded.');
  }
 });
+
+
+// PG-020 Quotation Register: illustrative permission-scoped list, no real quotations or backend.
+const PG020_META={
+ 'QT-2026-014':{entity:COMPANY[0],branch:'Main Branch',opportunity:'OP-2026-008',sent:'30 Oct 2026 (R0)',sentISO:'2026-10-30',updated:'03 Nov 2026',updatedISO:'2026-11-03'},
+ 'QT-2026-011':{entity:COMPANY[1],branch:'Secondary Branch',opportunity:'OP-2026-011',sent:'02 Nov 2026 (R0)',sentISO:'2026-11-02',updated:'02 Nov 2026',updatedISO:'2026-11-02'},
+ 'QT-2026-009':{entity:COMPANY[2],branch:'Main Branch',opportunity:'OP-2026-012',sent:'01 Nov 2026 (R0)',sentISO:'2026-11-01',updated:'01 Nov 2026',updatedISO:'2026-11-01'}
+};
+const PG020_DEMO_CAPS={
+ 'Salesperson':{create:true,editDraft:true,duplicateDraft:true,label:'Salesperson A · own or explicitly assigned quotations'},
+ 'Sales Manager':{create:false,editDraft:false,duplicateDraft:false,label:'Illustrative authorized team quotations'},
+ 'Pre-Sales / Technical':{create:false,editDraft:false,duplicateDraft:false,label:'No quotation access grant configured for this sample'},
+ 'View-Only':{create:false,editDraft:false,duplicateDraft:false,label:'No quotation access grant configured for this sample'}
+};
+let pg020SelectedQuoteId=null,pg020EditingQuoteId=null,pg020DuplicatingId=null;
+function pg020Capabilities(){return PG020_DEMO_CAPS[role]||{create:false,editDraft:false,duplicateDraft:false,label:'No quotation access grant configured for this role'}}
+function pg020All(){
+ const seed=REGISTER['PG-020'].rows.map(row=>({id:row[0],rev:row[1],customer:row[2],workType:row[3],owner:row[4],status:row[5],local:false,...PG020_META[row[0]]}));
+ const dups=Array.isArray(memory.forms['PG-020.localDuplicates'])?memory.forms['PG-020.localDuplicates']:[];
+ return [...seed,...dups.filter(x=>x&&x.local===true&&x.owner==='Salesperson A')];
+}
+function pg020Visible(){
+ const grants=PG012_QUOTE_GRANTS[role]||[];
+ return pg020All().filter(q=>!q.local?grants.includes(q.id):role==='Salesperson');
+}
+function pg020CanEdit(q){return !!q&&!!pg020Capabilities().editDraft&&q.owner==='Salesperson A'&&q.status==='Draft'}
+function pg020CanDuplicate(q){return !!q&&!q.local&&!!pg020Capabilities().duplicateDraft&&pg020CanEdit(q)}
+function pg020Option(id,label,values){
+ return '<div class="field"><label for="'+esc(id)+'">'+esc(label)+'</label><select id="'+esc(id)+'"><option value="">All '+esc(label.toLowerCase())+'</option>'+[...new Set(values)].sort().map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join('')+'</select></div>';
+}
+function pg020Row(q){
+ const options=pg020CanEdit(q)?'<button type="button" class="btn small" data-pg020-edit="'+esc(q.id)+'">Edit Draft</button>':'';
+ const duplicate=pg020CanDuplicate(q)?'<button type="button" class="btn small" data-pg020-duplicate="'+esc(q.id)+'">Duplicate</button>':'';
+ const last=q.sent||'Not sent';
+ return '<tr tabindex="0" data-pg020-id="'+esc(q.id)+'" title="Open quotation detail preview"><td data-label="Quotation"><strong>'+esc(q.id)+'</strong><small class="pg020-sub">'+esc(q.opportunity||'No opportunity linked (local demo)')+'</small></td>'+
+ '<td data-label="Revision">'+esc(q.rev)+'</td><td data-label="Customer">'+esc(q.customer)+'</td><td data-label="Work Type">'+esc(q.workType)+'</td>'+
+ '<td data-label="Legal Entity / Branch"><strong>'+esc(q.entity)+'</strong><small class="pg020-sub">'+esc(q.branch)+'</small></td>'+
+ '<td data-label="Owner">'+esc(q.owner)+'</td><td data-label="Status">'+badge(q.status)+'</td>'+
+ '<td data-label="Last Sent">'+esc(last)+'</td><td data-label="Actions"><div class="pg020-actions"><button type="button" class="btn small" data-pg020-view="'+esc(q.id)+'">View</button>'+options+duplicate+'</div></td></tr>';
+}
+function pg020Register(){
+ const visible=pg020Visible(),caps=pg020Capabilities();
+ const metrics='<div class="pg004-intro"><div><b>Accessible Quotation Register</b><small>'+esc(caps.label)+' · Fictional permission-scoped example</small></div><div class="pg004-overview">'+
+ [['Accessible',visible.length],['Draft',visible.filter(q=>q.status==='Draft').length],['Sent / Won',visible.filter(q=>['Sent','Won'].includes(q.status)).length]].map(([name,n])=>'<span><strong>'+String(n).padStart(2,'0')+'</strong> '+esc(name)+'</span>').join('')+'</div></div>';
+ const search='<div class="pg020-filters"><div class="field pg020-search"><label for="pg020-query">Quotation no. or customer</label><input id="pg020-query" type="search" placeholder="QT-2026-014 or ABC Industries"></div>'+
+ pg020Option('pg020-customer','Customer',visible.map(q=>q.customer))+
+ pg020Option('pg020-entity','Legal entity',visible.map(q=>q.entity))+
+ pg020Option('pg020-branch','Branch',visible.map(q=>q.branch))+
+ pg020Option('pg020-owner','Owner',visible.map(q=>q.owner))+
+ pg020Option('pg020-type','Work type',visible.map(q=>q.workType))+
+ pg020Option('pg020-status','Status',visible.map(q=>q.status))+
+ '<div class="field"><label for="pg020-date">Last updated date</label><input type="date" id="pg020-date"></div>'+
+ '<div class="field"><label for="pg020-sort">Sort by</label><select id="pg020-sort"><option value="updated-desc">Recently updated</option><option value="updated-asc">Oldest updated</option><option value="number">Quotation number</option><option value="customer">Customer</option></select></div></div>'+
+ '<div class="pg020-scope"><span><b>Access:</b> '+esc(caps.label)+' · Filters cannot expand record permissions.</span><button type="button" class="btn" data-pg020-clear>Clear filters</button></div>';
+ const table='<div class="pg004-results"><b>My authorized quotations</b><span id="pg020-count">'+visible.length+' of '+visible.length+' accessible sample record(s)</span></div>'+
+ '<div class="pg020-table-wrap"><table class="data-table pg020-table"><thead><tr><th>Quotation</th><th>Revision</th><th>Customer</th><th>Work Type</th><th>Legal Entity / Branch</th><th>Owner</th><th>Status</th><th>Last Sent</th><th>Actions</th></tr></thead>'+
+ '<tbody id="pg020-rows">'+visible.slice().sort((a,b)=>(b.updatedISO||'').localeCompare(a.updatedISO||'')).map(pg020Row).join('')+'</tbody></table></div>'+
+ '<div class="empty '+(visible.length?'hide':'')+'" id="pg020-empty"><strong>'+(visible.length?'No quotations match your filters':'No accessible sample quotations for this role')+'</strong><span id="pg020-empty-message">'+(visible.length?'Clear or adjust filters.':'An explicit quotation grant is required; a shared branch or opportunity alone is not sufficient.')+'</span>'+(caps.create?'<button type="button" class="btn" data-pg020-new>New Quotation (demo)</button>':'')+'</div>';
+ const warnings='<div class="pg020-notice"><b>Quotation visibility:</b> Issued/sent history and draft revisions must remain distinct. Quotation amount, confidential supplier cost and margin are intentionally not displayed (approved financial access is pending). <b>Pending integrations:</b> Approval shortcuts (PG-080), latest authorized PDF (PG-023), scoped export and final duplicate policy will be reviewed with their relevant screens.</div>';
+ const footer='<div class="pg004-help">New Quotation first selects an accessible opportunity. Edit Draft is available only for the illustrative owner and a draft; Duplicate creates a separate local sample row (not a server record). View opens the selected quotation context in PG-022, which is the next screen for full review. No database, real permission system, exported file, issued PDF or customer dispatch is involved.</div>';
+ return metrics+'<div class="section">'+panel('Search & Filter Quotations',search)+'</div><div class="section">'+panel('Quotation Register',table+warnings+footer)+'</div>';
+}
+function pg020RunFilters(){
+ if(screen!=='PG-020')return;
+ const tbody=document.getElementById('pg020-rows');if(!tbody)return;
+ const val=id=>document.getElementById(id)?.value||'';
+ const q=val('pg020-query').trim().toLowerCase(),customer=val('pg020-customer'),entity=val('pg020-entity'),branch=val('pg020-branch'),owner=val('pg020-owner'),type=val('pg020-type'),status=val('pg020-status'),date=val('pg020-date'),sort=val('pg020-sort');
+ const base=pg020Visible();
+ let filtered=base.filter(x=>(!q||[x.id,x.customer,x.opportunity||''].join(' ').toLowerCase().includes(q))&&(!customer||x.customer===customer)&&(!entity||x.entity===entity)&&(!branch||x.branch===branch)&&(!owner||x.owner===owner)&&(!type||x.workType===type)&&(!status||x.status===status)&&(!date||x.updatedISO===date));
+ filtered.sort((a,b)=>sort==='updated-asc'?(a.updatedISO||'').localeCompare(b.updatedISO||''):sort==='number'?a.id.localeCompare(b.id):sort==='customer'?a.customer.localeCompare(b.customer):(b.updatedISO||'').localeCompare(a.updatedISO||''));
+ tbody.innerHTML=filtered.map(pg020Row).join('');
+ const count=document.getElementById('pg020-count');if(count)count.textContent=filtered.length+' of '+base.length+' accessible sample record(s)';
+ const empty=document.getElementById('pg020-empty');if(empty)empty.classList.toggle('hide',filtered.length!==0);
+ const text=document.getElementById('pg020-empty-message');if(text)text.textContent=base.length?'Clear or adjust filters.':'An explicit quotation grant is required; a shared branch or opportunity alone is not sufficient.';
+}
+const pg020BaseRegister=registerPage,pg020BaseFilter=filterRows,pg020BaseHeader=headerButtons,pg020BaseDetail=detailPage,pg020BaseBody=appBody;
+registerPage=function(page){return page==='PG-020'?pg020Register():pg020BaseRegister(page)};
+filterRows=function(){return screen==='PG-020'?pg020RunFilters():pg020BaseFilter()};
+headerButtons=function(s){
+ if(s.id==='PG-020')return '<button type="button" class="btn" data-pg020-clear>Reset filters</button>'+(pg020Capabilities().create?'<button type="button" class="btn primary" data-pg020-new>+ New Quotation</button>':'');
+ return pg020BaseHeader(s);
+};
+function pg020Selected(){
+ const q=pg020Visible();return (pg020SelectedQuoteId?q.find(x=>x.id===pg020SelectedQuoteId):q[0])||null;
+}
+function pg020DetailPending(){
+ const q=pg020Selected();
+ if(!q)return '<div class="warning"><b>Quotation access unavailable for this demo role.</b> A quotation needs its own explicit grant; no protected quotation details are displayed.</div>'+button('Back to Quotation Register','PG-020');
+ return panel('Selected quotation — detail preview','<div class="pg020-selected"><div><b>'+esc(q.id)+'</b><small>Selected from the permission-scoped Quotation Register</small></div>'+badge(q.status)+'</div><div class="pg012-fields">'+
+ pg012Read('Revision',q.rev)+pg012Read('Customer',q.customer)+pg012Read('Work Type',q.workType)+pg012Read('Entity / Branch',q.entity+' / '+q.branch)+pg012Read('Owner',q.owner)+pg012Read('Last Sent',q.sent||'Not sent')+'</div>'+
+ '<div class="pg012-hint">The complete PG-022 revision, PDF, approval and dispatch view is pending our next document comparison. No quotation status or financial information has been changed.</div>')+
+ '<div class="section">'+panel('Navigation',button('Back to Quotation Register','PG-020')+(pg020CanEdit(q)?'<button type="button" class="btn" data-pg020-edit="'+esc(q.id)+'">Continue Draft (demo)</button>':''))+'</div>';
+}
+detailPage=function(page){return page==='PG-022'?pg020DetailPending():pg020BaseDetail(page)};
+appBody=function(){
+ const body=pg020BaseBody();
+ if(screen==='PG-021'&&pg020EditingQuoteId)return '<div class="help pg020-edit-context"><b>Edit draft preview:</b> '+esc(pg020EditingQuoteId)+' · Values shown in PG-021 are representative, not a real loaded quotation. The detailed draft builder is reviewed on PG-021.</div>'+body;
+ return body;
+};
+function pg020Open(id){
+ const q=pg020Visible().find(x=>x.id===id);
+ if(!q){toast('Quotation access unavailable in this role preview.');return}
+ pg020SelectedQuoteId=id;pg020EditingQuoteId=null;navigate('PG-022');
+}
+function pg020New(){
+ if(!pg020Capabilities().create){toast('No sample quotation create grant for this role.');return}
+ const opp=pg010Mine().filter(x=>!['Won','Lost','Cancelled'].includes(x.status));
+ if(!opp.length){openModal('Choose an opportunity','<p>No authorized active opportunity is available. Return to the Opportunity Register before preparing a normal quotation.</p>','<button type="button" class="btn" data-go="PG-010">Opportunity Register</button>');return}
+ const select='<div class="field"><label for="pg020-new-opportunity">Link to accessible opportunity</label><select id="pg020-new-opportunity">'+opp.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.id)+' · '+esc(x.customer)+'</option>').join('')+'</select></div>';
+ openModal('New quotation — select opportunity','<p>A normal quotation must be linked to an accessible opportunity. Choosing an opportunity only previews the next screen; it does not create or register a quotation.</p>'+select,'<button type="button" class="btn" data-act="close-modal">Cancel</button><button type="button" class="btn primary" data-pg020-confirm-new>Continue to Builder (demo)</button>');
+}
+function pg020Duplicate(id){
+ const q=pg020Visible().find(x=>x.id===id);
+ if(!pg020CanDuplicate(q)){toast('Only an authorized sample draft can be duplicated.');return}
+ pg020DuplicatingId=id;
+ openModal('Duplicate quotation draft — sample','<p>Duplicate '+esc(q.id)+' as a <b>separate local draft</b>? The original quotation and its revision stay unchanged. No official number is allocated, and no quote or commercial data is submitted to a server.</p>','<button class="btn" data-act="close-modal">Cancel</button><button class="btn primary" data-pg020-confirm-duplicate>Create separate demo draft</button>');
+}
+document.addEventListener('input',e=>{
+ if(e.target.id==='pg020-query')pg020RunFilters();
+});
+document.addEventListener('change',e=>{
+ if(['pg020-customer','pg020-entity','pg020-branch','pg020-owner','pg020-type','pg020-status','pg020-date','pg020-sort'].includes(e.target.id))pg020RunFilters();
+});
+// Capture a linked quotation selected on PG-012 before its existing navigation handler.
+document.addEventListener('click',e=>{
+ if(screen==='PG-012'){
+  const el=e.target.closest('[data-pg012-open-quote]');
+  if(el){
+   const r=pg012Record(),id=el.dataset.pg012OpenQuote;
+   if(r&&pg012QuoteList(r).some(x=>x.id===id))pg020SelectedQuoteId=id;
+  }
+ }
+},true);
+document.addEventListener('click',e=>{
+ if(e.target.closest('[data-pg020-clear]')&&screen==='PG-020'){
+  ['pg020-query','pg020-customer','pg020-entity','pg020-branch','pg020-owner','pg020-type','pg020-status','pg020-date'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});
+  const sort=document.getElementById('pg020-sort');if(sort)sort.value='updated-desc';
+  pg020RunFilters();return;
+ }
+ if(e.target.closest('[data-pg020-new]')){pg020New();return}
+ if(e.target.closest('[data-pg020-confirm-new]')){
+  const id=document.getElementById('pg020-new-opportunity')?.value;
+  if(!pg020Capabilities().create||!pg010Mine().some(x=>x.id===id)){toast('Select an accessible opportunity.');return}
+  pg020EditingQuoteId=null;pg020SelectedQuoteId=null;pg012QuoteContext=id;closeModal();navigate('PG-021');return;
+ }
+ const edit=e.target.closest('[data-pg020-edit]');
+ if(edit){
+  const found=pg020Visible().find(q=>q.id===edit.dataset.pg020Edit);
+  if(!pg020CanEdit(found)){toast('Edit Draft is not permitted for this sample quotation.');return}
+  pg020EditingQuoteId=found.id;pg012QuoteContext=null;closeModal();navigate('PG-021');return;
+ }
+ const duplicate=e.target.closest('[data-pg020-duplicate]');
+ if(duplicate){pg020Duplicate(duplicate.dataset.pg020Duplicate);return}
+ if(e.target.closest('[data-pg020-confirm-duplicate]')){
+  const q=pg020Visible().find(x=>x.id===pg020DuplicatingId);
+  if(!pg020CanDuplicate(q)){closeModal();toast('Source draft is no longer accessible.');return}
+  const current=Array.isArray(memory.forms['PG-020.localDuplicates'])?memory.forms['PG-020.localDuplicates']:[];
+  let n=1;while(current.some(x=>x.id==='LOCAL-QT-'+String(n).padStart(3,'0')))n++;
+  const id='LOCAL-QT-'+String(n).padStart(3,'0');
+  current.push({...q,id,rev:'—',status:'Draft',sent:'Not sent',sentISO:'',updated:'Local demo only',updatedISO:new Date().toISOString().slice(0,10),local:true,opportunity:q.opportunity});
+  memory.forms['PG-020.localDuplicates']=current;persist();pg020DuplicatingId=null;closeModal();render();toast(id+' created in browser demo only. Original draft unchanged.');return;
+ }
+ if(screen==='PG-020'){
+  const row=e.target.closest('tr[data-pg020-id]');
+  const view=e.target.closest('[data-pg020-view]');
+  if(view||row&&!e.target.closest('button,a,input,select'))pg020Open(view?.dataset.pg020View||row.dataset.pg020Id);
+ }
+});
+document.addEventListener('keydown',e=>{
+ if(screen==='PG-020'&&e.key==='Enter'&&e.target.matches('tr[data-pg020-id]')){
+  e.preventDefault();pg020Open(e.target.dataset.pg020Id);
+ }
+});
+// Leave any previous edit preview when a fresh PG-021 navigation originates elsewhere.
+document.addEventListener('click',e=>{
+ if(e.target.closest('[data-go="PG-021"]')||e.target.closest('[data-pg012-new-quote]'))pg020EditingQuoteId=null;
+},true);
 
 render();
 })();
