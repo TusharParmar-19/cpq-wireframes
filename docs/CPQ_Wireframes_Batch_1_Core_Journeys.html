@@ -1030,7 +1030,7 @@ function pg020Register(){
  const visible=pg020Visible(),caps=pg020Capabilities();
  const metrics='<div class="pg004-intro"><div><b>Accessible Quotation Register</b><small>'+esc(caps.label)+' · Fictional permission-scoped example</small></div><div class="pg004-overview">'+
  [['Accessible',visible.length],['Draft',visible.filter(q=>q.status==='Draft').length],['Sent / Won',visible.filter(q=>['Sent','Won'].includes(q.status)).length]].map(([name,n])=>'<span><strong>'+String(n).padStart(2,'0')+'</strong> '+esc(name)+'</span>').join('')+'</div></div>';
- const search='<div class="pg020-filters"><div class="field pg020-search"><label for="pg020-query">Quotation no. or customer</label><input id="pg020-query" type="search" placeholder="QT-2026-014 or ABC Industries"></div>'+
+ const search='<div class="pg020-filters"><div class="field pg020-search"><label for="pg020-query">Quotation no. or customer</label><input id="pg020-query" type="search" placeholder="Search quotation number or customer"></div>'+
  pg020Option('pg020-customer','Customer',visible.map(q=>q.customer))+
  pg020Option('pg020-entity','Legal entity',visible.map(q=>q.entity))+
  pg020Option('pg020-branch','Branch',visible.map(q=>q.branch))+
