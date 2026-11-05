@@ -32,6 +32,10 @@ body.mobile-preview{background:#dce0e4}body.mobile-preview .app{max-width:430px;
 
 
 
+
+.pg023-heading{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;background:#fff;border:1px solid var(--line);border-radius:9px;padding:16px;margin-bottom:13px}.pg023-heading div:first-child{display:flex;flex-direction:column;gap:5px}.pg023-heading b{font-size:17px}.pg023-heading small{font-size:11px;color:var(--muted)}.pg023-hint{border:1px dashed var(--line);border-radius:7px;background:var(--subtle);padding:11px;font-size:11px;color:var(--muted);line-height:1.6;margin:10px 0 14px}.pg023-layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start}.pg023-layout .section{margin-top:16px}.pg023-config{display:grid;gap:13px}.pg023-config select{width:100%}.pg023-config .pg012-item{padding-bottom:8px;border-bottom:1px solid var(--line2)}.pg023-paper-surface{background:#eef0f3;border:1px dashed var(--line);border-radius:7px;padding:24px 14px;display:flex;justify-content:center;overflow-x:auto}.pg023-paper{width:100%;max-width:550px;min-height:510px;background:#fff;box-shadow:0 7px 15px #14203415;border:1px solid #d6dbe0;padding:30px;display:flex;flex-direction:column;gap:20px}.pg023-paper-head{display:flex;flex-direction:column;gap:7px;border-bottom:2px solid #2d3845;padding-bottom:16px}.pg023-paper-head small{font-size:9px;letter-spacing:.09em;color:#984134;font-weight:800}.pg023-paper-head b{font-size:17px;letter-spacing:.07em}.pg023-paper-head span{font-size:12px}.pg023-paper-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.pg023-paper-grid div{display:flex;flex-direction:column;gap:4px;overflow-wrap:anywhere}.pg023-paper-grid span{font-size:10px;text-transform:uppercase;color:#6a7580}.pg023-paper-grid b{font-size:12px}.pg023-paper-section{border-top:1px solid #d9dfe5;padding-top:12px}.pg023-paper-section b{font-size:12px}.pg023-paper-section p{font-size:11px;line-height:1.75;color:#53616e}.pg023-paper footer{margin-top:auto;border-top:1px solid #d9dfe5;padding-top:13px;color:#984134;font-size:10px;font-weight:800}.pg023-table-scroll{overflow-x:auto}.pg023-table{width:100%;min-width:680px}.pg023-table td,.pg023-table th{font-size:11px}.pg023-table td:last-child{white-space:nowrap}.pg023-table .btn.small{padding:4px 7px}.pg023-section-action{margin-top:14px;display:flex;flex-wrap:wrap;gap:9px}.pg023-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.pg023-actions button{min-height:38px}.pg023-actions-locked{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;border-top:1px solid var(--line2);padding-top:14px}.pg023-actions-locked button:disabled{opacity:.55;cursor:not-allowed}.pg023-check-count{display:flex;flex-direction:column;gap:5px;border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:5px}.pg023-check-count b{font-size:13px}.pg023-check-count small{font-size:11px;color:var(--muted)}.pg023-check{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line2);padding:10px 0;font-size:11px}
+@media(max-width:1050px){.pg023-layout{grid-template-columns:1fr}}
+
 .pg022-layout{display:grid;grid-template-columns:minmax(0,1fr) 295px;gap:16px;align-items:start}.pg022-layout .section{margin-top:16px}.pg022-identity{display:flex;justify-content:space-between;align-items:center;gap:12px;border-bottom:1px solid var(--line2);padding-bottom:14px;margin-bottom:15px}.pg022-identity>div:first-child{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}.pg022-identity b{font-size:19px}.pg022-identity span:not(.badge){font-size:12px;color:var(--muted)}
 .pg022-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.pg022-filters{display:flex;align-items:center;justify-content:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:12px}.pg022-filters label{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px}.pg022-filters select{border:1px solid var(--line);border-radius:6px;padding:8px;background:#fff}
 .pg022-table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:7px}.pg022-table{min-width:780px;width:100%;border:0}.pg022-table th{font-size:10px;white-space:nowrap}.pg022-table td{font-size:11px}.pg022-table small{font-size:9px;display:block;color:var(--muted);margin-top:4px}.pg022-table .pg022-active{background:var(--subtle)}.pg022-snapshot{margin-top:17px;border:1px solid var(--line);border-radius:8px;padding:15px}.pg022-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:15px}.pg022-heading b{font-size:13px}
@@ -1575,7 +1579,7 @@ document.addEventListener('click',function(e){
  }
  if(e.target.closest('[data-pg022-preview]')){
   if(!pg022CanPdfPreview(q)){toast('No illustrative PDF workflow permission.');return}
-  pg022Related={target:'PG-023',id:q.id};navigate('PG-023');return;
+  pg022Related={target:'PG-023',id:q.id,revision:pg022SelectedVersion(q).rev};navigate('PG-023');return;
  }
  if(e.target.closest('[data-pg022-dispatch]')){
   if(!pg022CanDispatch(q)){toast('No illustrative dispatch workflow permission.');return}
@@ -1597,6 +1601,200 @@ document.addEventListener('change',function(e){
  if(screen==='PG-022'&&e.target.id==='pg022-filter'){pg022Filter=e.target.value;render()}
  if(screen==='PG-022'&&e.target.id==='pg022-sort'){pg022Sort=e.target.value;render()}
  if(e.target.id==='role-selector'){pg022SelectedQuoteKey=null;pg022SelectedRevision=null;pg022Related=null}
+},true);
+
+
+// PG-023 — revision-specific, customer-safe PDF preview (no real issue, PDF or file).
+const PG023_GRANTS={'Salesperson':['QT-2026-014','QT-2026-011']};
+const PG023_TECH_GRANTS={'Salesperson':['QT-2026-014']};
+const PG023_FILES={'QT-2026-014':[
+ {id:'cable',name:'Cable Datasheet (fictional)',type:'Datasheet',version:'Illustrative v1'},
+ {id:'sld',name:'Electrical Single-Line Drawing (fictional)',type:'Drawing',version:'Illustrative v1'}
+]};
+let pg023Key='',pg023Mode='Commercial',pg023Picked=[],pg023Order=[],pg023Message='';
+function pg023Context(){
+ const a=pg022Related?.target==='PG-023'?pg022Related:null;
+ const b=pg021RelatedWorkspace?.target==='PG-023'?pg021RelatedWorkspace:null;
+ let q=null,from='register',revision=null,isNew=false;
+ if(a){
+  q=pg020Visible().find(x=>x.id===a.id)||null;
+  if(!q)return null;
+  revision=a.revision||null;from='details';
+ }else if(b){
+  const builder=pg021Context();if(!builder)return null;
+  from='builder';
+  if(builder.kind==='new'){
+   if(role!=='Salesperson')return null;
+   isNew=true;
+   q={id:null,rev:'Not allocated',status:'Draft',customer:builder.opp.customer,
+    workType:builder.opp.workType,entity:builder.opp.company,branch:builder.opp.branch,
+    owner:builder.owner,opportunity:builder.opp.id,local:true,sent:'Not sent'};
+  }else{
+   q=pg020Visible().find(x=>x.id===builder.quote?.id)||null;
+  }
+ }else if(pg020SelectedQuoteId){
+  q=pg020Visible().find(x=>x.id===pg020SelectedQuoteId)||null;
+ }else{
+  q=pg020Visible().find(x=>(PG023_GRANTS[role]||[]).includes(x.id))||null;
+ }
+ if(!q)return null;
+ const allowed=isNew&&role==='Salesperson'||q.local&&role==='Salesperson'&&q.owner==='Salesperson A'||(PG023_GRANTS[role]||[]).includes(q.id);
+ if(!allowed)return null;
+ const version=pg022Versions(q).find(x=>x.rev===revision)||pg022Versions(q).find(x=>x.rev===q.rev);
+ if(!version)return null;
+ return {q,version,from,isNew,key:(q.id||'NEW-'+q.opportunity)+'::'+version.rev};
+}
+function pg023Sync(ctx){
+ if(pg023Key===ctx.key)return;
+ pg023Key=ctx.key;pg023Mode='Commercial';pg023Picked=[];pg023Order=[];pg023Message='';
+}
+function pg023Available(ctx){
+ if(ctx.isNew||ctx.q.local||ctx.version.immutable||ctx.version.rev!==ctx.q.rev)return [];
+ if(!(PG023_TECH_GRANTS[role]||[]).includes(ctx.q.id))return [];
+ return PG023_FILES[ctx.q.id]||[];
+}
+function pg023Ordered(ctx){
+ const available=pg023Available(ctx);
+ return pg023Order.map(id=>available.find(x=>x.id===id)).filter(x=>x&&pg023Picked.includes(x.id));
+}
+function pg023FileName(ctx){
+ if(ctx.isNew||!ctx.q.id)return 'Not allocated — save a quotation draft first';
+ const clean=s=>String(s).replace(/[^A-Za-z0-9-]/g,'_');
+ return clean(ctx.q.id)+'_'+clean(ctx.version.rev)+'_'+pg023Mode.toUpperCase()+'_planned.pdf';
+}
+function pg023Paper(ctx){
+ const q=ctx.q,ordered=pg023Ordered(ctx);
+ const field=(name,value)=>'<div><span>'+esc(name)+'</span><b>'+esc(value||'Not specified')+'</b></div>';
+ return '<div class="pg023-paper-surface"><article class="pg023-paper">'+
+ '<div class="pg023-paper-head"><small>DRAFT PREVIEW ONLY — NOT GENERATED</small><b>COMMERCIAL QUOTATION</b><span>'+esc(q.entity)+'</span></div>'+
+ '<div class="pg023-paper-grid">'+field('Quotation',q.id||'No number allocated')+field('Revision',ctx.version.rev)+field('Customer',q.customer)+field('Business work type',q.workType)+field('Issuing branch',q.branch)+field('Package preview mode',pg023Mode)+'</div>'+
+ '<div class="pg023-paper-section"><b>Customer scope and commercial BOQ</b><p>Approved customer-facing BOQ lines, selling totals and terms appear here after review for this revision. No unapproved amounts are inserted.</p></div>'+
+ '<div class="pg023-paper-section"><b>Selected technical attachments (metadata only)</b><p>'+(ordered.length?ordered.map((f,i)=>esc((i+1)+'. '+f.name+' — '+f.version)).join('<br>'):'None selected')+'</p></div>'+
+ '<footer>WIREFRAME MOCKUP · NOT FOR CUSTOMER DISPATCH · NO PDF FILE EXISTS</footer></article></div>';
+}
+function pg023AttachmentTable(ctx){
+ const all=pg023Available(ctx),ordered=pg023Ordered(ctx);
+ if(!all.length)return '<div class="pg023-hint">No separately permitted technical PDF candidates exist for this quotation and revision in the demo. Opportunity, vendor and private files are never automatically included.</div>';
+ const rows=all.map(f=>{
+  const yes=pg023Picked.includes(f.id),i=ordered.findIndex(v=>v.id===f.id);
+  const controls=yes?'<b>'+(i+1)+'</b> <button type="button" class="btn small" data-pg023-move="'+esc(f.id)+'" data-dir="up" '+(i===0?'disabled':'')+'>↑</button><button type="button" class="btn small" data-pg023-move="'+esc(f.id)+'" data-dir="down" '+(i===ordered.length-1?'disabled':'')+'>↓</button>':'—';
+  return '<tr><td>'+esc(f.name)+'</td><td>'+esc(f.type)+'</td><td>'+esc(f.version)+'</td><td><input type="checkbox" data-pg023-file="'+esc(f.id)+'" aria-label="Select '+esc(f.name)+'" '+(yes?'checked':'')+'></td><td>'+controls+'</td></tr>';
+ }).join('');
+ return '<div class="pg023-hint">These are fictional authorized candidate names, not uploaded, approved or mergeable PDF files. The table previews selection and attachment order.</div>'+
+ '<div class="pg023-table-scroll"><table class="data-table pg023-table"><thead><tr><th>File</th><th>Type</th><th>Version</th><th>Selected</th><th>Order</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
+ '<div class="pg023-section-action"><button class="btn" type="button" data-go="PG-110">Technical attachment selection workspace (PG-110)</button></div>';
+}
+function pg023Checks(ctx){
+ const q=ctx.q,version=ctx.version;
+ return [
+ ['Separate PDF-view preview grant (fictional)',true],
+ ['Customer, legal entity, branch and work type available',!!(q.customer&&q.entity&&q.branch&&q.workType)],
+ ['Official saved and eligible current revision',!ctx.isNew&&!q.local&&!version.immutable&&version.rev===q.rev],
+ ['Entity and work-type template approved (DEC-011)',false],
+ ['Finance-approved BOQ, GST, discounts and totals',false],
+ ['Revision approvals and confidential-data scan verified',false],
+ ['Verified technical files and successful merge',pg023Mode==='Commercial'],
+ ['Issue archive, immutable retention and audit checks',false]
+ ];
+}
+function pg023Checklist(ctx){
+ const rows=pg023Checks(ctx),ready=rows.filter(x=>x[1]).length;
+ return '<div class="pg023-check-count"><b>'+ready+' / '+rows.length+' preliminary checks satisfied</b><small>Not ready to generate, issue, store or download a PDF.</small></div>'+
+ rows.map(([label,ok])=>'<div class="pg023-check"><span>'+esc(label)+'</span>'+badge(ok?'Metadata present':'Not verified')+'</div>').join('');
+}
+function pg023Panel(ctx){
+ const q=ctx.q;
+ const identity='<div class="pg023-heading"><div><b>'+esc(q.id||'New quotation — no number allocated')+'</b><small>'+esc(q.customer)+' · '+esc(q.entity)+' / '+esc(q.branch)+'</small></div><div>'+badge(ctx.version.status)+' '+badge(ctx.version.rev)+'</div></div>'+
+ '<div class="pg023-hint"><b>Revision:</b> '+esc(ctx.version.rev)+(ctx.version.immutable?' is preserved and read-only. No historical file bytes are available.':ctx.isNew?' is not yet an allocated or saved quotation.':' is the current working draft; issuance remains blocked until all approvals are verified.')+'</div>';
+ const controls='<div class="pg023-config"><div class="field"><label for="pg023-template">Approved template family</label><select id="pg023-template" disabled><option>Pending management samples — DEC-011</option></select></div>'+
+ '<div class="field"><label for="pg023-package">Document package / preview mode</label><select id="pg023-package">'+['Commercial','Technical','Combined'].map(s=>'<option value="'+s+'" '+(pg023Mode===s?'selected':'')+'>'+s+'</option>').join('')+'</select></div>'+
+ pg012Read('Issuing legal entity',q.entity)+pg012Read('Business work type',q.workType)+pg012Read('Quotation revision',ctx.version.rev)+pg012Read('Planned filename (not generated)',pg023FileName(ctx))+
+ '</div><div class="pg023-hint">An approved entity/work-type template has not been supplied. This selector cannot authorize PDF generation.</div>';
+ const actions='<div class="pg023-actions"><button type="button" class="btn" data-pg023-preview>Preview package</button>'+
+ '<button type="button" class="btn" data-pg023-generate="Commercial">Generate Commercial PDF</button>'+
+ '<button type="button" class="btn" data-pg023-generate="Technical">Generate Technical Package</button>'+
+ '<button type="button" class="btn" data-pg023-generate="Combined">Generate Combined PDF</button></div>'+
+ '<div class="pg023-actions-locked"><button type="button" class="btn primary" disabled>Issue / Store — blocked</button><button type="button" class="btn" disabled>Download — unavailable</button></div>'+
+ '<div class="pg023-hint">Generate checks explain why issuance is blocked; they do not produce PDF bytes, store documents or change customer status.</div>'+
+ (pg023Message?'<div class="warning" role="status"><b>'+esc(pg023Message)+'</b><p>No file was created. Previously issued revisions and PDFs remain unchanged.</p></div>':'');
+ const history=pg012Read('Selected revision',ctx.version.rev)+pg012Read('Previously sent reference',q.sent||'Not sent')+pg012Read('Revision PDF status',ctx.version.pdf||'Not generated')+
+ '<div class="pg023-hint">A production issue event must record the quote revision, package type, template version, creator, timestamp and file identity. Merge failures must not replace earlier issued files.</div>'+
+ '<div class="pg023-section-action"><button type="button" class="btn" data-pg023-return>Return to quotation</button><button type="button" class="btn" data-go="PG-111">PDF archive workspace</button></div>';
+ return '<div id="pg023-screen">'+identity+'<div class="pg023-layout"><div>'+
+ panel('Customer-facing quotation mock preview',pg023Paper(ctx)+'<div class="pg023-hint"><b>Confidentiality:</b> Customer-visible data only. Supplier purchase prices, internal negotiation rates, costs, margins and internal notes are excluded. Production still requires an independent confidentiality check.</div>')+
+ '</div><aside>'+panel('PDF package setup',controls)+'<div class="section">'+panel('Preview / Generate / Issue',actions)+'</div></aside></div>'+
+ '<div class="section">'+panel('Technical attachments — selected files and order',pg023AttachmentTable(ctx))+'</div>'+
+ '<div class="section">'+panel('PDF issue validation checklist',pg023Checklist(ctx))+'</div>'+
+ '<div class="section">'+panel('Revision-linked issuance and retention',history)+'</div></div>';
+}
+function pg023Page(){
+ const ctx=pg023Context();
+ if(!ctx)return '<div class="warning"><b>PDF preview access unavailable.</b> The current demo role lacks a separate PDF preview grant or the selected quotation is inaccessible. Quotation visibility alone is not enough.</div>'+button('Quotation Register','PG-020');
+ pg023Sync(ctx);
+ return pg023Panel(ctx);
+}
+const pg023BaseAppBody=appBody;
+appBody=function(){return screen==='PG-023'&&demoState==='normal'?pg023Page():pg023BaseAppBody()};
+const pg023BaseHeader=headerButtons;
+headerButtons=function(s){
+ if(s.id==='PG-023')return button('Quotation Register','PG-020')+'<button type="button" class="btn primary" data-pg023-preview>Preview package</button>';
+ return pg023BaseHeader(s);
+};
+function pg023Return(){
+ const ctx=pg023Context();
+ if(!ctx){navigate('PG-020');return}
+ if(ctx.from==='builder'){navigate('PG-021');return}
+ if(ctx.from==='details'){
+  pg020SelectedQuoteId=ctx.q.id;pg022SelectedQuoteKey=ctx.q.id;pg022SelectedRevision=ctx.version.rev;
+  navigate('PG-022');return;
+ }
+ navigate('PG-020');
+}
+document.addEventListener('change',function(e){
+ if(screen!=='PG-023')return;
+ if(e.target.id==='pg023-package'){
+  if(!['Commercial','Technical','Combined'].includes(e.target.value))return;
+  pg023Mode=e.target.value;pg023Message='';render();return;
+ }
+ const file=e.target.dataset?.pg023File;
+ if(file){
+  const ctx=pg023Context();if(!ctx||!pg023Available(ctx).some(f=>f.id===file))return;
+  if(e.target.checked){
+   if(!pg023Picked.includes(file))pg023Picked.push(file);
+   if(!pg023Order.includes(file))pg023Order.push(file);
+  }else{
+   pg023Picked=pg023Picked.filter(id=>id!==file);
+   pg023Order=pg023Order.filter(id=>id!==file);
+  }
+  pg023Message='';render();
+ }
+});
+document.addEventListener('click',function(e){
+ if(screen!=='PG-023')return;
+ const move=e.target.closest('[data-pg023-move]');
+ if(move){
+  const ctx=pg023Context(),id=move.dataset.pg023Move;
+  if(!ctx||!pg023Picked.includes(id)||!pg023Available(ctx).some(f=>f.id===id))return;
+  const i=pg023Order.indexOf(id),j=i+(move.dataset.dir==='up'?-1:1);
+  if(i<0||j<0||j>=pg023Order.length)return;
+  const other=pg023Order[j];pg023Order[j]=id;pg023Order[i]=other;pg023Message='';render();return;
+ }
+ if(e.target.closest('[data-pg023-preview]')){
+  if(!pg023Context())return;
+  pg023Message='Customer-safe HTML preview refreshed (no PDF generated).';render();return;
+ }
+ const gen=e.target.closest('[data-pg023-generate]');
+ if(gen){
+  if(!pg023Context())return;
+  if(!['Commercial','Technical','Combined'].includes(gen.dataset.pg023Generate))return;
+  pg023Mode=gen.dataset.pg023Generate;
+  pg023Message=pg023Mode+' package generation blocked by pending issue checks.';
+  render();return;
+ }
+ if(e.target.closest('[data-pg023-return]'))pg023Return();
+});
+document.addEventListener('change',function(e){
+ if(e.target.id==='role-selector'){pg023Key='';pg023Picked=[];pg023Order=[];pg023Message=''}
 },true);
 
 render();
