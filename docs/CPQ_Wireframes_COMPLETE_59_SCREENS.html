@@ -1461,6 +1461,28 @@ function pg022Dispatch(q){
  if(pg022CanOutcome(q))html+='<div class="pg022-editor"><label for="pg022-outcome">Customer-reported outcome (proposed labels)</label><select id="pg022-outcome"><option value="">Select an outcome...</option><option value="Under Negotiation">Under Negotiation</option><option value="Won">Won (requires evidence review)</option><option value="Lost">Lost</option></select><label for="pg022-outcome-reason">Customer response / reason (required for demo)</label><textarea id="pg022-outcome-reason" placeholder="Record what the customer communicated"></textarea><button type="button" class="btn" data-pg022-save-outcome>Record outcome (demo)</button><small>Outcome updates do not alter issued revision snapshots, confirm acceptance or register an order.</small></div>';
  return html;
 }
+function pg022Parties(q){
+ const opp=pg010Mine().find(x=>x.id===q.opportunity);
+ if(!opp)return '<div class="pg012-hint"><b>Project party information restricted.</b> Access to a quotation does not automatically grant access to its linked opportunity or customer-party details.</div>';
+ const data=PG012_EXTRAS[opp.id]||{};
+ const editKey='PG-011.edit.'+opp.id;
+ const isSaved=memory.forms['PG-011.saved.'+editKey]===true;
+ const get=(label,fallback)=>isSaved?(memory.forms[editKey+'::'+label]??fallback):fallback;
+ return '<div class="pg022-grid">'+
+  pg012Read('Linked opportunity',opp.id)+pg012Read('Billing customer',q.customer)+
+  pg012Read('Main contractor',get('Main contractor',data.contractor||''))+
+  pg012Read('End client',get('End client',data.endClient||''))+
+  pg012Read('Project / site',get('Project site',data.site||''))+
+  pg012Read('Enquiry source',get('Enquiry source',opp.source||''))+
+  '</div><div class="pg012-hint">These are fictional project parties from an independently accessible opportunity. The billing customer, main contractor and end client are distinct.</div>';
+}
+function pg022Documents(q){
+ const allowed=pg010Mine().some(x=>x.id===q.opportunity)&&(PG012_DOC_GRANTS[role]||[]).includes(q.opportunity);
+ return '<div class="pg022-grid">'+
+ pg012Read('Quotation-specific attachments','None provided in the sample')+
+ pg012Read('Original opportunity documents',allowed?'See separately authorized opportunity document workspace':'Not available under this role\'s opportunity/document grant')+
+ '</div><div class="pg012-hint">Quotation attachments, customer enquiry files, supplier evidence and revision-specific PDFs must be permission checked independently. This page does not copy or expose files merely because a quotation is visible. Document workflows are reviewed on PG-090/091 and PDF issuance on PG-023.</div>';
+}
 function pg022Orders(q){
  const won=q.status==='Won';
  return '<div class="pg022-grid">'+pg012Read('Customer outcome',won?'Won (illustrative; unverified)':'Not confirmed as accepted')+pg012Read('Registered order reference','None in this browser prototype')+pg012Read('Acceptance / PO / WO / LOI evidence','Not verified')+pg012Read('Accepted commercial values','Not verified; restricted')+'</div>'+
@@ -1493,8 +1515,10 @@ function pg022Detail(){
  pg012Read('Linked opportunity',q.opportunity||'Not linked in local demo')+pg012Read('Current revision',q.rev)+pg012Read('Quotation status / outcome',q.status)+pg012Read('Work type',q.workType)+pg012Read('Legal entity / branch',q.entity+' / '+q.branch)+pg012Read('Responsible / prepared by',q.owner)+pg012Read('Last updated',q.updated)+pg012Read('Last Sent',q.sent||'Not sent')+'</div>'+
  '<div class="pg012-hint">Customer and parties are sourced from this quotation\'s sample record. Customer-visible selling totals, acceptance values, supplier costs and margins are withheld without an approved financial viewing grant.</div>';
  const main=panel('Quotation overview',overview)+
+ '<div class="section">'+panel('Customer & project parties',pg022Parties(q))+'</div>'+
  '<div class="section">'+panel('Revision history — current and preserved versions',pg022VersionTable(q))+'</div>'+
  '<div class="section">'+panel('Approval & PDF snapshots',pg022ApprovalPdf(q))+'</div>'+
+ '<div class="section">'+panel('Supporting documents & evidence',pg022Documents(q))+'</div>'+
  '<div class="section">'+panel('Dispatch & customer response',pg022Dispatch(q))+'</div>'+
  '<div class="section">'+panel('Linked order & acceptance verification',pg022Orders(q))+'</div>'+
  '<div class="section">'+panel('Activity & change history',pg022Activity(q))+'</div>';
