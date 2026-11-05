@@ -31,6 +31,15 @@ body.mobile-preview{background:#dce0e4}body.mobile-preview .app{max-width:430px;
 
 
 
+
+.pg022-layout{display:grid;grid-template-columns:minmax(0,1fr) 295px;gap:16px;align-items:start}.pg022-layout .section{margin-top:16px}.pg022-identity{display:flex;justify-content:space-between;align-items:center;gap:12px;border-bottom:1px solid var(--line2);padding-bottom:14px;margin-bottom:15px}.pg022-identity>div:first-child{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}.pg022-identity b{font-size:19px}.pg022-identity span:not(.badge){font-size:12px;color:var(--muted)}
+.pg022-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.pg022-filters{display:flex;align-items:center;justify-content:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:12px}.pg022-filters label{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px}.pg022-filters select{border:1px solid var(--line);border-radius:6px;padding:8px;background:#fff}
+.pg022-table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:7px}.pg022-table{min-width:780px;width:100%;border:0}.pg022-table th{font-size:10px;white-space:nowrap}.pg022-table td{font-size:11px}.pg022-table small{font-size:9px;display:block;color:var(--muted);margin-top:4px}.pg022-table .pg022-active{background:var(--subtle)}.pg022-snapshot{margin-top:17px;border:1px solid var(--line);border-radius:8px;padding:15px}.pg022-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:15px}.pg022-heading b{font-size:13px}
+.pg022-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.pg022-tile{border:1px solid var(--line2);padding:15px;border-radius:8px;display:flex;flex-direction:column;gap:10px;min-width:0}.pg022-tile b{font-size:12px}.pg022-tile p{font-size:12px;margin:0}.pg022-tile small{font-size:11px;color:var(--muted);line-height:1.6}.pg022-tile button{align-self:flex-start}.pg022-inline{margin-top:14px}
+.pg022-editor{display:flex;flex-direction:column;gap:9px;margin-top:18px;padding:15px;border:1px solid var(--line);border-radius:8px}.pg022-editor label{font-size:11px;font-weight:700}.pg022-editor select,.pg022-editor textarea{border:1px solid var(--line);border-radius:6px;padding:9px;width:100%}.pg022-editor textarea{min-height:90px}.pg022-editor button{align-self:flex-start}.pg022-editor small{font-size:10px;color:var(--muted)}.pg022-actions{display:flex;flex-direction:column;gap:9px}.pg022-actions button{width:100%;justify-content:center}.pg022-check{border-bottom:1px solid var(--line2);display:flex;flex-direction:column;gap:3px;padding:10px 0}.pg022-check b{font-size:11px}.pg022-check span{font-size:11px;color:var(--muted)}
+.pg022-timeline{padding-left:5px}.pg022-event{padding:12px 14px;border-left:2px solid var(--line);border-bottom:1px solid var(--line2)}.pg022-event b{font-size:11px}.pg022-event p{margin:5px 0;font-size:12px;white-space:pre-wrap}.pg022-event small{font-size:10px;color:var(--muted)}.pg022-context{margin-bottom:14px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}.pg022-context button{margin-left:auto}
+@media(max-width:1000px){.pg022-layout{grid-template-columns:1fr}.pg022-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
 .pg021-context{display:flex;align-items:center;gap:9px;padding:14px;border:1px solid var(--line);border-radius:9px;background:#fff;margin-bottom:8px;flex-wrap:wrap}.pg021-context>div{display:flex;flex-direction:column;gap:2px;flex:1;min-width:200px}.pg021-context b{font-size:15px}.pg021-context small{font-size:11px;color:var(--muted)}
 .pg021-hint{font-size:11px;color:var(--muted);line-height:1.65;border:1px dashed var(--line);border-radius:7px;padding:11px;background:var(--subtle);margin:10px 0 15px}.pg021-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}.pg021-grid .field{min-width:0}.pg021-grid input,.pg021-grid textarea{width:100%;max-width:100%}.pg021-grid input[readonly]{background:#f7f8f9;color:#46505c;cursor:default}.pg021-grid .pg021-locked{font-size:9px;font-weight:400;text-transform:none;color:var(--soft)}.pg021-grid .pg021-wide{grid-column:1/-1}.pg021-tabs{margin-bottom:18px;overflow-x:auto}.pg021-tabs button{white-space:nowrap}.pg021-boq-actions{margin-top:11px}.pg021-next{display:flex;gap:7px;flex-wrap:wrap}.pg021-footer{margin-top:16px}.pg021-footer .keys{max-width:560px;line-height:1.6}.pg021-contextbar{margin-bottom:15px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}.pg021-contextbar button{margin-left:auto}.pg021-check-lead{font-size:12px}.pg021-check{display:flex;justify-content:space-between;align-items:center;gap:12px;border-bottom:1px solid var(--line2);padding:10px 0;font-size:12px}
 @media(max-width:760px){.pg021-grid{grid-template-columns:1fr}.pg021-grid .pg021-wide{grid-column:auto}}
@@ -1008,7 +1017,11 @@ const PG020_DEMO_CAPS={
 let pg020SelectedQuoteId=null,pg020EditingQuoteId=null,pg020DuplicatingId=null;
 function pg020Capabilities(){return PG020_DEMO_CAPS[role]||{create:false,editDraft:false,duplicateDraft:false,label:'No quotation access grant configured for this role'}}
 function pg020All(){
- const seed=REGISTER['PG-020'].rows.map(row=>({id:row[0],rev:row[1],customer:row[2],workType:row[3],owner:row[4],status:row[5],local:false,...PG020_META[row[0]]}));
+ const seed=REGISTER['PG-020'].rows.map(row=>{
+  const original={id:row[0],rev:row[1],customer:row[2],workType:row[3],owner:row[4],status:row[5],local:false,...PG020_META[row[0]]};
+  const current=memory.forms['PG-022.current.'+original.id];
+  return current&&typeof current==='object'?{...original,rev:current.rev||original.rev,status:current.status||original.status,updated:current.updated||original.updated,updatedISO:current.updatedISO||original.updatedISO}:original;
+ });
  const dups=Array.isArray(memory.forms['PG-020.localDuplicates'])?memory.forms['PG-020.localDuplicates']:[];
  return [...seed,...dups.filter(x=>x&&x.local===true&&x.owner==='Salesperson A')];
 }
@@ -1373,6 +1386,193 @@ document.addEventListener('click',function(e){
 });
 document.addEventListener('change',function(e){
  if(e.target.id==='role-selector'){pg021PendingNavigation=null;pg021RelatedWorkspace=null;pg012QuoteContext=null;}
+},true);
+
+
+// PG-022: selected quotation, immutable revision history and guarded example actions.
+// Everything below is an illustrative browser-only workflow, not an actual issued PDF.
+const PG022_ISSUED={
+ 'QT-2026-014':[{rev:'R0',status:'Sent',preparedBy:'Salesperson A',issued:'Not recorded',sent:'30 Oct 2026',approval:'Not supplied',pdf:'File unavailable',immutable:true}],
+ 'QT-2026-011':[{rev:'R0',status:'Sent',preparedBy:'Salesperson A',issued:'Not recorded',sent:'02 Nov 2026',approval:'Not supplied',pdf:'File unavailable',immutable:true}],
+ 'QT-2026-009':[{rev:'R0',status:'Sent',preparedBy:'Sales Manager',issued:'Not recorded',sent:'01 Nov 2026',approval:'Not supplied',pdf:'File unavailable',immutable:true}]
+};
+let pg022SelectedQuoteKey=null,pg022SelectedRevision=null,pg022Filter='All',pg022Sort='newest',pg022Related=null;
+function pg022Versions(q){
+ if(q.local)return [{rev:q.rev||'—',status:'Draft',preparedBy:q.owner,issued:'Not issued',sent:'Not sent',approval:'Not requested',pdf:'Not generated',immutable:false}];
+ const issued=PG022_ISSUED[q.id]||[];
+ if(q.rev!=='R0'&&q.status==='Draft'){
+  return [{rev:q.rev,status:'Draft',preparedBy:q.owner,issued:'Not issued',sent:'Not sent',approval:'Not requested',pdf:'Not generated',immutable:false},...issued];
+ }
+ return issued.length?issued:[{rev:q.rev,status:q.status,preparedBy:q.owner,issued:'Not supplied',sent:q.sent||'Not recorded',approval:'Not supplied',pdf:'File unavailable',immutable:q.status!=='Draft'}];
+}
+function pg022SelectedVersion(q){
+ if(pg022SelectedQuoteKey!==q.id){
+  pg022SelectedQuoteKey=q.id;pg022SelectedRevision=q.rev;pg022Filter='All';pg022Sort='newest';
+ }
+ const rows=pg022Versions(q);
+ return rows.find(v=>v.rev===pg022SelectedRevision)||rows[0];
+}
+function pg022Writable(q){
+ return !!q&&!q.local&&q.owner==='Salesperson A'&&role==='Salesperson'&&!!pg020Capabilities().editDraft;
+}
+function pg022CanRevision(q){return pg022Writable(q)&&['Sent','Under Negotiation'].includes(q.status)&&q.rev==='R0'}
+function pg022CanOutcome(q){return pg022Writable(q)&&['Sent','Under Negotiation'].includes(q.status)}
+function pg022CanDispatch(q){return pg022Writable(q)&&['Sent','Under Negotiation'].includes(q.status)}
+function pg022CanPdfPreview(q){return !!q&&pg022Writable(q)}
+function pg022Events(q){
+ const saved=memory.forms['PG-022.events.'+q.id];
+ return Array.isArray(saved)?saved:[];
+}
+function pg022AddEvent(q,type,note){
+ const next=pg022Events(q);
+ next.unshift({type,note,time:new Date().toLocaleString('en-IN'),actor:role+' (demo)'});
+ memory.forms['PG-022.events.'+q.id]=next.slice(0,40);
+ persist();
+}
+function pg022VersionRows(q){
+ const rows=pg022Versions(q).filter(x=>pg022Filter==='All'||(pg022Filter==='Draft'?x.status==='Draft':x.immutable));
+ rows.sort((a,b)=>{
+  const n=r=>Number(String(r.rev).replace(/\D/g,''))||0;
+  return pg022Sort==='oldest'?n(a)-n(b):n(b)-n(a);
+ });
+ return rows;
+}
+function pg022VersionTable(q){
+ const selected=pg022SelectedVersion(q);
+ const control='<div class="pg022-filters"><label for="pg022-filter">Revision type <select id="pg022-filter"><option value="All" '+(pg022Filter==='All'?'selected':'')+'>All revisions</option><option value="Draft" '+(pg022Filter==='Draft'?'selected':'')+'>Draft only</option><option value="Issued" '+(pg022Filter==='Issued'?'selected':'')+'>Issued only</option></select></label><label for="pg022-sort">Order <select id="pg022-sort"><option value="newest" '+(pg022Sort==='newest'?'selected':'')+'>Newest first</option><option value="oldest" '+(pg022Sort==='oldest'?'selected':'')+'>Oldest first</option></select></label></div>';
+ const list=pg022VersionRows(q);
+ const rows=list.length?'<div class="pg022-table-wrap"><table class="data-table pg022-table"><thead><tr><th>Revision</th><th>Revision status</th><th>Prepared by</th><th>Issue date</th><th>Approval</th><th>PDF</th><th>Sent date</th><th>Action</th></tr></thead><tbody>'+list.map(r=>'<tr class="'+(selected.rev===r.rev?'pg022-active':'')+'"><td><b>'+esc(r.rev)+'</b>'+(q.rev===r.rev?'<small>Current</small>':'')+'</td><td>'+badge(r.status)+'</td><td>'+esc(r.preparedBy)+'</td><td>'+esc(r.issued)+'</td><td>'+esc(r.approval)+'</td><td>'+esc(r.pdf)+'</td><td>'+esc(r.sent)+'</td><td><button type="button" class="btn small" data-pg022-revision="'+esc(r.rev)+'">View metadata</button></td></tr>').join('')+'</tbody></table></div>':'<div class="empty"><b>No revisions match</b>Change the revision filter.</div>';
+ const snapshot='<div class="pg022-snapshot"><div class="pg022-heading"><b>Selected revision: '+esc(selected.rev)+'</b>'+badge(selected.immutable?'Preserved / read-only':'Working draft')+'</div><div class="pg022-grid">'+
+ pg012Read('Revision status',selected.status)+pg012Read('Prepared by',selected.preparedBy)+pg012Read('Issued date',selected.issued)+pg012Read('Last sent',selected.sent)+pg012Read('Approval evidence',selected.approval)+pg012Read('PDF file',selected.pdf)+'</div>'+
+ '<div class="pg012-hint">'+(selected.immutable?'Issued revision metadata is immutable in this demonstration. Earlier issued PDFs and commercial snapshots must remain separately stored in production; no real historic PDF has been supplied here.':'This is an editable draft only while its current state and explicit sample permission allow editing. It has not been issued.')+'</div></div>';
+ return '<p class="smallnote">Revisions belong to the same quotation number. Revision status and customer outcome are separate. Existing issued revisions cannot be overwritten.</p>'+control+rows+snapshot;
+}
+function pg022ApprovalPdf(q){
+ const selected=pg022SelectedVersion(q);
+ const approvals='<div class="pg022-tile"><b>Approval snapshot — '+esc(selected.rev)+'</b><p>'+esc(selected.approval)+'</p><small>No approval workflow evidence is supplied for this sample. Validity must be re-evaluated when a material revision is created.</small></div>';
+ const pdf='<div class="pg022-tile"><b>Customer PDF — '+esc(selected.rev)+'</b><p>'+esc(selected.pdf)+'</p><small>No PDF bytes or authorized download are available. Previously issued PDFs must never be replaced by a newer revision.</small><button type="button" class="btn small" disabled title="No authorized PDF file linked in this sample">Download PDF — unavailable</button></div>';
+ const actions=pg022CanPdfPreview(q)?'<div class="pg022-inline"><button class="btn" type="button" data-pg022-preview>Open PG-023 PDF workflow (demo)</button></div>':'';
+ return '<div class="pg022-tiles">'+approvals+pdf+'</div>'+actions;
+}
+function pg022Dispatch(q){
+ const last=q.sent||'Not sent';
+ let html='<div class="pg022-grid">'+pg012Read('Last Sent reference',last)+pg012Read('Actual channel / recipient','Not supplied')+pg012Read('Customer acknowledgement','Not supplied')+pg012Read('Communication evidence','Not verified')+'</div><div class="pg012-hint">The sent date above is fictional metadata, not evidence that email or WhatsApp was dispatched. PG-024 handles verified recording against a specific revision.</div>';
+ if(pg022CanDispatch(q))html+='<div class="pg022-inline"><button type="button" class="btn" data-pg022-dispatch>Open PG-024 dispatch/response workflow (demo)</button></div>';
+ if(pg022CanOutcome(q))html+='<div class="pg022-editor"><label for="pg022-outcome">Customer-reported outcome (proposed labels)</label><select id="pg022-outcome"><option value="">Select an outcome...</option><option value="Under Negotiation">Under Negotiation</option><option value="Won">Won (requires evidence review)</option><option value="Lost">Lost</option></select><label for="pg022-outcome-reason">Customer response / reason (required for demo)</label><textarea id="pg022-outcome-reason" placeholder="Record what the customer communicated"></textarea><button type="button" class="btn" data-pg022-save-outcome>Record outcome (demo)</button><small>Outcome updates do not alter issued revision snapshots, confirm acceptance or register an order.</small></div>';
+ return html;
+}
+function pg022Orders(q){
+ const won=q.status==='Won';
+ return '<div class="pg022-grid">'+pg012Read('Customer outcome',won?'Won (illustrative; unverified)':'Not confirmed as accepted')+pg012Read('Registered order reference','None in this browser prototype')+pg012Read('Acceptance / PO / WO / LOI evidence','Not verified')+pg012Read('Accepted commercial values','Not verified; restricted')+'</div>'+
+ '<div class="pg012-hint">The PG-025 accepted-quote order registration process requires the actual accepted revision, evidence, commercial differences and an authorized registration decision. No action here creates an order.</div>'+
+ (won?'<button type="button" class="btn" disabled title="Verified acceptance evidence and order registration authority are missing">Register Accepted Order — blocked pending evidence</button>':'<span class="smallnote">Order registration is not available without a verified acceptance.</span>');
+}
+function pg022Activity(q){
+ const history=pg022Events(q);
+ const base=pg022Versions(q).filter(v=>v.immutable).map(v=>({type:'Historical revision',note:'Revision '+v.rev+' is preserved as a read-only '+v.status+' sample. Sent reference: '+v.sent+'.',time:v.sent,actor:v.preparedBy}));
+ if(pg022Versions(q).some(v=>!v.immutable))base.unshift({type:'Working revision',note:'Draft '+q.rev+' is the current working revision. No issuance or PDF is implied.',time:q.updated||'Local demo',actor:q.owner});
+ const saved=memory.forms['PG-021.savedAt.quote-'+q.id];
+ if(saved)base.unshift({type:'Draft saved',note:'Builder values saved locally for this current draft (not issued).',time:saved,actor:q.owner});
+ const items=[...history,...base];
+ return '<div class="pg022-timeline">'+items.map(x=>'<div class="pg022-event"><b>'+esc(x.type)+'</b><p>'+esc(x.note)+'</p><small>'+esc(x.actor)+' · '+esc(x.time)+'</small></div>').join('')+'</div><div class="pg012-hint">A production audit log will retain user, timestamp, old/new revision details and evidence references. These entries are fictional or local browser events only.</div>';
+}
+function pg022Actions(q){
+ let actions=button('Back to Quotation Register','PG-020');
+ if(pg020CanEdit(q))actions+='<button type="button" class="btn" data-pg020-edit="'+esc(q.id)+'">Open Current Draft (demo)</button>';
+ if(pg022CanRevision(q))actions+='<button type="button" class="btn" data-pg022-create-revision>Create New Revision (demo)</button>';
+ if(pg022CanDispatch(q))actions+='<button type="button" class="btn" data-pg022-dispatch>Record Dispatch / Response (PG-024)</button>';
+ if(pg022CanPdfPreview(q))actions+='<button type="button" class="btn" data-pg022-preview>PDF workflow (PG-023)</button>';
+ return '<div class="pg022-actions">'+actions+'</div>';
+}
+function pg022Detail(){
+ const q=pg020Selected();
+ if(!q)return '<div class="warning"><b>Quotation access unavailable.</b> The selected quotation is not in the current role\'s illustrative quotation grant. No record, revision or financial details are exposed.</div>'+button('Back to Quotation Register','PG-020');
+ const selected=pg022SelectedVersion(q);
+ const header='<div class="pg022-identity"><div><b>'+esc(q.id)+'</b><span>'+esc(q.customer)+'</span></div><div>'+badge(q.status)+' '+badge(q.rev)+'</div></div>';
+ const overview=header+'<div class="pg022-grid">'+
+ pg012Read('Linked opportunity',q.opportunity||'Not linked in local demo')+pg012Read('Current revision',q.rev)+pg012Read('Quotation status / outcome',q.status)+pg012Read('Work type',q.workType)+pg012Read('Legal entity / branch',q.entity+' / '+q.branch)+pg012Read('Responsible / prepared by',q.owner)+pg012Read('Last updated',q.updated)+pg012Read('Last Sent',q.sent||'Not sent')+'</div>'+
+ '<div class="pg012-hint">Customer and parties are sourced from this quotation\'s sample record. Customer-visible selling totals, acceptance values, supplier costs and margins are withheld without an approved financial viewing grant.</div>';
+ const main=panel('Quotation overview',overview)+
+ '<div class="section">'+panel('Revision history — current and preserved versions',pg022VersionTable(q))+'</div>'+
+ '<div class="section">'+panel('Approval & PDF snapshots',pg022ApprovalPdf(q))+'</div>'+
+ '<div class="section">'+panel('Dispatch & customer response',pg022Dispatch(q))+'</div>'+
+ '<div class="section">'+panel('Linked order & acceptance verification',pg022Orders(q))+'</div>'+
+ '<div class="section">'+panel('Activity & change history',pg022Activity(q))+'</div>';
+ const sidebar=panel('Permitted actions',pg022Actions(q))+
+ '<div class="section">'+panel('Revision integrity','<div class="pg022-check"><b>Current revision</b><span>'+esc(q.rev)+' · '+esc(q.status)+'</span></div><div class="pg022-check"><b>Selected revision</b><span>'+esc(selected.rev)+(selected.immutable?' · read-only':' · draft')+'</span></div><div class="pg022-check"><b>Historical PDF</b><span>Not attached in this sample</span></div><div class="pg012-hint">Draft editing, new revisions, customer dispatch, PDF access and order registration require independent permissions and checks. This is not a production authorization matrix.</div>')+'</div>';
+ return '<div class="pg022-layout"><div>'+main+'</div><aside>'+sidebar+'</aside></div>';
+}
+pg020DetailPending=pg022Detail;
+const pg022OldHeader=headerButtons;
+headerButtons=function(s){
+ if(s.id==='PG-022'){
+  const q=pg020Selected();
+  return button('Quotation Register','PG-020')+(q&&pg020CanEdit(q)?'<button type="button" class="btn primary" data-pg020-edit="'+esc(q.id)+'">Edit Current Draft</button>':q&&pg022CanRevision(q)?'<button type="button" class="btn primary" data-pg022-create-revision>Create New Revision (demo)</button>':'');
+ }
+ return pg022OldHeader(s);
+};
+const pg022OldQuoteList=pg012QuoteList;
+pg012QuoteList=function(r){
+ return pg022OldQuoteList(r).map(ref=>{
+  const q=pg020Visible().find(x=>x.id===ref.id);
+  return q?{...ref,rev:q.rev,status:q.status}:ref;
+ });
+};
+const pg022OldAppBody=appBody;
+appBody=function(){
+ const body=pg022OldAppBody();
+ if(pg022Related&&pg022Related.target===screen&&['PG-023','PG-024'].includes(screen)){
+  const q=pg020Visible().find(x=>x.id===pg022Related.id);
+  if(!q)return '<div class="warning">The related quotation is no longer accessible with this demo role. Return to your quotation register.</div>'+button('Quotation Register','PG-020');
+  return '<div class="help pg022-context"><b>Related quotation workflow:</b> '+esc(q.id)+' · '+esc(q.rev)+' · '+esc(q.customer)+' · '+esc(SCREENS[screen].title)+'. This is a generic wireframe, not a record-specific issuance or dispatch. <button class="btn small" data-go="PG-022">Back to Quotation Details</button></div>'+body;
+ }
+ return body;
+};
+document.addEventListener('click',function(e){
+ if(screen!=='PG-022'&&!(e.target.closest('[data-pg022-confirm-revision]')))return;
+ const rev=e.target.closest('[data-pg022-revision]');
+ if(rev&&screen==='PG-022'){
+  const q=pg020Selected(),target=rev.dataset.pg022Revision;
+  if(!q||!pg022Versions(q).some(x=>x.rev===target))return;
+  pg022SelectedRevision=target;render();return;
+ }
+ const q=pg020Selected();if(!q)return;
+ if(e.target.closest('[data-pg022-create-revision]')){
+  if(!pg022CanRevision(q)){toast('This example does not grant a new revision for the selected quotation.');return}
+  openModal('Create a new draft revision (demo)','<p>The issued '+esc(q.rev)+' snapshot stays preserved and cannot be overwritten. This creates a <b>new working draft '+esc('R'+(Number(q.rev.slice(1))+1))+'</b> and resets approval/PDF review requirements. It does not generate a PDF, notify a customer, or register an order.</p>','<button class="btn" data-act="close-modal">Cancel</button><button class="btn primary" data-pg022-confirm-revision>Confirm New Draft Revision</button>');return;
+ }
+ if(e.target.closest('[data-pg022-confirm-revision]')){
+  if(!pg022CanRevision(q)){closeModal();return}
+  const nextRev='R'+(Number(q.rev.slice(1))+1),now=new Date(),updated=now.toLocaleDateString('en-GB'),updatedISO=now.toISOString().slice(0,10);
+  memory.forms['PG-022.current.'+q.id]={rev:nextRev,status:'Draft',updated:'Local browser revision · '+updated,updatedISO};
+  pg022AddEvent(q,'New draft revision','Created '+nextRev+' as a local working draft. Preserved '+q.rev+' issued revision; approvals and PDF must be re-checked.');
+  pg022SelectedRevision=nextRev;pg020EditingQuoteId=q.id;pg020SelectedQuoteId=q.id;pg012QuoteContext=null;
+  persist();closeModal();navigate('PG-021');toast('New draft revision '+nextRev+' created locally. Earlier issued revision preserved.');return;
+ }
+ if(e.target.closest('[data-pg022-preview]')){
+  if(!pg022CanPdfPreview(q)){toast('No illustrative PDF workflow permission.');return}
+  pg022Related={target:'PG-023',id:q.id};navigate('PG-023');return;
+ }
+ if(e.target.closest('[data-pg022-dispatch]')){
+  if(!pg022CanDispatch(q)){toast('No illustrative dispatch workflow permission.');return}
+  pg022Related={target:'PG-024',id:q.id};navigate('PG-024');return;
+ }
+ if(e.target.closest('[data-pg022-save-outcome]')){
+  if(!pg022CanOutcome(q))return;
+  const status=document.getElementById('pg022-outcome')?.value||'';
+  const note=document.getElementById('pg022-outcome-reason')?.value.trim()||'';
+  if(!['Under Negotiation','Won','Lost'].includes(status)){toast('Select a customer-reported outcome.');return}
+  if(note.length<5){toast('Add a short customer response/reason (at least 5 characters).');document.getElementById('pg022-outcome-reason')?.focus();return}
+  const original=memory.forms['PG-022.current.'+q.id]||{};
+  memory.forms['PG-022.current.'+q.id]={...original,rev:q.rev,status,updated:new Date().toLocaleDateString('en-GB')+' · local demo',updatedISO:new Date().toISOString().slice(0,10)};
+  pg022AddEvent(q,'Customer response','Reported '+status+' — '+note.slice(0,600)+' (unverified; no accepted order registered)');
+  render();toast('Customer response recorded in browser demo. Issued revision unchanged.');return;
+ }
+});
+document.addEventListener('change',function(e){
+ if(screen==='PG-022'&&e.target.id==='pg022-filter'){pg022Filter=e.target.value;render()}
+ if(screen==='PG-022'&&e.target.id==='pg022-sort'){pg022Sort=e.target.value;render()}
+ if(e.target.id==='role-selector'){pg022SelectedQuoteKey=null;pg022SelectedRevision=null;pg022Related=null}
 },true);
 
 render();
