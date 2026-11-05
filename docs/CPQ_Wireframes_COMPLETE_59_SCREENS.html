@@ -1793,6 +1793,14 @@ document.addEventListener('click',function(e){
  }
  if(e.target.closest('[data-pg023-return]'))pg023Return();
 });
+document.addEventListener('click',function(e){
+ const fromBuilder=e.target.closest('[data-pg021-preview]')||(screen==='PG-021'&&e.target.closest('[data-go="PG-023"]'));
+ const fromDetail=e.target.closest('[data-pg022-preview]');
+ const direct=e.target.closest('[data-go="PG-023"]')&&screen!=='PG-021';
+ if(fromBuilder){pg022Related=null;}
+ else if(fromDetail){pg021RelatedWorkspace=null;}
+ else if(direct){pg022Related=null;pg021RelatedWorkspace=null;}
+},true);
 document.addEventListener('change',function(e){
  if(e.target.id==='role-selector'){pg023Key='';pg023Picked=[];pg023Order=[];pg023Message=''}
 },true);
