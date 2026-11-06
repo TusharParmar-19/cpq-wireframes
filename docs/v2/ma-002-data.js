@@ -9,3 +9,11 @@ window.CPQ_MA002_DATA=[
 {id:"e3",name:"Example Technical Services Co.",legalName:"Example Technical Services Company (sample)",type:"Partnership",address:"Sample Service Complex",city:"Rajkot",state:"Gujarat",pin:"360000",gstin:"SAMPLE - NOT VERIFIED",pan:"NOT VERIFIED",registration:"Not supplied",msme:"Not supplied",phone:"+91 00000 00006",email:"sample-service@example.com",website:"",logo:"No logo",letterhead:"Not configured",signatory:"Authorized Signatory (sample)",signature:"Not configured",bankName:"Not configured",accountHolder:"Not configured",bankAccount:"Not configured",ifsc:"Not configured",terms:"Not configured",prefix:"TSC",status:"Active",branches:[
 {id:"e3r",name:"Rajkot",address:"Sample Service Complex",city:"Rajkot",state:"Gujarat",pin:"360000",phone:"+91 00000 00007",email:"rajkot-service@example.com",manager:"Service Manager",status:"Active"}]}
 ];
+
+/* Read-only demonstration of the business-account record required by FR-TEN-001. */
+window.CPQ_MA002_TENANT={
+ name:"Example Business Group",status:"Active",
+ primaryContact:"Demo Business Administrator",email:"business-group@example.com",
+ phone:"+91 00000 00008",address:"Example Business Campus, Ahmedabad, Gujarat",
+ created:"01 Nov 2026 (sample)",updated:"06 Nov 2026 (sample)"
+};
