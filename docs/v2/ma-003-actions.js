@@ -182,5 +182,7 @@ $("overlay").addEventListener("click",e=>{if(e.target===$("overlay"))close()});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("overlay").classList.contains("open"))close()});
 setupFilters();
 render();
+const initialPanel=window.location.hash.replace(/^#/, "");
+if(["users","roles","preview"].includes(initialPanel))setTab(initialPanel);
 if(new URLSearchParams(window.location.search).get("action")==="new")employeeForm();
 })();
