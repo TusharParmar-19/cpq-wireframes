@@ -56,7 +56,7 @@ function render(){
  $("entity-count").textContent=filtered.length+" "+(filtered.length===1?"entity":"entities");
  $("entity-list").innerHTML=filtered.length?filtered.map(x=>'<button class="org-item'+(x.id===state.selected?' selected':'')+'" data-entity="'+esc(x.id)+'" type="button" aria-pressed="'+(x.id===state.selected)+'"><span class="org-item-head"><span class="org-item-name">'+esc(x.name)+'</span>'+badge(x.status)+'</span><span class="org-item-sub">'+esc(x.legalName)+'</span><span class="org-item-foot"><span>'+x.branches.length+' branch(es)</span><span>Prefix '+esc(x.prefix||"Not set")+'</span></span></button>').join(""):'<div class="empty">No matching company. Clear search or change status.</div>';
  $("selected-header").innerHTML='<div><div style="margin-bottom:7px">'+badge(e.status)+' <span class="chip">Entity '+esc(e.id.toUpperCase())+'</span></div><h2>'+esc(e.name)+'</h2><p>'+esc(e.legalName)+'</p><small>'+esc([e.city,e.state].filter(Boolean).join(', '))+' · '+e.branches.length+' branch(es) · Prefix '+esc(e.prefix||"Not set")+'</small></div><div class="actions"><button class="btn" data-edit="legal">Edit Company</button><button class="btn" data-go="branding">Quotation Identity</button></div>';
- document.querySelectorAll('[data-tab]').forEach(t=>{const on=t.dataset.tab===state.tab;t.classList.toggle("active",on);t.setAttribute("aria-selected",String(on));t.tabIndex=on?0:-1});
+ document.querySelectorAll('[data-tab]').forEach(t=>{const on=t.dataset.tab===state.tab;t.classList.toggle("active",on);t.setAttribute("aria-selected",String(on));t.tabIndex=0});
  $("tab-content").innerHTML=tabs[state.tab](e);
 }
 window.CPQ_MA002={records,$,esc,state,current,render,badge,value};
