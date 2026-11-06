@@ -104,7 +104,7 @@ function renderProfile(){
  ['Email',u.email,'Department',u.department,'Role assignments',roleChips(u),'Legal entities',scopeEntities(u).map(id=>companyBy(id)?.name).join(", "),'Branches',u.branches.includes("*")?"All tenant branches (explicit grant)":branches.map(b=>b.name).join(", "),'Record visibility example',visibility(u).toUpperCase(),'Last updated',u.updated||"Not recorded"].reduce((out,item,i,arr)=>{
   if(i%2)return out;const label=arr[i],val=arr[i+1];return out+'<div class="ma3-kv"><label>'+esc(label)+'</label><strong>'+(label==="Role assignments"?val:esc(val||"Not assigned"))+'</strong></div>';
  },"")+'</div>'+
- '<div class="ma3-profile-actions"><button type="button" class="btn primary" data-edit-user="'+esc(u.id)+'">Edit Employee &amp; Access</button><button type="button" class="btn" data-preview-for="'+esc(u.id)+'">Preview Access</button><button type="button" class="btn" data-toggle-user="'+esc(u.id)+'">'+(u.status==="Active"?"Deactivate":"Activate")+' (demo)</button></div>'+
+ '<div class="ma3-profile-actions"><button type="button" class="btn primary" data-edit-user="'+esc(u.id)+'">Edit Employee &amp; Access</button><button type="button" class="btn" data-preview-for="'+esc(u.id)+'">Preview Access</button><button type="button" class="btn" data-toggle-user="'+esc(u.id)+'">'+(u.status==="Active"?"Deactivate":u.status==="Invited"?"Invitation Details":"Reactivate")+' (demo)</button></div>'+
  '<p class="ma3-profile-note">This account belongs to the demo business tenant. Deactivation keeps historical employee and quotation references. Password setup uses secure invitations in the real system.</p></div>';
 }
 function renderAudit(){
