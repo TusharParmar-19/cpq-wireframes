@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MA-002 — Organization & Legal Entities | CPQ</title>
+<link rel="stylesheet" href="ma-001.css"><link rel="stylesheet" href="ma-002.css">
+</head><body>
+<div class="layout">
+<aside class="sidebar"><div class="logo"><span>CP</span><div>CPQ Platform<small>Master Admin Workspace</small></div></div>
+<nav class="nav" aria-label="Main navigation">
+<div class="nav-title">Workspace</div><a class="nav-link" href="ma-001-dashboard.html">▦ &nbsp; Dashboard</a>
+<div class="nav-title">Organization &amp; People</div><a class="nav-link active" href="ma-002-organization.html" aria-current="page">▤ &nbsp; Companies &amp; Branches <small>MA-002</small></a>
+<button class="nav-link" data-planned="MA-003" data-name="Users, Roles &amp; Access">♙ &nbsp; Users, Roles &amp; Access</button>
+<div class="nav-title">Business Records</div>
+<button class="nav-link" data-planned="Customer Management" data-name="Customer Management">◉ &nbsp; Customers</button>
+<button class="nav-link" data-planned="Opportunity Management" data-name="Opportunities">◇ &nbsp; Opportunities</button>
+<button class="nav-link" data-planned="Quotation Management" data-name="Quotations">▣ &nbsp; Quotations</button>
+<button class="nav-link" data-planned="Order Management" data-name="Orders">☷ &nbsp; Orders</button>
+<div class="nav-title">Controls</div>
+<button class="nav-link" data-planned="Approval Policies" data-name="Approval Policies">✓ &nbsp; Approval Policies</button>
+<button class="nav-link" data-planned="Commercial Settings" data-name="Commercial Settings">⚙ &nbsp; Commercial Settings</button>
+<button class="nav-link" data-planned="Reports" data-name="Reports">▥ &nbsp; Reports</button>
+</nav>
+<div class="sidebar-foot"><b>Master Admin · Demo</b><p>Manage authorized company identities and locations. Sensitive financial changes still require explicit permission.</p></div>
+</aside>
+<div class="app">
+<header class="top"><div>CPQ Workspace / <b>Organization &amp; Legal Entities</b></div><span class="avatar">MA</span></header>
+<main class="page">
+<div class="hero">
+<div><div class="overline">Master Admin / MA-002</div><h1>Organization &amp; Legal Entities</h1><p class="muted">Manage your own company identities, quotation settings and operating branches.</p></div>
+<div class="actions"><a class="btn" href="ma-001-dashboard.html">← Dashboard</a><button type="button" id="new-entity" class="btn primary">+ Add Legal Entity</button></div>
+</div>
+<div class="info"><b>WIREFRAME ONLY · Fictional example companies.</b> Changes below are temporary browser-session demonstrations, not database records. Do not enter real GST, PAN, signature or bank details. Quotations are not generated or issued.</div>
+<section class="card org-account">
+<div class="account-identity"><div class="account-icon">CP</div><div><div class="eyebrow">Business account / tenant</div><strong>Example Business Group</strong><p>One business workspace can contain several legal entities and each entity can have several branches.</p></div></div>
+<span class="chip">Sample tenant · Active</span>
+</section>
+<section class="org-summary" id="org-summary" aria-label="Organization summary"></section>
+<div class="org-layout">
+<section class="card org-directory" aria-label="Legal entity directory">
+<div class="org-directory-head"><div><h2>Legal entities</h2><p class="muted">Select a company to review its details</p></div><span class="chip" id="entity-count">3 entities</span></div>
+<div class="org-search"><label for="entity-search">Find company</label><input id="entity-search" type="search" placeholder="Search company name..." autocomplete="off">
+<div class="org-status-filter"><label for="entity-status">Status</label><select id="entity-status"><option value="all">All statuses</option><option value="Active">Active</option><option value="Inactive">Inactive</option></select></div>
+</div><div id="entity-list" class="org-list"></div>
+<div class="org-directory-foot">Each legal entity has its own tax identity, branding, default terms and quotation prefix. Customer companies are managed separately.</div>
+</section>
+<section class="org-detail" aria-label="Selected legal entity">
+<div class="card org-entity-head" id="selected-header"></div>
+<div class="card org-workspace">
+<div class="org-tabs" role="tablist" aria-label="Company details">
+<button type="button" role="tab" data-tab="overview" aria-selected="true" class="active">Overview</button>
+<button type="button" role="tab" data-tab="legal">Legal &amp; Contact</button>
+<button type="button" role="tab" data-tab="branding">Branding &amp; Quotations</button>
+<button type="button" role="tab" data-tab="bank">Bank &amp; Terms</button>
+<button type="button" role="tab" data-tab="branches">Branches</button>
+</div><div id="tab-content" class="org-tab-content" role="tabpanel" aria-live="polite"></div>
+</div>
+</section>
+</div>
+<div class="org-footnote">Legal entity identity is selected on a quotation; branches determine operational context and may provide approved contact details. Existing issued quotations must retain their original entity data and revision history.</div>
+<footer class="footer">CPQ · Master Admin / Organization &amp; Legal Entities · Fictional data · No production backend</footer>
+</main>
+</div></div>
+<div id="overlay" class="overlay" aria-hidden="true">
+<div class="dialog org-dialog" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+<div class="dialog-head"><div><h2 id="modal-title">Details</h2><p id="modal-subtitle" class="muted"></p></div><button type="button" class="btn" id="modal-close" aria-label="Close">×</button></div>
+<div id="modal-body"></div>
+<div class="org-dialog-footer"><button type="button" class="btn" id="modal-done">Close</button></div>
+</div></div>
+<div role="status" aria-live="polite" id="toast" class="org-toast" hidden></div>
+<script src="ma-002-data.js"></script>
+<script src="ma-002-render.js"></script>
+<script src="ma-002-actions.js"></script>
+</body></html>
