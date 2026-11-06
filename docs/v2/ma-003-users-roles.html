@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MA-003 — Users, Roles &amp; Permissions | CPQ</title>
+<link rel="stylesheet" href="ma-001.css"><link rel="stylesheet" href="ma-003.css">
+</head><body>
+<div class="layout">
+<aside class="sidebar">
+ <div class="logo"><span>CP</span><div>CPQ Platform<small>Master Admin Workspace</small></div></div>
+ <nav class="nav" aria-label="CPQ navigation">
+ <div class="nav-title">Workspace</div>
+ <a class="nav-link" href="ma-001-dashboard.html">▦ &nbsp; Dashboard</a>
+ <div class="nav-title">Organization &amp; People</div>
+ <a class="nav-link" href="ma-002-organization.html">▤ &nbsp; Companies &amp; Branches</a>
+ <a class="nav-link active" href="ma-003-users-roles.html" aria-current="page">♙ &nbsp; Users, Roles &amp; Access <small>MA-003</small></a>
+ <div class="nav-title">Business Records</div>
+ <button class="nav-link" data-planned="Customer Management" data-name="Customers">◉ &nbsp; Customers</button>
+ <button class="nav-link" data-planned="Opportunity Management" data-name="Opportunities">◇ &nbsp; Opportunities</button>
+ <button class="nav-link" data-planned="Quotation Management" data-name="Quotations">▣ &nbsp; Quotations</button>
+ <button class="nav-link" data-planned="Vendor RFQ Management" data-name="Vendor RFQs">⇄ &nbsp; Vendor RFQs</button>
+ <button class="nav-link" data-planned="Order Management" data-name="Orders">☷ &nbsp; Orders</button>
+ <div class="nav-title">Controls</div>
+ <button class="nav-link" data-planned="Approval Policies" data-name="Approval Policies">✓ &nbsp; Approval Policies</button>
+ <button class="nav-link" data-planned="Commercial Settings" data-name="Commercial Settings">⚙ &nbsp; Commercial Settings</button>
+ <button class="nav-link" data-planned="Reports" data-name="Reports">▥ &nbsp; Reports</button>
+ </nav>
+ <div class="sidebar-foot"><b>Master Admin · Demo</b><p>Manage access within this business account. This is not the SaaS Platform Super Admin.</p></div>
+</aside>
+<div class="app">
+<header class="top"><div>CPQ Workspace / <b>Users, Roles &amp; Permissions</b></div><span class="avatar">MA</span></header>
+<main class="page">
+<div class="hero">
+ <div><div class="overline">MASTER ADMIN / MA-003</div><h1>Users, Roles &amp; Permissions</h1><p class="muted">Manage people, assign several roles, control branch access and review who can do what.</p></div>
+ <div class="actions"><a class="btn" href="ma-002-organization.html">Companies &amp; Branches</a><button type="button" class="btn primary" id="new-user">+ Add Employee</button></div>
+</div>
+<div class="info"><b>WIREFRAME ONLY · All employees and access examples are fictional.</b> Editing this screen affects only the current page until refresh. It does not create accounts, send invitations, change production access or enforce security.</div>
+<section class="ma3-explainer" aria-label="How employee access works">
+ <div class="ma3-explainer-title"><span class="ma3-mark"><span>✓</span></span><div><strong>How access is determined</strong><p>All checks must pass together. Selecting a company or branch never grants access by itself.</p></div></div>
+ <div class="ma3-access-flow">
+  <div><b>1. Business account</b><span>Stay inside the assigned tenant</span></div><span class="ma3-flow-arrow">+</span>
+  <div><b>2. Company &amp; branch</b><span>Assigned organization scope</span></div><span class="ma3-flow-arrow">+</span>
+  <div><b>3. Role permission</b><span>Action and sensitive-field grant</span></div><span class="ma3-flow-arrow">+</span>
+  <div><b>4. Record &amp; policy</b><span>Ownership, approval and status checks</span></div>
+ </div>
+</section>
+<section id="summary-cards" class="ma3-stats" aria-label="Employee and role summary"></section>
+<div class="ma3-navtabs" role="tablist" aria-label="User access workspace">
+ <button type="button" id="tab-users" role="tab" data-panel="users" aria-selected="true" class="active">Employees</button>
+ <button type="button" id="tab-roles" role="tab" data-panel="roles" aria-selected="false">Roles &amp; Permissions</button>
+ <button type="button" id="tab-preview" role="tab" data-panel="preview" aria-selected="false">Access Preview</button>
+</div>
+<section id="panel-users" role="tabpanel" aria-labelledby="tab-users">
+ <div class="ma3-main">
+  <section class="card ma3-registry">
+   <div class="ma3-panel-title"><div><h2>Employee directory</h2><p class="muted">Find people and manage their assigned access</p></div><span class="chip" id="user-match-count"></span></div>
+   <div class="ma3-filters">
+    <div class="ma3-filter-wide"><label for="user-search">Search employee / email</label><input type="search" id="user-search" placeholder="Name, email or ID" autocomplete="off"></div>
+    <div><label for="user-role-filter">Role</label><select id="user-role-filter"><option value="all">All roles</option></select></div>
+    <div><label for="user-company-filter">Legal entity</label><select id="user-company-filter"><option value="all">All companies</option></select></div>
+    <div><label for="user-status-filter">Status</label><select id="user-status-filter"><option value="all">All statuses</option><option value="Active">Active</option><option value="Invited">Invited</option><option value="Inactive">Inactive</option></select></div>
+   </div>
+   <div class="ma3-table-scroller"><table class="ma3-employee-table">
+    <thead><tr><th>Employee</th><th>Role(s)</th><th>Company / branch scope</th><th>Status</th><th>Action</th></tr></thead>
+    <tbody id="user-rows"></tbody>
+   </table></div>
+   <div class="ma3-table-caption">An employee can hold multiple roles, but records remain restricted to explicitly assigned company and branch scopes.</div>
+  </section>
+  <aside class="card ma3-profile" id="user-profile" aria-label="Selected employee detail"></aside>
+ </div>
+ <section class="card ma3-audit">
+  <div class="ma3-panel-title"><div><h2>Account changes</h2><p class="muted">Illustrative access events from this browser session</p></div></div>
+  <div id="access-history"></div>
+ </section>
+</section>
+<section id="panel-roles" role="tabpanel" aria-labelledby="tab-roles" hidden>
+ <div class="ma3-main ma3-role-main">
+  <section class="card ma3-role-list">
+   <div class="ma3-panel-title"><div><h2>Role catalog</h2><p class="muted">Reusable permissions, not company assignments</p></div><button type="button" class="btn" id="new-role">+ Custom Role</button></div>
+   <div id="role-list"></div>
+  </section>
+  <section class="card ma3-role-detail">
+   <div id="role-detail"></div>
+  </section>
+ </div>
+ <div class="ma3-inline-note"><b>Important:</b> Built-in roles are illustrative templates, not an approved company permission matrix. Custom role permissions shown here require approval and must be enforced in the production backend.</div>
+</section>
+<section id="panel-preview" role="tabpanel" aria-labelledby="tab-preview" hidden>
+ <div class="ma3-main ma3-preview-main">
+  <section class="card ma3-preview-setup">
+   <div class="ma3-panel-title"><div><h2>Try an access scenario</h2><p class="muted">Choose a user, action and record context</p></div></div>
+   <div class="ma3-preview-fields">
+    <div><label for="check-user">Employee</label><select id="check-user"></select></div>
+    <div><label for="check-action">Action</label><select id="check-action"></select></div>
+    <div><label for="check-company">Legal entity</label><select id="check-company"></select></div>
+    <div><label for="check-branch">Branch</label><select id="check-branch"></select></div>
+    <div><label for="check-relation">Relationship to record</label><select id="check-relation">
+      <option value="own">Owned by employee</option>
+      <option value="assigned">Assigned to employee</option>
+      <option value="team">Employee's team</option>
+      <option value="other">Unrelated record</option>
+    </select></div>
+   </div>
+   <div class="ma3-preview-presets"><b>Try examples:</b><button type="button" class="btn" data-scenario="sales-own">Salesperson · own quote</button><button type="button" class="btn" data-scenario="sales-other-branch">Salesperson · another branch</button><button type="button" class="btn" data-scenario="sales-margin">Salesperson · margin</button><button type="button" class="btn" data-scenario="finance-margin">Finance · margin</button></div>
+  </section>
+  <section class="card ma3-preview-result" id="preview-result" aria-live="polite"></section>
+ </div>
+ <div class="ma3-inline-note"><b>Simulation only.</b> These outcomes explain the proposed permission model, not actual authorization. Production must recheck tenant, role, branch, record ownership, sensitive field access and approval policy on the server.</div>
+</section>
+<div class="ma3-bottom-note"><b>Access rules:</b> Inactive or unaccepted invited accounts cannot log in. User deactivation must preserve audit history. Customer/vendor portal accounts and platform-level Super Admin access are outside this business-account screen.</div>
+<footer class="footer">CPQ · MA-003 Users, Roles &amp; Permissions · Fictional employees · No production backend</footer>
+</main></div></div>
+<div class="overlay" id="overlay" aria-hidden="true">
+ <div class="dialog ma3-dialog" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="dialog-head"><div><h2 id="modal-title">Details</h2><p id="modal-subtitle" class="muted"></p></div><button type="button" class="btn" id="modal-close" aria-label="Close">×</button></div>
+  <div id="modal-body"></div>
+  <div class="ma3-dialog-actions"><button type="button" class="btn" id="modal-cancel">Cancel</button><button type="button" class="btn primary" id="modal-save">Save demo</button></div>
+ </div>
+</div>
+<div role="status" id="toast" class="ma3-toast" aria-live="polite" hidden></div>
+<script src="ma-002-data.js"></script>
+<script src="ma-003-data.js"></script>
+<script src="ma-003-render.js"></script>
+<script src="ma-003-actions.js"></script>
+</body></html>
