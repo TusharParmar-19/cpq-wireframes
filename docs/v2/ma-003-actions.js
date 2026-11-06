@@ -91,6 +91,18 @@ function employeeForm(u=null){
  });
  $("ma3-editor").addEventListener("submit",e=>{e.preventDefault();saveHandler?.()});
 }
+function showEffectivePermissions(id){
+ const u=userBy(id);if(!u)return;
+ const grants=a.granted(u),all=a.scopeBranches(u);
+ const groups=[...new Set(perms.map(x=>x.group))];
+ const groupHtml=groups.map(g=>'<section class="ma3-role-group"><h3>'+esc(g)+'</h3>'+
+ perms.filter(x=>x.group===g).map(p=>'<div class="ma3-perm-row"><label>'+esc(p.name)+(p.sensitive?' <span class="ma3-sensitive">· Sensitive</span>':'')+'</label><span class="ma3-tag '+(grants.has(p.id)?"good":"neutral")+'">'+(grants.has(p.id)?"✓ Role grant":"— Not granted")+'</span></div>').join("")+'</section>').join("");
+ const companies=[...new Set(all.map(b=>b.companyId))].map(id=>entities.find(x=>x.id===id)?.name||id).join(", ");
+ const branches=all.map(b=>b.name).join(", ");
+ const html='<div class="ma3-dialog-warning"><b>Employee:</b> '+esc(u.name)+' · '+esc(u.status)+'<br><b>Roles:</b> '+esc(u.roles.map(r=>roleBy(r)?.name||r).join(", "))+'<br><b>Companies:</b> '+esc(companies)+'<br><b>Branches:</b> '+esc(branches)+'</div>'+
+ groupHtml+'<div class="ma3-inline-note"><b>How to interpret this:</b> Action grants are combined from assigned roles, but records remain within selected branches and their own/team/assigned relationship. This initial sample applies all selected roles across all assigned branches. If different roles are needed in different companies, their role-to-company assignments must be agreed before development. Sensitive approvals require separate policy checks.</div>';
+ open("Effective Permissions — "+u.name,"Read-only sample permissions, not an authorization decision",html,null);
+}
 function customRoleForm(source=null,copy=false){
  const base=source&&copy?{...source,id:"",name:source.name+" - Custom",system:false}:source||{name:"",description:"",visibility:"assigned",perms:[],system:false};
  const groups=[...new Set(perms.map(p=>p.group))];
@@ -163,12 +175,13 @@ const presets={
 "finance-margin":{user:"U007",action:"margin.view",company:"e1",branch:"e1a",relation:"assigned"}
 };
 document.addEventListener("click",event=>{
- const t=event.target.closest("[data-select-user],[data-edit-user],[data-toggle-user],[data-preview-for],[data-select-role],[data-edit-role],[data-copy-role],[data-scenario],[data-planned]");
+ const t=event.target.closest("[data-select-user],[data-edit-user],[data-toggle-user],[data-effective-user],[data-preview-for],[data-select-role],[data-edit-role],[data-copy-role],[data-scenario],[data-planned]");
  if(!t)return;
  const d=t.dataset;
  if(d.selectUser){state.selectedUser=d.selectUser;render();return;}
  if(d.editUser){employeeForm(userBy(d.editUser));return;}
  if(d.toggleUser){updateAccountStatus(d.toggleUser);return;}
+ if(d.effectiveUser){showEffectivePermissions(d.effectiveUser);return;}
  if(d.previewFor){const u=userBy(d.previewFor),b=u?.branches.includes("*")?entities[0].branches[0]:a.scopeBranches(u)[0];setPreview({user:d.previewFor,company:b?.companyId||"e1",branch:b?.id||"e1a",action:"quotes.view",relation:"own"});return;}
  if(d.selectRole){state.selectedRole=d.selectRole;render();return;}
  if(d.editRole){const role=roleBy(d.editRole);if(role&&!role.system)customRoleForm(role);else msg("Protected example template","Copy built-in roles to create editable sample role templates.");return;}
