@@ -14,12 +14,13 @@ function branches(){
  $("branch").value=state.branch;
 }
 function render(){
- const entities=d.entities.filter(e=>state.entity==="all"||e.id===state.entity);
+ const entities=d.entities.filter(e=>(state.entity==="all"||e.id===state.entity)&&(state.branch==="all"||e.branches.some(b=>b[0]===state.branch)));
  const employees=scoped(d.employees),customers=scoped(d.customers),opp=scoped(d.opportunities),quotes=scoped(d.quotations),orders=scoped(d.orders);
  const tasks=scoped(d.tasks,3,4).filter(t=>state.type==="all"||t[1]===state.type),activities=scoped(d.activities,3,4);
  const branchCount=entities.reduce((n,e)=>n+e.branches.filter(b=>state.branch==="all"||b[0]===state.branch).length,0);
- $("scope-label").textContent=state.branch==="all"?(state.entity==="all"?"All authorized entities":legal(state.entity)):branchName(state.entity,state.branch);
- $("scope-help").textContent="Fictional records for "+(state.entity==="all"?"all example companies":legal(state.entity))+(state.branch==="all"?"":" / "+branchName(state.entity,state.branch))+".";
+ const selectedEntity=state.entity==="all"&&state.branch!=="all"?(entities[0]?.id||"all"):state.entity;
+ $("scope-label").textContent=state.branch==="all"?(state.entity==="all"?"All authorized entities":legal(state.entity)):legal(selectedEntity)+" / "+branchName(selectedEntity,state.branch);
+ $("scope-help").textContent="Fictional records for "+(selectedEntity==="all"?"all example companies":legal(selectedEntity))+(state.branch==="all"?"":" / "+branchName(selectedEntity,state.branch))+".";
  $("org-stats").innerHTML=tile("Legal entities",entities.length,"Companies in current scope","entities","▤")+tile("Branches",branchCount,"Operating branches in scope","branches","⌁")+tile("Active employees",employees.filter(x=>x[4]==="Active").length,"Active user accounts","employees","♙")+tile("Customers",customers.length,"Customer master records","customers","◉");
  $("business-stats").innerHTML=tile("Active opportunities",opp.filter(x=>["New","In Discussion","Quote Preparation"].includes(x[4])).length,"New / discussing / preparing","active","◇")+tile("Draft quotations",quotes.filter(x=>x[4]==="Draft").length,"Working customer drafts","drafts","▣")+tile("Awaiting approval",quotes.filter(x=>x[4]==="Awaiting Approval").length,"Needs authorized reviewer","approvals","✓")+tile("Registered orders",orders.length,"Direct and accepted-quote","orders","☷");
  $("tasks-count").textContent=tasks.length+" items";
@@ -30,7 +31,7 @@ function render(){
   return '<div class="pipe"><div class="pipe-label"><span>'+esc(s[0])+'</span><b>'+n+'</b></div><div class="track"><div class="bar" style="width:'+(100*n/Math.max(1,quotes.length))+'%;background:'+s[1]+'"></div></div></div>';
  }).join("");
  $("activity-count").textContent=activities.length+" events";
- $("activity-list").innerHTML=activities.length?activities.map(a=>'<div class="event"><b>'+esc(a[1])+'</b><p>'+esc(a[2])+' · '+esc(legal(a[3]))+' / '+esc(branchName(a[3],a[4]))+'</p><small>'+esc(a[5])+' · '+esc(a[6])+'</small> <button type="button" class="btn" data-event="'+esc(a[0])+'">View</button></div>').join(""):'<div class="empty"><b>No activity</b>No examples in this scope.</div>';
+ $("activity-list").innerHTML=activities.length?activities.map(a=>'<div class="event"><div class="event-content"><b>'+esc(a[1])+'</b><p>'+esc(a[2])+' · '+esc(legal(a[3]))+' / '+esc(branchName(a[3],a[4]))+'</p><small>'+esc(a[5])+' · '+esc(a[6])+'</small></div><button type="button" class="btn event-action" data-event="'+esc(a[0])+'" aria-label="View activity: '+esc(a[1])+'">View</button></div>').join(""):'<div class="empty"><b>No activity</b>No examples in this scope.</div>';
 }
 $("entity").innerHTML+=d.entities.map(e=>'<option value="'+esc(e.id)+'">'+esc(e.name)+'</option>').join("");
 branches();render();
