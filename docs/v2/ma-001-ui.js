@@ -35,8 +35,8 @@ function preview(key){
  orders:["Registered orders",filter(d.orders)]
  };
  if(key==="entities"){
- const entities=d.entities.filter(e=>state.entity==="all"||e.id===state.entity);
- open("Legal entities","Fictional organization scope",entities.map(e=>'<div class="item"><b>'+esc(e.name)+'</b><small>'+e.branches.length+' branches in sample master</small></div>').join("")+'<div class="message">Company management is not available in this prototype.</div>');return;
+ const entities=d.entities.filter(e=>(state.entity==="all"||e.id===state.entity)&&(state.branch==="all"||e.branches.some(b=>b[0]===state.branch)));
+ open("Legal entities","Fictional organization scope",entities.map(e=>'<div class="item"><b>'+esc(e.name)+'</b><small>'+e.branches.filter(b=>state.branch==="all"||b[0]===state.branch).length+' branches in selected scope</small></div>').join("")+'<div class="message">Company management is not available in this prototype.</div>');return;
  }
  if(key==="branches"){
  const branchesInScope=d.entities.filter(e=>state.entity==="all"||e.id===state.entity).flatMap(e=>e.branches.filter(b=>state.branch==="all"||b[0]===state.branch).map(b=>'<div class="item"><b>'+esc(b[1])+'</b><small>'+esc(e.name)+'</small></div>'));
