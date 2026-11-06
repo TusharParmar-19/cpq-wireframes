@@ -16,3 +16,5 @@
 @media(max-width:1200px){.org-layout{grid-template-columns:300px minmax(0,1fr)}}
 @media(max-width:1050px){.org-layout{grid-template-columns:1fr}.org-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:650px){.org-summary{grid-template-columns:1fr}.org-list{grid-template-columns:1fr}.org-fields,.org-split,.org-form{grid-template-columns:1fr}.org-form-item.full,.org-field.wide{grid-column:auto}.org-tab-content{padding:15px}.org-entity-head{padding:15px}}
+
+.account-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.account-controls .btn{white-space:nowrap}
