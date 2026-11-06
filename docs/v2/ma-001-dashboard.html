@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MA-001 — Master Admin Dashboard | CPQ Version 2</title>
+<link rel="stylesheet" href="ma-001.css">
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar">
+ <div class="logo"><span>CP</span><div>CPQ Platform<small>Wireframe Version 2</small></div></div>
+ <nav class="nav" aria-label="Master Admin navigation">
+ <div class="nav-title">Workspace</div>
+ <a class="nav-link active" href="ma-001-dashboard.html" aria-current="page">▦ &nbsp; Dashboard <small>MA-001</small></a>
+ <div class="nav-title">Organization &amp; People</div>
+ <button class="nav-link" data-planned="MA-002" data-name="Companies &amp; Branches">▤ &nbsp; Companies &amp; Branches <small>Next</small></button>
+ <button class="nav-link" data-planned="MA-003" data-name="Users, Roles &amp; Access">♙ &nbsp; Users, Roles &amp; Access <small>Planned</small></button>
+ <div class="nav-title">Business Records</div>
+ <button class="nav-link" data-view="customers">◉ &nbsp; Customers</button>
+ <button class="nav-link" data-view="opportunities">◇ &nbsp; Opportunities</button>
+ <button class="nav-link" data-view="quotations">▣ &nbsp; Quotations</button>
+ <button class="nav-link" data-view="orders">☷ &nbsp; Orders</button>
+ <div class="nav-title">Controls</div>
+ <button class="nav-link" data-planned="MA-004" data-name="Approval Policies">✓ &nbsp; Approval Policies</button>
+ <button class="nav-link" data-planned="MA-005" data-name="Commercial Settings">⚙ &nbsp; Commercial Settings</button>
+ <button class="nav-link" data-planned="MA-006" data-name="Reports">▥ &nbsp; Reports</button>
+ </nav>
+ <div class="sidebar-foot"><b>Master Admin · Demo</b><p>Business administrator, not SaaS Platform Super Admin. Sensitive supplier costs and financial approvals require separate permissions.</p></div>
+</aside>
+<div class="app">
+<header class="top"><div>CPQ Workspace / <b>Master Admin Dashboard</b></div><span class="avatar">MA</span></header>
+<main class="page">
+ <div class="hero">
+  <div><div class="overline">CPQ V2 · MA-001</div><h1>Master Admin Dashboard</h1><p class="muted">See your authorized companies, branches, people and commercial activity at a glance.</p></div>
+  <div class="actions">
+   <a class="btn" href="index.html">V2 Home</a>
+   <a class="btn" href="../index.html">All Versions</a>
+   <button class="btn primary" data-planned="MA-002" data-name="Manage Organization">Manage Organization</button>
+  </div>
+ </div>
+ <div class="info"><b>WIREFRAME ONLY · All sample records are fictional.</b> Filters and buttons demonstrate the proposed experience. They do not enforce real permissions, approve quotations, create users, send messages or process financial transactions.</div>
+ <section class="card scope" aria-label="Working company and branch">
+  <div class="scope-header"><span>Working company &amp; branch</span><span id="scope-label" class="chip">All authorized entities</span></div>
+  <div class="filters">
+   <div><label for="entity">Legal entity</label><select id="entity"><option value="all">All authorized legal entities</option></select></div>
+   <div><label for="branch">Branch</label><select id="branch"><option value="all">All authorized branches</option></select></div>
+   <button class="btn" type="button" id="reset">Reset filters</button>
+  </div>
+  <div class="scope-note"><span id="scope-help">Fictional records for all example companies.</span> Administrative access does not automatically grant financial approval authority.</div>
+ </section>
+ <div class="section-title"><div><h2>Organization snapshot</h2><p>Company structure, employees and customers in the selected scope</p></div></div>
+ <section class="stat-grid" id="org-stats" aria-label="Organization summary"></section>
+ <div class="section-title"><div><h2>Commercial pipeline</h2><p>Accessible business record counts — not confidential cost or margin totals</p></div></div>
+ <section class="stat-grid" id="business-stats" aria-label="Commercial pipeline summary"></section>
+ <div class="section-title"><div><h2>Attention &amp; progress</h2><p>Outstanding administrative and commercial work</p></div></div>
+ <div class="columns">
+  <section class="card">
+   <div class="panel-head"><div><h2>Items requiring attention</h2><p>Read-only oversight of what needs action and who is responsible</p></div><span class="pill" id="tasks-count">0 items</span></div>
+   <div class="panel-body">
+    <div style="margin-bottom:12px"><label for="task-filter" style="font-size:11px;color:#647a90">Type:&nbsp; </label><select id="task-filter" style="border:1px solid #d7e0e8;border-radius:6px;padding:8px;background:white;font-size:11px">
+     <option value="all">All types</option><option value="Approval">Approval</option><option value="Access">Access</option><option value="Setup">Setup</option><option value="Evidence">Evidence</option><option value="Response">Response</option>
+    </select></div>
+    <div class="scroll"><table>
+    <thead><tr><th>Item / reference</th><th>Company / branch</th><th>Responsible</th><th>Priority</th><th>Action</th></tr></thead>
+    <tbody id="task-rows"></tbody>
+    </table></div>
+    <p class="muted">No automatic reminders. A Master Admin may view an approval task without having permission to approve its financial decision.</p>
+   </div>
+  </section>
+  <section class="card">
+   <div class="panel-head"><div><h2>Quotation status</h2><p>Distribution of quotations in the selected scope</p></div><span class="pill" id="quotes-count">0 quotations</span></div>
+   <div class="pipeline" id="pipeline"></div>
+   <p class="muted" style="padding:0 20px 16px">“Won” is an illustrative customer outcome; accepted-order registration still requires appropriate evidence and authorization.</p>
+  </section>
+ </div>
+ <div class="bottom-grid">
+  <section class="card">
+   <div class="panel-head"><div><h2>Recent activity</h2><p>Employee, related record, company and timestamp</p></div><span class="pill" id="activity-count">0 events</span></div>
+   <div class="activity" id="activity-list"></div>
+  </section>
+  <section class="card">
+   <div class="panel-head"><div><h2>Quick actions</h2><p>Upcoming pages and read-only record previews</p></div></div>
+   <div class="quick-grid">
+    <button type="button" data-planned="MA-002" data-name="Add Company"><b>Add Company</b><small>Legal entity and branch setup</small></button>
+    <button type="button" data-planned="MA-003" data-name="Add Employee"><b>Add Employee</b><small>Employee onboarding and scope</small></button>
+    <button type="button" data-planned="MA-003" data-name="Manage Roles"><b>Manage Roles</b><small>Review effective permissions</small></button>
+    <button type="button" data-view="quotations"><b>View Quotations</b><small>Accessible sample records</small></button>
+    <button type="button" data-view="orders"><b>View Orders</b><small>Direct and quote-origin orders</small></button>
+    <button type="button" data-planned="MA-005" data-name="Commercial Settings"><b>Commercial Settings</b><small>Templates and numbering</small></button>
+   </div>
+  </section>
+ </div>
+ <section class="card" style="padding:18px 20px;margin-top:18px">
+  <h2>CPQ Version 2 — Built page by page</h2>
+  <p class="muted">MA-001 is our first Master Admin page. Companies, Users, Customer Management and the remaining CPQ functions will be reviewed and designed separately, while retaining the complete seven-phase product roadmap.</p>
+ </section>
+ <footer class="footer">CPQ V2 · MA-001 Master Admin Dashboard · Fictional sample data · No production backend</footer>
+</main>
+</div></div>
+<div class="overlay" id="overlay" aria-hidden="true">
+ <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="dialog-head"><div><h2 id="modal-title">Details</h2><p id="modal-subtitle" class="muted"></p></div><button class="btn" id="modal-close" type="button" aria-label="Close">×</button></div>
+  <div id="modal-body"></div>
+  <p style="text-align:right"><button class="btn" id="modal-done" type="button">Close</button></p>
+ </div>
+</div>
+<script src="ma-001-data.js"></script>
+<script src="ma-001-render.js"></script>
+<script src="ma-001-ui.js"></script>
+</body></html>
