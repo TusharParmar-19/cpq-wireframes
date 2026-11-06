@@ -116,6 +116,15 @@ function edit(kind,branchId=null){
  dialog(kind==="branch"&&branchId?"Edit Branch":title,subtitle,body,()=>{const f=$("org-editor");if(f.reportValidity())saveForm(kind,source,branchId);});
  $("org-editor").addEventListener("submit",event=>{event.preventDefault();if(event.target.reportValidity())saveForm(kind,source,branchId)});
 }
+$("account-details").addEventListener("click",()=>{
+ const t=window.CPQ_MA002_TENANT;
+ const pairs=[["Business account",t.name],["Status",t.status],["Primary contact",t.primaryContact],
+ ["Contact email",t.email],["Contact phone",t.phone],["Address",t.address],
+ ["Created date",t.created],["Last updated",t.updated]];
+ const rows=pairs.map(([label,val])=>'<div class="item"><b>'+esc(label)+'</b><small>'+esc(val)+'</small></div>').join("");
+ message("Business Account Details",rows+
+ '<div class="org-callout"><strong>Read-only demonstration.</strong> Business-account identity, tenant status and tenant isolation are managed separately from legal entities. This screen cannot change tenant status, permissions or records.</div>');
+});
 $("new-entity").addEventListener("click",()=>edit("new"));
 $("entity-search").addEventListener("input",e=>{state.search=e.target.value;render()});
 $("entity-status").addEventListener("change",e=>{state.status=e.target.value;render()});
