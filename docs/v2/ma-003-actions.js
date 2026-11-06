@@ -28,7 +28,8 @@ function msg(title,content){
 }
 function toast(s){const t=$("toast");t.hidden=false;t.textContent=s;}
 function audit(title,detail){
- state.history.unshift({title,detail:"Master Admin (demo) · "+detail});
+ const when=new Date().toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit",hour12:true});
+ state.history.unshift({title,detail:"Master Admin (demo) · "+when+" · "+detail});
  state.history=state.history.slice(0,7);
 }
 function formError(message){const e=$("ma3-form-error");if(e)e.textContent=message;}
