@@ -2,3 +2,42 @@
 @media(max-width:1220px){.stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.columns,.bottom-grid{grid-template-columns:1fr}}
 @media(max-width:900px){.layout{grid-template-columns:1fr}.sidebar{padding:14px}.nav{display:flex;flex-wrap:wrap}.nav-title,.sidebar-foot{display:none}.nav-link{width:auto}.page{padding:22px 16px}}
 @media(max-width:610px){.filters{grid-template-columns:1fr}.top{padding:14px}.stat-grid{gap:8px}.stat{padding:13px}.page{padding:18px 12px}}
+
+/* MA-001 readability and consistent right-aligned activity actions. */
+.nav-title{font-size:11px;color:#a2bed5}
+.nav-link{font-size:13px;line-height:1.45}
+.logo small{font-size:11px;color:#b8cee1}
+.sidebar-foot{font-size:12px;color:#b8cee1}
+.top{font-size:13px}
+.overline{font-size:11px}
+.muted{font-size:13px;color:#64798d}
+.btn{font-size:12px}
+.info{font-size:12px;color:#426987}
+.scope-header{font-size:13px}
+.chip{font-size:11px}
+.filters label{font-size:12px}
+.filters select{font-size:13px}
+.scope-note{font-size:12px;color:#687d91;line-height:1.6}
+.section-title p{font-size:12px;color:#71869a}
+.stat span{font-size:12px;color:#4f687f}
+.stat small{font-size:12px;color:#6c8194;line-height:1.45}
+.stat em{font-size:11px}
+.panel-head p{font-size:12px;color:#74899c}
+th{font-size:10px;color:#637c92}
+td{font-size:12px;color:#3e576d}
+td small{font-size:11px;color:#71859a}
+.pill{font-size:11px}
+.pipe-label{font-size:12px}
+.event{display:flex;justify-content:space-between;align-items:center;gap:14px;font-size:12px}
+.event-content{flex:1;min-width:0}
+.event-content p{font-size:12px;color:#617b91;overflow-wrap:anywhere}
+.event-content small{font-size:11px;color:#72899d}
+.event-action{flex:0 0 auto;align-self:center;min-width:60px}
+.quick-grid button{font-size:12px}
+.quick-grid small{font-size:12px;color:#71869a}
+.footer{font-size:11px;color:#7c8fa2}
+.dialog .item{font-size:13px}
+.dialog small{font-size:12px;color:#647d92}
+.dialog .message{font-size:12px}
+.empty{font-size:12px;color:#687f93}
+button:focus-visible,a:focus-visible,select:focus-visible{outline:3px solid #69a6d5;outline-offset:2px}
