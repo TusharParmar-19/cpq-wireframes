@@ -23,14 +23,14 @@ function render(){
  $("scope-help").textContent="Fictional records for "+(selectedEntity==="all"?"all example companies":legal(selectedEntity))+(state.branch==="all"?"":" / "+branchName(selectedEntity,state.branch))+".";
  $("org-stats").innerHTML=tile("Legal entities",entities.length,"Companies in current scope","entities","▤")+tile("Branches",branchCount,"Operating branches in scope","branches","⌁")+tile("Active employees",employees.filter(x=>x[4]==="Active").length,"Active user accounts","employees","♙")+tile("Customers",customers.length,"Customer master records","customers","◉");
  $("business-stats").innerHTML=tile("Active opportunities",opp.filter(x=>["New","In Discussion","Quote Preparation"].includes(x[4])).length,"New / discussing / preparing","active","◇")+tile("Draft quotations",quotes.filter(x=>x[4]==="Draft").length,"Working customer drafts","drafts","▣")+tile("Awaiting approval",quotes.filter(x=>x[4]==="Awaiting Approval").length,"Needs authorized reviewer","approvals","✓")+tile("Registered orders",orders.length,"Direct and accepted-quote","orders","☷");
- $("tasks-count").textContent=tasks.length+" items";
+ $("tasks-count").textContent=tasks.length+" "+(tasks.length===1?"item":"items");
  $("task-rows").innerHTML=tasks.length?tasks.map(t=>'<tr><td><b>'+esc(t[1])+'</b><small>'+esc(t[2])+' · '+esc(t[7])+'</small></td><td>'+esc(legal(t[3]))+'<small>'+esc(branchName(t[3],t[4]))+'</small></td><td>'+esc(t[5])+'</td><td><span class="priority '+(t[6]==="High"?"high":"")+'">'+esc(t[6])+'</span></td><td><button type="button" class="btn" data-task="'+esc(t[0])+'">View</button></td></tr>').join(""):'<tr><td colspan="5"><div class="empty"><b>No matching tasks</b>Try a different company, branch or task type.</div></td></tr>';
- $("quotes-count").textContent=quotes.length+" quotations";
+ $("quotes-count").textContent=quotes.length+" "+(quotes.length===1?"quotation":"quotations");
  $("pipeline").innerHTML=[["Draft","#558fb9"],["Awaiting Approval","#dba768"],["Sent","#77a6c7"],["Won","#389b89"]].map(s=>{
   const n=quotes.filter(q=>q[4]===s[0]).length;
   return '<div class="pipe"><div class="pipe-label"><span>'+esc(s[0])+'</span><b>'+n+'</b></div><div class="track"><div class="bar" style="width:'+(100*n/Math.max(1,quotes.length))+'%;background:'+s[1]+'"></div></div></div>';
  }).join("");
- $("activity-count").textContent=activities.length+" events";
+ $("activity-count").textContent=activities.length+" "+(activities.length===1?"event":"events");
  $("activity-list").innerHTML=activities.length?activities.map(a=>'<div class="event"><div class="event-content"><b>'+esc(a[1])+'</b><p>'+esc(a[2])+' · '+esc(legal(a[3]))+' / '+esc(branchName(a[3],a[4]))+'</p><small>'+esc(a[5])+' · '+esc(a[6])+'</small></div><button type="button" class="btn event-action" data-event="'+esc(a[0])+'" aria-label="View activity: '+esc(a[1])+'">View</button></div>').join(""):'<div class="empty"><b>No activity</b>No examples in this scope.</div>';
 }
 $("entity").innerHTML+=d.entities.map(e=>'<option value="'+esc(e.id)+'">'+esc(e.name)+'</option>').join("");
