@@ -1,0 +1,111 @@
+/* MA-003: role-scoped employee workspace; uses the existing MA-001 sidebar/header design. */
+.ma3-explainer{background:#fff;border:1px solid #dce7ee;border-radius:13px;margin:18px 0;padding:20px 22px}
+.ma3-explainer-title{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.ma3-mark{width:37px;height:37px;flex:0 0 37px;border-radius:10px;background:#e7f2fb;color:#1f5d8a;font-size:20px;font-weight:900;display:grid;place-items:center}
+.ma3-explainer-title strong{font-size:14px;color:#1b3852}
+.ma3-explainer-title p{margin:5px 0 0;color:#71899b;font-size:12px;line-height:1.5}
+.ma3-access-flow{display:flex;align-items:stretch;gap:11px}
+.ma3-access-flow>div{flex:1;min-width:0;background:#f5f9fc;border:1px solid #e1edf5;border-radius:9px;padding:13px 14px}
+.ma3-access-flow b{font-size:12px;display:block;color:#21475f}.ma3-access-flow span:not(.ma3-flow-arrow){font-size:11px;color:#778b9e;display:block;margin-top:6px;line-height:1.4}
+.ma3-flow-arrow{align-self:center;color:#5c87a4;font-size:18px;font-weight:800}
+.ma3-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin-top:16px}
+.ma3-stat{padding:17px 19px;display:flex;flex-direction:column;gap:4px}
+.ma3-stat span{color:#526d80;font-size:12px;font-weight:750}.ma3-stat strong{font-size:28px;font-weight:850;letter-spacing:-.04em;color:#122e46}.ma3-stat small{font-size:11px;color:#8195a6;line-height:1.4}
+.ma3-navtabs{display:flex;gap:6px;border-bottom:1px solid #dce6ee;margin:24px 0 15px}
+.ma3-navtabs button{border:0;border-bottom:3px solid transparent;background:transparent;color:#617b90;font-size:13px;font-weight:800;padding:15px 20px}
+.ma3-navtabs button.active,.ma3-navtabs button[aria-selected=true]{color:#185d89;border-bottom-color:#2473a1;background:#eff7fc;border-radius:8px 8px 0 0}
+.ma3-main{display:grid;grid-template-columns:minmax(0,1fr) 325px;gap:15px;align-items:start}
+.ma3-registry,.ma3-profile,.ma3-role-list,.ma3-role-detail,.ma3-preview-setup,.ma3-preview-result,.ma3-audit{min-width:0;overflow:hidden}
+.ma3-panel-title{display:flex;justify-content:space-between;gap:12px;align-items:center;border-bottom:1px solid #e7edf2;padding:18px 20px}
+.ma3-panel-title h2{font-size:16px}.ma3-panel-title p{margin:5px 0 0;font-size:12px;color:#7a90a3}
+.ma3-panel-title .btn{white-space:nowrap}
+.ma3-filters{padding:14px 17px;display:grid;grid-template-columns:1.5fr 1fr 1fr .9fr;gap:10px;border-bottom:1px solid #e9eff3}
+.ma3-filters label,.ma3-preview-fields label{display:block;color:#58778d;font-size:11px;font-weight:750;margin-bottom:7px}
+.ma3-filters select,.ma3-filters input,.ma3-preview-fields select,.ma3-form input,.ma3-form select,.ma3-form textarea{width:100%;border:1px solid #d1dee9;border-radius:7px;padding:10px 11px;font-size:12px;color:#223f54;background:#fff;min-height:40px}
+.ma3-filters input:focus,.ma3-filters select:focus,.ma3-form input:focus,.ma3-form select:focus,.ma3-preview-fields select:focus{outline:2px solid #78b8e0;outline-offset:1px}
+.ma3-table-scroller{overflow-x:auto;padding:0 14px}
+.ma3-employee-table{width:100%;border-collapse:collapse;min-width:660px}
+.ma3-employee-table thead{background:#f5f9fc}.ma3-employee-table th{font-size:10px;color:#688196;text-align:left;letter-spacing:.03em;text-transform:uppercase;padding:13px 10px}
+.ma3-employee-table td{font-size:12px;vertical-align:middle;border-bottom:1px solid #ecf0f4;padding:13px 10px}
+.ma3-employee-table td b{color:#193c5a;font-size:12px}.ma3-employee-table td small{display:block;font-size:11px;color:#8195a8;margin-top:5px;line-height:1.5}
+.ma3-employee-table tr.selected{background:#f0f7fc}.ma3-employee-table tbody tr:hover{background:#f7fbfd}
+.ma3-badges{display:flex;flex-wrap:wrap;gap:4px}
+.ma3-tag{display:inline-flex;align-items:center;gap:5px;background:#ecf4fa;color:#2c5f83;border:1px solid #dcebf4;border-radius:6px;padding:4px 7px;font-size:10px;font-weight:720;line-height:1.25}
+.ma3-tag.neutral{background:#f4f6f8;color:#617484;border-color:#e1e7ec}
+.ma3-tag.warn{background:#fff3e7;color:#99631f;border-color:#f4dfc2}
+.ma3-tag.danger{background:#fff1f0;color:#a54d41;border-color:#f2d4cd}
+.ma3-tag.good{background:#e9f7ef;color:#2b7956;border-color:#d0eedc}
+.ma3-table-caption{padding:13px 20px 16px;color:#7890a2;font-size:11px;line-height:1.65}
+.ma3-profile{position:sticky;top:14px}
+.ma3-profile-content{padding:20px}
+.ma3-profile-head{display:flex;gap:11px;align-items:center;margin-bottom:15px}
+.ma3-avatar{display:grid;place-items:center;flex:0 0 42px;width:42px;height:42px;background:#dfeef8;border:1px solid #cce0ee;border-radius:11px;color:#255b80;font-size:13px;font-weight:900}
+.ma3-profile-head h3{font-size:15px;margin:0;color:#173b55}.ma3-profile-head p{font-size:11px;margin:5px 0 0;color:#71879a}
+.ma3-key-values{display:grid;grid-template-columns:1fr;gap:10px}
+.ma3-kv{padding:10px 0;border-bottom:1px solid #eaf0f4}.ma3-kv:last-child{border-bottom:0}
+.ma3-kv label{display:block;color:#7790a5;font-size:10px;text-transform:uppercase;letter-spacing:.03em;font-weight:800;margin-bottom:5px}
+.ma3-kv strong{font-size:12px;color:#254963;line-height:1.6;display:block;font-weight:700;overflow-wrap:anywhere}
+.ma3-profile-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:17px;padding-top:15px;border-top:1px solid #e8eef4}
+.ma3-profile-actions .btn{font-size:11px}
+.ma3-profile-note{font-size:11px;color:#7d91a3;line-height:1.6;margin-top:11px}
+.ma3-audit{margin-top:16px}
+.ma3-audit-list{padding:0 20px 16px}
+.ma3-audit-event{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid #e8eef4;font-size:12px}
+.ma3-audit-event:last-child{border-bottom:0}
+.ma3-audit-event span{color:#7d92a5;font-size:11px}
+.ma3-role-main{grid-template-columns:310px minmax(0,1fr)}
+.ma3-role-list-items{padding:12px}
+.ma3-role-option{width:100%;text-align:left;border:1px solid #e1e9ef;border-radius:9px;background:#fff;padding:12px 13px;display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.ma3-role-option:hover{background:#f7fafc}.ma3-role-option.active{background:#edf7fd;border-color:#77add0;box-shadow:inset 3px 0 #2774a3}
+.ma3-role-option b{font-size:12px;color:#25465e}.ma3-role-option small{color:#70899b;font-size:10px}
+.ma3-role-inner{padding:21px}
+.ma3-role-header{display:flex;justify-content:space-between;align-items:start;gap:15px;flex-wrap:wrap}
+.ma3-role-header h2{font-size:20px;margin:0}
+.ma3-role-header p{font-size:12px;color:#748b9d;line-height:1.6;max-width:660px;margin:7px 0 0}
+.ma3-role-meta{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px}
+.ma3-role-group{margin-top:21px}
+.ma3-role-group h3{font-size:12px;font-weight:800;color:#365a75;margin-bottom:9px;border-bottom:1px solid #e7eef3;padding-bottom:9px}
+.ma3-perm-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid #eef2f5}
+.ma3-perm-row:last-child{border-bottom:0}
+.ma3-perm-row label{font-size:12px;color:#29475e}
+.ma3-perm-row .ma3-sensitive{color:#9b653d;font-size:10px}
+.ma3-inline-note,.ma3-bottom-note{border:1px dashed #cddde8;border-radius:9px;background:#f8fbfd;color:#6b8497;font-size:12px;padding:14px 17px;line-height:1.65;margin:18px 0}
+.ma3-bottom-note{background:#edf5fa;border-color:#d1e2ed}
+.ma3-preview-main{grid-template-columns:minmax(0,1fr) minmax(300px,.72fr)}
+.ma3-preview-fields{padding:18px 20px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.ma3-preview-fields>div:last-child{grid-column:1/-1}
+.ma3-preview-presets{border-top:1px solid #e9eef3;padding:15px 20px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ma3-preview-presets b{color:#5c7990;font-size:11px;margin-right:4px}
+.ma3-preview-presets .btn{font-size:11px}
+.ma3-preview-result{padding:22px}
+.ma3-result-header{display:flex;align-items:center;gap:11px}
+.ma3-result-icon{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;font-size:19px;font-weight:900}
+.ma3-result-icon.good{background:#e5f4ec;color:#287c5b}
+.ma3-result-icon.danger{background:#fff0eb;color:#aa5342}
+.ma3-result-header h2{font-size:19px;margin:0}
+.ma3-result-header p{font-size:12px;color:#748a9c;margin:5px 0 0}
+.ma3-preview-explanation{margin:18px 0;padding:14px;border-radius:8px;background:#f5f9fc;color:#49677e;font-size:12px;line-height:1.65;border:1px solid #e0eaf1}
+.ma3-checks{display:flex;flex-direction:column;gap:10px}
+.ma3-check{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid #edf1f5;padding-bottom:10px;font-size:12px;color:#4a677c}
+.ma3-check:last-child{border-bottom:0}
+.ma3-dialog{width:min(760px,100%);max-height:min(85vh,880px);overflow-y:auto}
+.ma3-dialog-actions{display:flex;justify-content:flex-end;gap:8px;padding-top:14px;margin-top:15px;border-top:1px solid #e6edf2}
+.ma3-dialog-warning{background:#fff8ee;border:1px solid #f2e1c6;border-radius:8px;padding:12px;font-size:12px;color:#8c6236;margin:12px 0;line-height:1.6}
+.ma3-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;margin-top:16px}
+.ma3-form-item{min-width:0}
+.ma3-form-item.full{grid-column:1/-1}
+.ma3-form-item label{font-size:11px;color:#567185;font-weight:780;display:block;margin-bottom:7px}
+.ma3-form-item small{display:block;font-size:10px;color:#8a9db0;margin-top:5px;line-height:1.55}
+.ma3-form-item textarea{min-height:70px;resize:vertical}
+.ma3-checkbox-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.ma3-checklabel{display:flex;gap:8px;align-items:flex-start;border:1px solid #e2eaf0;border-radius:7px;padding:10px;color:#2d526b;font-size:12px;line-height:1.45;cursor:pointer}
+.ma3-checklabel input{flex:0 0 16px;width:16px;height:16px;margin:1px 0 0;min-height:auto;accent-color:#2576a6}
+.ma3-checklabel .ma3-branch-meta{font-size:10px;color:#8297a8}
+.ma3-form-error{grid-column:1/-1;min-height:18px;color:#b04f40;font-size:12px;font-weight:680}
+.ma3-toast{position:fixed;bottom:18px;right:18px;background:#173e60;color:#fff;box-shadow:0 10px 30px #102b4450;border-radius:9px;padding:14px 18px;z-index:105;max-width:360px;font-size:12px;line-height:1.5}
+.ma3-toast[hidden]{display:none}
+.ma3-empty{padding:30px;text-align:center;color:#8094a5;font-size:13px}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #8bbadb;outline-offset:2px}
+@media(max-width:1260px){.ma3-main{grid-template-columns:1fr}.ma3-role-main{grid-template-columns:310px minmax(0,1fr)}.ma3-profile{position:static}.ma3-filters{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:960px){.ma3-role-main,.ma3-preview-main{grid-template-columns:1fr}.ma3-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.ma3-access-flow{flex-wrap:wrap}.ma3-flow-arrow{display:none}.ma3-access-flow>div{flex-basis:44%}}
+@media(max-width:650px){.ma3-stats,.ma3-filters,.ma3-preview-fields,.ma3-form,.ma3-checkbox-grid{grid-template-columns:1fr}.ma3-navtabs{overflow-x:auto}.ma3-navtabs button{white-space:nowrap}.ma3-preview-fields>div:last-child,.ma3-form-item.full{grid-column:auto}.ma3-access-flow>div{flex-basis:100%}}
