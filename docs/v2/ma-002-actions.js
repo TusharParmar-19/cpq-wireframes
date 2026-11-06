@@ -114,6 +114,7 @@ function edit(kind,branchId=null){
  if(kind==="branch"&&current().status!=="Active"&&!branchId){message("Branch creation unavailable","This sample company is inactive. Reactivate it before adding a branch.");return;}
  const body='<div class="org-dialog-intro">'+tags[kind]+'</div><form id="org-editor"><div class="org-form">'+schema[kind].map(f=>formField(f,source)).join("")+'<div id="org-error" class="org-form-error" role="alert"></div></div></form>';
  dialog(kind==="branch"&&branchId?"Edit Branch":title,subtitle,body,()=>{const f=$("org-editor");if(f.reportValidity())saveForm(kind,source,branchId);});
+ $("org-editor").addEventListener("submit",event=>{event.preventDefault();if(event.target.reportValidity())saveForm(kind,source,branchId)});
 }
 $("new-entity").addEventListener("click",()=>edit("new"));
 $("entity-search").addEventListener("input",e=>{state.search=e.target.value;render()});
