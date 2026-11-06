@@ -36,14 +36,14 @@ function preview(key){
  };
  if(key==="entities"){
  const entities=d.entities.filter(e=>state.entity==="all"||e.id===state.entity);
- open("Legal entities","Fictional organization scope",entities.map(e=>'<div class="item"><b>'+esc(e.name)+'</b><small>'+e.branches.length+' branches in sample master</small></div>').join("")+'<div class="message">The full company setup page will be MA-002.</div>');return;
+ open("Legal entities","Fictional organization scope",entities.map(e=>'<div class="item"><b>'+esc(e.name)+'</b><small>'+e.branches.length+' branches in sample master</small></div>').join("")+'<div class="message">Company management is not available in this prototype.</div>');return;
  }
  if(key==="branches"){
  const branchesInScope=d.entities.filter(e=>state.entity==="all"||e.id===state.entity).flatMap(e=>e.branches.filter(b=>state.branch==="all"||b[0]===state.branch).map(b=>'<div class="item"><b>'+esc(b[1])+'</b><small>'+esc(e.name)+'</small></div>'));
- open("Branches","Fictional branches in selected scope",branchesInScope.join("")+'<div class="message">Branch administration will be MA-002.</div>');return;
+ open("Branches","Fictional branches in selected scope",branchesInScope.join("")+'<div class="message">Branch administration is not available in this prototype.</div>');return;
  }
  const value=set[key];if(!value)return;
- open(value[0],value[1].length+" accessible sample records",recordList(value[1])+'<div class="message">This is only a record preview. We will develop register pages separately; clicking here cannot alter business data.</div>');
+ open(value[0],value[1].length+" accessible sample records",recordList(value[1])+'<div class="message">This is a read-only sample record preview. No business data can be changed here.</div>');
 }
 $("entity").addEventListener("change",e=>{state.entity=e.target.value;state.branch="all";branches();render()});
 $("branch").addEventListener("change",e=>{state.branch=e.target.value;render()});
@@ -53,7 +53,7 @@ document.addEventListener("click",e=>{
  const target=e.target.closest("[data-view],[data-planned],[data-task],[data-event]");
  if(!target)return;
  if(target.dataset.view){preview(target.dataset.view);return;}
- if(target.dataset.planned){open(target.dataset.name,"Planned screen — not yet built",'<div class="message">'+esc(target.dataset.planned)+' will be designed and approved in our page-by-page V2 process. No records are created or changed.</div>');return;}
+ if(target.dataset.planned){open(target.dataset.name,"This section is not yet available",'<div class="message">'+esc(target.dataset.planned)+' is not available in this prototype. No records are created or changed.</div>');return;}
  if(target.dataset.task){
  const item=scoped(d.tasks,3,4).find(r=>r[0]===target.dataset.task);
  if(item)open(item[1]+" · "+item[2],item[7],'<div class="item"><b>Responsible</b><small>'+esc(item[5])+'</small></div><div class="message">Read-only task example. This does not grant approval or access permission.</div>');
