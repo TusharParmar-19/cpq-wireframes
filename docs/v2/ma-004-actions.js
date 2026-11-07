@@ -122,42 +122,49 @@ function linkScope(){
 const taxOptions=[["Not supplied","Not supplied"],["Pending","Pending verification"],["Verified sample","Verified (sample only)"]];
 function companyForm(id=null){
  const c=cust(state.selected);if(!c||c.status==="Archived")return;
+ const personal=c.type==="Individual";
  const old=db.companies.find(x=>x.id===id&&x.customerId===c.id);
- const x=old||{name:"",kind:"Group company",taxStatus:"Not supplied",city:"",state:"",address:"",billingTerms:""};
- const f=wrap(field("name","Buyer legal / trading name",x.name,true,"text",true)+
- select("kind","Customer entity type",[["Head office","Head office"],["Group company","Group company"],["Subsidiary","Subsidiary"],["Division","Division"]],x.kind)+
- select("taxStatus","Tax ID verification state",taxOptions,x.taxStatus)+field("city","Billing city",x.city)+field("state","Billing state",x.state)+
- area("address","Billing address (fictional)",x.address)+area("billingTerms","Sample billing terms",x.billingTerms),
- "Customer buyer companies are not MA-002 internal companies. Never enter a real tax number in this public wireframe.");
- show(old?"Edit Customer Company":"Add Customer Company",c.name+" · buyer / bill-to identity",f,fd=>{
+ if(personal&&!old){message("Individual buyer profile","An individual customer has one buyer identity, not multiple legal companies. Use <b>Edit buyer details</b> to update the personal billing information.");return;}
+ const x=old||{name:"",kind:c.type==="Group"?"Group company":"Head office",taxStatus:"Not supplied",city:"",state:"",address:"",billingTerms:""};
+ const f=wrap(field("name",personal?"Individual buyer full name":"Buyer legal / trading name",x.name,true,"text",true)+
+  (personal?"":select("kind","Customer entity type",[["Head office","Head office"],["Group company","Group company"],["Subsidiary","Subsidiary"],["Division","Division"]],x.kind)+select("taxStatus","Tax ID verification state",taxOptions,x.taxStatus))+
+  field("city","Billing city",x.city)+field("state","Billing state",x.state)+
+  area("address","Billing address (fictional)",x.address)+area("billingTerms","Sample billing terms",x.billingTerms),
+  personal?"One individual buyer profile. Business registration and tax-identity fields do not apply in this demo. Only fictional billing information is allowed.":"Buyer/legal entities are different from the INTERNAL companies in MA-002. Never enter real tax identifiers in this public wireframe.");
+ show(personal?"Edit Individual Buyer":old?"Edit Customer Company":"Add Customer Company",c.name+" · buyer / billing identity",f,fd=>{
   const name=v(fd,"name");
-  if(!name){invalid("A buyer legal name is required.");return;}
-  if(db.companies.some(y=>y.id!==old?.id&&y.name.toLowerCase()===name.toLowerCase())){invalid("A buyer company with this name already exists. Avoid duplicate records.");return;}
-  const patch={name,kind:v(fd,"kind"),taxStatus:v(fd,"taxStatus"),city:v(fd,"city"),state:v(fd,"state"),address:v(fd,"address"),billingTerms:v(fd,"billingTerms")};
+  if(!name){invalid("Enter a buyer name.");return;}
+  if(db.companies.some(y=>y.id!==old?.id&&y.name.toLowerCase()===name.toLowerCase())){invalid("A buyer identity with this name already exists.");return;}
+  if(personal&&db.customers.some(y=>y.id!==c.id&&y.name.toLowerCase()===name.toLowerCase())){invalid("Another customer account already uses this name.");return;}
+  const patch={name,kind:personal?"Individual":v(fd,"kind"),taxStatus:personal?"Not applicable":v(fd,"taxStatus"),city:v(fd,"city"),state:v(fd,"state"),address:v(fd,"address"),billingTerms:v(fd,"billingTerms")};
   if(old)Object.assign(old,patch);
   else db.companies.push({id:next("CC-",db.companies),customerId:c.id,...patch,primary:companies(c.id).length===0});
-  saved(c,old?"Buyer company updated":"Buyer company added","companies");
- },"Save company (demo)");
+  if(personal)c.name=name;
+  saved(c,personal?"Individual billing profile updated":old?"Buyer company updated":"Buyer company added","companies");
+ },"Save buyer details (demo)");
 }
+
 function primaryCompany(id){
  const c=cust(state.selected),x=db.companies.find(y=>y.id===id&&y.customerId===c?.id);
- if(!c||!x||c.status==="Archived")return;
+ if(!c||!x||c.status==="Archived"||c.type==="Individual")return;
  companies(c.id).forEach(y=>y.primary=y.id===id);
  audit(c,"Primary buyer changed");render();toast("Primary buyer changed · demo only");
 }
 function contactForm(id=null){
  const c=cust(state.selected);if(!c||c.status==="Archived")return;
+ const personal=c.type==="Individual";
  const old=db.contacts.find(x=>x.id===id&&x.customerId===c.id);
  const x=old||{name:"",companyId:companies(c.id)[0]?.id||"",role:"",email:"",phone:"",status:"Active",primary:contacts(c.id).length===0};
- const f=wrap(field("name","Contact person (fictional)",x.name,true)+
- select("companyId","Customer legal entity",companies(c.id).map(y=>[y.id,y.name]),x.companyId,true)+
- field("role","Designation / responsibility",x.role)+field("email","Email (example.com only)",x.email,false,"email")+
- field("phone","Phone (fictional)",x.phone)+select("primary","Primary for this customer",[["false","No"],["true","Yes"]],String(x.primary))+
- select("status","Contact status",[["Active","Active"],["Inactive","Inactive"]],x.status),
- "Use only fictional contact details; real personal data and communication consent need production controls.");
- show(old?"Edit Contact":"Add Contact",c.name+" · contact directory",f,fd=>{
+ const buyerField=personal?'<div class="ma4-form-item full"><label>Linked individual buyer</label><div class="ma4-readonly-value">'+esc(companies(c.id)[0]?.name||c.name)+'</div><input type="hidden" name="companyId" value="'+esc(x.companyId)+'"></div>':
+  select("companyId","Customer legal entity",companies(c.id).map(y=>[y.id,y.name]),x.companyId,true);
+ const f=wrap(field("name",personal?"Additional / authorized contact (fictional)":"Contact person (fictional)",x.name,true)+
+  buyerField+field("role","Designation / responsibility",x.role)+field("email","Email (example.com only)",x.email,false,"email")+
+  field("phone","Phone (fictional)",x.phone)+select("primary","Primary contact for this account",[["false","No"],["true","Yes"]],String(x.primary))+
+  select("status","Contact status",[["Active","Active"],["Inactive","Inactive"]],x.status),
+  personal?"The individual buyer is already recorded as the purchaser. Add a separate authorized representative only when needed. Use fictional contact details.":"Use only fictional contact details; real personal data and communications consent need production controls.");
+ show(old?"Edit Contact":personal?"Add Authorized Contact":"Add Contact",c.name+" · contact directory",f,fd=>{
   const name=v(fd,"name"),co=v(fd,"companyId"),email=v(fd,"email");
-  if(!name||!companies(c.id).some(y=>y.id===co)){invalid("Enter a contact name and a valid buyer company.");return;}
+  if(!name||!companies(c.id).some(y=>y.id===co)){invalid("Enter a contact name and a valid buyer identity.");return;}
   if(email&&!email.toLowerCase().endsWith("@example.com")){invalid("Use fictional @example.com email addresses in this public demo.");return;}
   if(email&&db.contacts.some(y=>y.id!==old?.id&&y.customerId===c.id&&y.email.toLowerCase()===email.toLowerCase())){invalid("This contact email is already linked to the customer.");return;}
   const primary=v(fd,"primary")==="true"||contacts(c.id).length===0;
@@ -168,11 +175,12 @@ function contactForm(id=null){
   saved(c,old?"Contact updated":"Contact added","contacts");
  },"Save contact (demo)");
 }
+
 function siteForm(id=null){
  const c=cust(state.selected);if(!c||c.status==="Archived")return;
  const old=db.sites.find(x=>x.id===id&&x.customerId===c.id);
  const x=old||{name:"",companyId:companies(c.id)[0]?.id||"",type:"Project / delivery site",status:"Active",city:"",state:"",address:""};
- const f=wrap(field("name","Site / delivery address label",x.name,true)+select("companyId","Buyer legal entity",companies(c.id).map(y=>[y.id,y.name]),x.companyId,true)+
+ const f=wrap(field("name","Site / delivery address label",x.name,true)+select("companyId",c.type==="Individual"?"Individual buyer":"Buyer legal entity",companies(c.id).map(y=>[y.id,y.name]),x.companyId,true)+
  select("type","Location type",[["Customer branch / office","Customer branch / office"],["Project / delivery site","Project / delivery site"],["Delivery address","Delivery address"],["Service site","Service site"],["Billing address","Billing address"]],x.type)+
  select("status","Site status",[["Active","Active"],["Inactive","Inactive"]],x.status)+
  field("city","City",x.city)+field("state","State",x.state)+area("address","Site address (fictional)",x.address));
@@ -197,7 +205,7 @@ function projectForm(id=null){
  const old=db.projects.find(x=>x.id===id&&x.customerId===c.id);
  const x=old||{name:"",companyId:companies(c.id)[0]?.id||"",siteId:"",stage:"New",owner:c.owner};
  const f=wrap(field("name","Project title",x.name,true)+
- '<div class="ma4-form-item"><label for="ma4-project-company">Buyer legal entity</label><select id="ma4-project-company" name="companyId">'+options(companies(c.id).map(y=>[y.id,y.name]),x.companyId)+'</select></div>'+
+ '<div class="ma4-form-item"><label for="ma4-project-company">Buyer identity</label><select id="ma4-project-company" name="companyId">'+options(companies(c.id).map(y=>[y.id,y.name]),x.companyId)+'</select></div>'+
  '<div class="ma4-form-item"><label for="ma4-project-site">Project site</label><select id="ma4-project-site" name="siteId">'+siteOptions(c,x.companyId,x.siteId)+'</select></div>'+
  select("stage","Project stage",stages,x.stage)+field("owner","Project owner",x.owner),
  "Project location is optional. When provided, the selected site must belong to the same buyer legal entity.");
@@ -262,6 +270,7 @@ $("modal-save").addEventListener("click",saveForm);
 $("modal-body").addEventListener("submit",e=>{if(e.target.id==="ma4-form"){e.preventDefault();saveForm();}});
 $("modal-body").addEventListener("change",e=>{
  if(e.target.id==="ma4-own-company")updateOwnBranches();
+ if(e.target.id==="f-type")updateCreateType();
  if(e.target.id==="ma4-project-company"){
   const c=cust(state.selected),co=e.target.value,site=$("ma4-project-site");
   if(site)site.innerHTML=siteOptions(c,co,"");
