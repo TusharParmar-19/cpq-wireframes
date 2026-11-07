@@ -9,7 +9,7 @@ employees:[
 ["EMP-001","Admin User","e1","e1a","Active"],["EMP-002","Salesperson A","e1","e1a","Active"],["EMP-003","Salesperson B","e1","e1s","Active"],["EMP-004","Sales Manager","e1","e1a","Active"],["EMP-005","Technical User","e2","e2a","Active"],["EMP-006","Purchase User","e2","e2v","Active"],["EMP-007","Finance User","e1","e1a","Active"],["EMP-008","Salesperson C","e2","e2a","Active"],["EMP-009","Operations User","e2","e2v","Active"],["EMP-010","Admin User B","e3","e3r","Active"],["EMP-011","Service Manager","e3","e3r","Active"],["EMP-012","Accounts Assistant","e1","e1s","Invited"]
 ],
 customers:[
-["CU-001","ABC Industries","e1","e1a"],["CU-002","Greenfield Facility","e2","e2a"],["CU-003","Sunrise Manufacturing","e1","e1s"],["CU-004","Omega Infrastructure","e2","e2v"],["CU-005","Delta Engineering","e3","e3r"],["CU-006","Apex Retail","e1","e1a"],["CU-007","Northstar Components","e2","e2a"],["CU-008","Westline Logistics","e3","e3r"]
+["CU-001","ABC Industries","e1","e1a"],["CU-002","Greenfield Facility","e2","e2a"],["CU-003","Sunrise Manufacturing","e1","e1s"],["CU-004","Omega Infrastructure","e2","e2v"],["CU-005","Delta Engineering","e3","e3r"],["CU-006","Apex Retail","e1","e1a"],["CU-007","Northstar Components","e2","e2a"],["CU-008","Westline Logistics","e3","e3r"],["CU-009","Example Individual Customer","e1","e1a"]
 ],
 opportunities:[
 ["OP-2026-008","ABC Industries","e1","e1a","In Discussion"],["OP-2026-011","Greenfield Facility","e2","e2a","Quote Preparation"],["OP-2026-015","Omega Infrastructure","e2","e2v","New"],["OP-2026-016","Delta Engineering","e3","e3r","In Discussion"],["OP-2026-017","Sunrise Manufacturing","e1","e1s","Lost"]
