@@ -111,7 +111,7 @@ function createCustomer(){
   db.companies.push({id:buyerId,customerId:id,name:buyerName,kind:type==="Individual"?"Individual":"Head office",primary:true,taxStatus:type==="Individual"?"Not applicable":"Not supplied",email:type==="Individual"?personalEmail:"",phone:type==="Individual"?personalPhone:"",city:"",state:"",address:"",billingTerms:"Not configured"});
   state.company="all";state.branch="all";state.status="all";state.type="all";state.q="";
   $("customer-search").value="";$("status-filter").value="all";$("type-filter").value="all";state.selected=id;
-  saved(c,type==="Individual"?"Individual customer created":type==="Group"?"Customer group created":"Company customer created","overview");
+  saved(c,(type==="Individual"?"Individual customer created":type==="Group"?"Customer group created":"Company customer created")+": "+name,"overview");
  },"Create customer (demo)");
  updateCreateType();
 }
@@ -131,7 +131,7 @@ function editCustomer(){
   if(v(fd,"owner")&&!customerOwners(c).includes(v(fd,"owner"))){invalid("Select an active employee assigned to one of this customer’s internal branches.");return;}
   Object.assign(c,{name,status:v(fd,"status"),industry:v(fd,"industry"),owner:v(fd,"owner"),notes:v(fd,"notes")});
   if(currentBuyer)currentBuyer.name=name;
-  saved(c,"Customer details updated");
+  saved(c,"Customer details updated: "+name);
  },"Save customer (demo)");
 }
 
@@ -142,7 +142,7 @@ function linkScope(){
   const co=v(fd,"ourCompany"),br=v(fd,"ourBranch");
   if(!allowedLink(co,br)){invalid("The selected branch must belong to that internal company.");return;}
   if(c.links.some(x=>x.companyId===co&&x.branchId===br)){invalid("This internal company/branch relationship already exists.");return;}
-  c.links.push({companyId:co,branchId:br});saved(c,"Internal scope linked","overview");
+  c.links.push({companyId:co,branchId:br});saved(c,"Internal scope linked: "+(ent(co)?.name||co)+" / "+(branch(br)?.name||br),"overview");
  },"Link scope (demo)");
 }
 const taxOptions=[["Not supplied","Not supplied"],["Pending","Pending verification"],["Verified sample","Verified (sample only)"]];
@@ -167,7 +167,7 @@ function companyForm(id=null){
   if(old)Object.assign(old,patch);
   else db.companies.push({id:next("CC-",db.companies),customerId:c.id,...patch,primary:companies(c.id).length===0});
   if(personal)c.name=name;
-  saved(c,personal?"Individual billing profile updated":old?"Buyer company updated":"Buyer company added","companies");
+  saved(c,(personal?"Individual billing profile updated":old?"Buyer company updated":"Buyer company added")+": "+name,"companies");
  },personal?"Save individual buyer (demo)":old?"Save buyer changes (demo)":"Add buyer company (demo)");
 }
 
@@ -175,7 +175,7 @@ function primaryCompany(id){
  const c=cust(state.selected),x=db.companies.find(y=>y.id===id&&y.customerId===c?.id);
  if(!c||!x||c.status==="Archived"||c.type!=="Group")return;
  companies(c.id).forEach(y=>y.primary=y.id===id);
- audit(c,"Primary buyer changed");render();toast("Primary buyer changed · demo only");
+ audit(c,"Primary buyer changed to: "+x.name);render();toast("Primary buyer changed · demo only");
 }
 function contactForm(id=null){
  const c=cust(state.selected);if(!c||c.status==="Archived")return;
@@ -199,7 +199,7 @@ function contactForm(id=null){
   const patch={name,companyId:co,role:v(fd,"role"),email,phone:v(fd,"phone"),status:v(fd,"status"),primary};
   if(old)Object.assign(old,patch);
   else db.contacts.push({id:next("CT-",db.contacts),customerId:c.id,...patch});
-  saved(c,old?"Contact updated":"Contact added","contacts");
+  saved(c,(old?"Contact updated":"Contact added")+": "+name+" ("+(buyer(co)?.name||"Buyer")+")","contacts");
  },"Save contact (demo)");
 }
 
@@ -219,7 +219,7 @@ function siteForm(id=null){
   const patch={name,companyId:co,type:v(fd,"type"),status:v(fd,"status"),city:v(fd,"city"),state:v(fd,"state"),address:v(fd,"address")};
   if(old)Object.assign(old,patch);
   else db.sites.push({id:next("ST-",db.sites),customerId:c.id,...patch});
-  saved(c,old?"Customer site updated":"Customer site added","sites");
+  saved(c,(old?"Customer site updated":"Customer site added")+": "+name,"sites");
  },"Save site (demo)");
 }
 const stages=[["New","New"],["Planning","Planning"],["In discussion","In discussion"],["Quotation","Quotation"],["In progress","In progress"],["Completed","Completed"],["Cancelled","Cancelled"]];
@@ -244,14 +244,14 @@ function projectForm(id=null){
   const patch={name,companyId:co,siteId,stage:v(fd,"stage"),owner:v(fd,"owner")};
   if(old)Object.assign(old,patch);
   else db.projects.push({id:next("PR-",db.projects),customerId:c.id,...patch});
-  saved(c,old?"Project updated":"Project added","sites");
+  saved(c,(old?"Project updated":"Project added")+": "+name,"sites");
  },"Save project (demo)");
 }
 function archiveCustomer(){
  const c=cust(state.selected);if(!c)return;
  if(c.status==="Archived"){
   show("Restore Customer",c.name+" · restore historical customer",'<div class="ma4-dialog-warning">Restoration is a demo. Production must verify permission and preserve an audit trail.</div>',()=>{
-   c.status=c.beforeArchive||"Active";delete c.beforeArchive;saved(c,"Customer restored","overview");
+   c.status=c.beforeArchive||"Active";delete c.beforeArchive;saved(c,"Customer restored: "+c.name,"overview");
   },"Restore (demo)");return;
  }
  const blocking=related(c.id).filter(r=>(r.type==="Opportunity"&&!["Lost","Closed","Cancelled"].includes(r.status))||(r.type==="Quotation"&&["Draft","Sent","Awaiting Approval"].includes(r.status)));
@@ -259,7 +259,7 @@ function archiveCustomer(){
   message("Archive blocked",'<b>'+esc(c.name)+'</b> has '+blocking.length+' active opportunity or quotation record(s): '+esc(blocking.map(x=>x.id).join(", "))+'. Resolve those records before archiving. No data was changed.');return;
  }
  show("Archive Customer",c.name+" · non-destructive archive",'<div class="ma4-dialog-warning">Archive keeps buyer, contact, site, project and commercial history. It does not delete records. A real operation requires permission and audit.</div>',()=>{
-  c.beforeArchive=c.status;c.status="Archived";saved(c,"Customer archived","overview");
+  c.beforeArchive=c.status;c.status="Archived";saved(c,"Customer archived: "+c.name,"overview");
  },"Archive (demo)");
 }
 const handlers={"edit-customer":editCustomer,"link-scope":linkScope,"add-company":()=>companyForm(),"add-contact":()=>contactForm(),"add-site":()=>siteForm(),"add-project":()=>projectForm(),"archive-customer":archiveCustomer};
