@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MA-005 — Opportunities &amp; Enquiries | CPQ</title>
+<link rel="stylesheet" href="ma-001.css"><link rel="stylesheet" href="ma-005.css">
+</head>
+<body>
+<div class="layout">
+ <aside class="sidebar">
+  <div class="logo"><span>CP</span><div>CPQ Platform<small>Master Admin Workspace</small></div></div>
+  <nav class="nav" aria-label="CPQ navigation">
+   <div class="nav-title">Workspace</div>
+   <a class="nav-link" href="ma-001-dashboard.html">▦ &nbsp; Dashboard</a>
+   <div class="nav-title">Organization &amp; People</div>
+   <a class="nav-link" href="ma-002-organization.html">▤ &nbsp; Companies &amp; Branches</a>
+   <a class="nav-link" href="ma-003-users-roles.html">♙ &nbsp; Users, Roles &amp; Access</a>
+   <div class="nav-title">Business Records</div>
+   <a class="nav-link" href="ma-004-customers.html">◉ &nbsp; Customers <small>MA-004</small></a>
+   <a class="nav-link active" href="ma-005-opportunities.html" aria-current="page">◇ &nbsp; Opportunities <small>MA-005</small></a>
+   <button class="nav-link" type="button" data-planned="Quotation Register &amp; Builder">▣ &nbsp; Quotations</button>
+   <button class="nav-link" type="button" data-planned="Vendor RFQs">⇄ &nbsp; Vendor RFQs</button>
+   <button class="nav-link" type="button" data-planned="Orders">☷ &nbsp; Orders</button>
+   <div class="nav-title">Controls</div>
+   <button class="nav-link" type="button" data-planned="Approval Policies">✓ &nbsp; Approval Policies</button>
+   <button class="nav-link" type="button" data-planned="Commercial Settings">⚙ &nbsp; Commercial Settings</button>
+   <button class="nav-link" type="button" data-planned="Reports">▥ &nbsp; Reports</button>
+  </nav>
+  <div class="sidebar-foot"><b>Master Admin · Demo</b><p>Page and action access, company/branch assignments and record scope are separate MA-003 decisions. Filters in this wireframe are previews, not security controls.</p></div>
+ </aside>
+ <div class="app">
+  <header class="top"><div>CPQ Workspace / <b>Opportunities &amp; Enquiries</b></div><span class="avatar">MA</span></header>
+  <main class="page ma5-page">
+   <div class="hero">
+    <div><div class="overline">MASTER ADMIN / MA-005</div><h1>Opportunities &amp; Enquiries</h1><p class="muted">Capture customer requirements, qualify potential work, manage follow-ups and hand over to quotation preparation.</p></div>
+    <div class="actions"><a class="btn" href="ma-004-customers.html">Customer Master</a><a class="btn" href="#opportunity-workspace">Browse enquiries</a><button class="btn primary" type="button" id="add-enquiry">+ New Enquiry</button></div>
+   </div>
+   <div class="info"><b>WIREFRAME · Fictional opportunity records.</b> This page demonstrates structure and workflow only. There is no live lead ingestion, database, file storage, notification delivery, quotation issuance or production authorization. Demo edits reset on refresh.</div>
+   <details class="ma5-context">
+    <summary>Where does an enquiry fit in CPQ? <span>View workflow</span></summary>
+    <div class="ma5-steps"><div><b>1. Customer</b><small>MA-004 · buyer/contact/site</small></div><i>→</i><div><b>2. Enquiry</b><small>MA-005 · requirements and qualification</small></div><i>→</i><div><b>3. Quotation</b><small>Separate quote/BOQ, pricing and approval</small></div><i>→</i><div><b>4. Outcome</b><small>Response and authorized order process</small></div></div>
+   </details>
+   <section id="opportunity-stats" class="ma5-stats" aria-label="Opportunity summary"></section>
+   <section class="card ma5-scope" aria-label="Company and branch scope">
+    <div class="ma5-scope-heading"><div><h2>Internal company / branch context</h2><p class="muted">Show the pipeline for the company and branch handling the enquiry. This filter does not grant access.</p></div><span class="ma5-tag">Scope preview</span></div>
+    <div class="ma5-scope-grid">
+     <div><label for="company-filter">Our legal entity</label><select id="company-filter"><option value="all">All authorized internal companies</option></select></div>
+     <div><label for="branch-filter">Our branch</label><select id="branch-filter"><option value="all">All authorized branches</option></select></div>
+     <button class="btn" type="button" id="reset-all">Reset filters</button>
+    </div>
+   </section>
+   <section class="card ma5-pipeline" aria-label="Opportunity pipeline">
+    <div class="ma5-section-heading"><div><h2>Enquiry pipeline</h2><p class="muted">Select a stage to filter the register. Pipeline stages shown here are proposed for design review.</p></div><button class="btn" type="button" id="clear-stage">Show all stages</button></div>
+    <div id="pipeline-stages" class="ma5-stage-list"></div>
+    <p class="ma5-stage-note">An opportunity stage is not a quotation approval, customer acceptance or confirmed order. Quotation and order statuses are maintained separately.</p>
+   </section>
+   <div id="opportunity-workspace" class="ma5-workspace">
+    <section class="card ma5-directory" aria-label="Enquiry register">
+     <div class="ma5-directory-head"><div><h2>Enquiry register</h2><p class="muted">Select an opportunity to review</p></div><span class="chip" id="register-count">0 shown</span></div>
+     <div class="ma5-register-controls">
+      <div><label for="search-filter">Search enquiry</label><input type="search" id="search-filter" placeholder="Reference, customer, title or owner"></div>
+      <div class="ma5-register-grid">
+       <div><label for="priority-filter">Priority</label><select id="priority-filter"><option value="all">All priorities</option><option>High</option><option>Medium</option><option>Low</option></select></div>
+       <div><label for="owner-filter">Owner</label><select id="owner-filter"><option value="all">All owners</option></select></div>
+      </div>
+     </div>
+     <div id="register-list" class="ma5-register-list" aria-live="polite"></div>
+     <div class="ma5-register-foot">Five seeded sample opportunities are consistent with the MA-001 dashboard. Record visibility and sensitive information require production authorization.</div>
+    </section>
+    <section class="ma5-detail" aria-label="Selected opportunity">
+     <div class="card ma5-detail-hero" id="opportunity-head"></div>
+     <div class="card ma5-detail-card">
+      <div id="detail-tabs" class="ma5-tabs" role="tablist" aria-label="Opportunity sections">
+       <button type="button" role="tab" aria-selected="true" data-tab="overview" class="active">Overview</button>
+       <button type="button" role="tab" aria-selected="false" data-tab="requirements">Requirements</button>
+       <button type="button" role="tab" aria-selected="false" data-tab="stakeholders">Customer &amp; Scope</button>
+       <button type="button" role="tab" aria-selected="false" data-tab="followups">Follow-ups</button>
+       <button type="button" role="tab" aria-selected="false" data-tab="quotations">Quotations &amp; Files</button>
+       <button type="button" role="tab" aria-selected="false" data-tab="activity">Activity</button>
+      </div>
+      <div id="detail-body" class="ma5-detail-body" role="tabpanel" aria-live="polite"></div>
+     </div>
+    </section>
+   </div>
+   <div class="ma5-bottom-note"><b>Proposed data relationship:</b> Internal company + branch → authorized employee → customer account → buyer identity → optional contact/site/project → enquiry → one or more linked quotations. The enquiry records requirements and next actions, not approved pricing or financial commitments. Future development must enforce company/branch scope, controlled stage transitions and immutable activity history.</div>
+   <footer class="footer">CPQ · MA-005 Opportunities &amp; Enquiries · Wireframe only · No production backend</footer>
+  </main>
+ </div>
+</div>
+<div id="overlay" class="overlay" aria-hidden="true">
+ <div class="dialog ma5-dialog" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="ma5-dialog-head"><div><h2 id="modal-title">Opportunity</h2><p class="muted" id="modal-subtitle"></p></div><button type="button" id="modal-close" class="btn" aria-label="Close">×</button></div>
+  <div id="modal-body" class="ma5-modal-body"></div>
+  <div class="ma5-dialog-actions"><button class="btn" id="modal-cancel" type="button">Cancel</button><button class="btn primary" id="modal-save" type="button">Save demo</button></div>
+ </div>
+</div>
+<div id="toast" role="status" class="ma5-toast" aria-live="polite" hidden></div>
+<script src="ma-002-data.js"></script>
+<script src="ma-003-data.js"></script>
+<script src="ma-004-data.js"></script>
+<script src="ma-001-data.js"></script>
+<script src="ma-005-data.js"></script>
+<script src="ma-005-app.js"></script>
+<script src="ma-005-actions.js"></script>
+</body>
+</html>
