@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MA-006 — Quotations, Configuration & BOQ | CPQ Platform</title>
+<link rel="stylesheet" href="ma-001.css">
+<link rel="stylesheet" href="ma-006.css">
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="logo"><span>CP</span><div>CPQ Platform<small>Master Admin Workspace</small></div></div>
+    <nav class="nav" aria-label="CPQ navigation">
+      <div class="nav-title">Workspace</div>
+      <a class="nav-link" href="ma-001-dashboard.html">▦ &nbsp; Dashboard</a>
+      <div class="nav-title">Organization &amp; People</div>
+      <a class="nav-link" href="ma-002-organization.html">▤ &nbsp; Companies &amp; Branches</a>
+      <a class="nav-link" href="ma-003-users-roles.html">♙ &nbsp; Users, Roles &amp; Access</a>
+      <div class="nav-title">Business Records</div>
+      <a class="nav-link" href="ma-004-customers.html">◉ &nbsp; Customers <small>MA-004</small></a>
+      <a class="nav-link" href="ma-005-opportunities.html">◇ &nbsp; Opportunities <small>MA-005</small></a>
+      <a class="nav-link active" href="ma-006-quotations.html" aria-current="page">▣ &nbsp; Quotations <small>MA-006</small></a>
+      <button class="nav-link" type="button" data-planned="Vendor RFQs">⇄ &nbsp; Vendor RFQs</button>
+      <button class="nav-link" type="button" data-planned="Orders">☷ &nbsp; Orders</button>
+      <div class="nav-title">Controls</div>
+      <button class="nav-link" type="button" data-planned="Product Catalog & Configuration Rules">⚙ &nbsp; Product Catalog &amp; Rules</button>
+      <button class="nav-link" type="button" data-planned="Approval Policies">✓ &nbsp; Approval Policies</button>
+      <button class="nav-link" type="button" data-planned="Commercial Settings">⚙ &nbsp; Commercial Settings</button>
+      <button class="nav-link" type="button" data-planned="Reports">▥ &nbsp; Reports</button>
+    </nav>
+    <div class="sidebar-foot"><b>Master Admin · Wireframe</b><p>Permissions, authorized price lists, sensitive costs, discounts, engineering rules and approvals require separate backend policy checks. Demo selections are not approved offers.</p></div>
+  </aside>
+  <div class="app">
+    <header class="top"><div>CPQ Workspace / <b>Quotations, Configuration &amp; BOQ</b></div><span class="avatar">MA</span></header>
+    <main class="page ma6-page">
+      <div class="hero">
+        <div>
+          <div class="overline">MASTER ADMIN / MA-006</div>
+          <h1>Quotations, Configuration &amp; BOQ</h1>
+          <p class="muted">Configure products, build the bill of quantities, apply illustrative pricing and prepare a controlled customer offer.</p>
+        </div>
+        <div class="actions">
+          <a class="btn" href="ma-005-opportunities.html">Opportunities</a>
+          <a class="btn" href="#quote-register">Quotation Register</a>
+          <button class="btn primary" type="button" id="new-quote">+ New Quotation</button>
+        </div>
+      </div>
+      <div class="info"><b>WIREFRAME ONLY · Fictional commercial values.</b> No product engineering validation, authoritative price list, tax determination, real discount approval, PDF issuance, email, database or order creation. This public demonstration resets on refresh. Never enter real customer, tax, price or confidential margin data.</div>
+      <section class="ma6-explainer" aria-label="Configure, price and quote">
+        <div class="ma6-explain"><span class="ma6-circle">C</span><div><b>Configuration</b><small>Select the product, attributes, options and compatible components.</small></div></div>
+        <div class="ma6-explain"><span class="ma6-circle">P</span><div><b>BOQ &amp; Pricing</b><small>Review quantities, selling rates, discounts, tax assumptions and totals.</small></div></div>
+        <div class="ma6-explain"><span class="ma6-circle">Q</span><div><b>Quotation</b><small>Review terms and approvals, retain revisions and prepare a customer-facing offer.</small></div></div>
+      </section>
+      <section class="ma6-stats" id="quote-stats" aria-label="Quotation summary"></section>
+      <section class="card ma6-scope" aria-label="Company and branch scope">
+        <div class="ma6-section-heading"><div><h2>Internal company / branch context</h2><p class="muted">Narrow the quotation register to the selling company and branch. Filtering is not a permission grant.</p></div><span class="ma6-chip">Scope preview</span></div>
+        <div class="ma6-scope-grid">
+          <div><label for="company-filter">Our legal entity</label><select id="company-filter"><option value="all">All authorized internal companies</option></select></div>
+          <div><label for="branch-filter">Our branch</label><select id="branch-filter"><option value="all">All authorized branches</option></select></div>
+          <button type="button" class="btn" id="reset-filters">Reset filters</button>
+        </div>
+      </section>
+      <section class="ma6-workspace" id="quote-register">
+        <section class="card ma6-list-panel" aria-label="Quotation register">
+          <div class="ma6-list-heading"><div><h2>Quotation Register</h2><p class="muted">Select a quotation to inspect</p></div><span class="chip" id="quote-count">7 shown</span></div>
+          <div class="ma6-filter-fields">
+            <div><label for="quote-search">Search</label><input type="search" id="quote-search" placeholder="Quote ID, buyer, customer or title"></div>
+            <div class="ma6-two-cols">
+              <div><label for="quote-status-filter">Status</label><select id="quote-status-filter"><option value="all">All statuses</option></select></div>
+              <div><label for="quote-owner-filter">Owner</label><select id="quote-owner-filter"><option value="all">All owners</option></select></div>
+            </div>
+          </div>
+          <div id="quote-list" class="ma6-quote-list" aria-live="polite"></div>
+          <div class="ma6-list-note">Buyer identity, quote revision, internal scope and status remain independent. Sample records align with MA-001.</div>
+        </section>
+        <section class="ma6-details" aria-label="Quotation details">
+          <div class="card ma6-detail-header" id="quote-header"></div>
+          <div class="card ma6-detail-panel">
+            <div id="quote-tabs" class="ma6-tabs" role="tablist" aria-label="Quotation sections">
+              <button data-tab="summary" type="button" role="tab" aria-selected="true" class="active">Summary</button>
+              <button data-tab="items" type="button" role="tab" aria-selected="false">Configuration &amp; BOQ</button>
+              <button data-tab="commercial" type="button" role="tab" aria-selected="false">Commercial</button>
+              <button data-tab="approvals" type="button" role="tab" aria-selected="false">Review &amp; Approvals</button>
+              <button data-tab="revisions" type="button" role="tab" aria-selected="false">Versions</button>
+              <button data-tab="documents" type="button" role="tab" aria-selected="false">PDF &amp; Response</button>
+            </div>
+            <div id="quote-tab-body" class="ma6-tab-body" role="tabpanel" aria-live="polite"></div>
+          </div>
+        </section>
+      </section>
+      <section class="ma6-builder card" id="quote-builder" hidden aria-label="Quotation builder">
+        <div class="ma6-builder-head">
+          <div><span class="ma6-eyebrow">MA-006 / Quotation Builder</span><h2 id="builder-title">New quotation</h2><p class="muted" id="builder-subtitle">Draft only · Not a customer offer</p></div>
+          <button type="button" class="btn" id="builder-close">Back to Register</button>
+        </div>
+        <nav class="ma6-stepper" aria-label="Quotation builder steps" id="builder-steps"></nav>
+        <div class="ma6-builder-content" id="builder-body"></div>
+        <div class="ma6-builder-footer">
+          <div class="ma6-builder-hint" id="builder-hint">Changes remain in this browser only.</div>
+          <div class="ma6-builder-actions">
+            <button type="button" class="btn" id="builder-prev">Previous</button>
+            <button type="button" class="btn primary" id="builder-next">Next step</button>
+            <button type="button" class="btn primary" id="builder-save">Save Draft (demo)</button>
+          </div>
+        </div>
+      </section>
+      <section class="ma6-design-note">
+        <b>Proposed module boundary:</b> Configuration uses catalog attributes and validated compatibility rules (future Product Catalog &amp; Rules administration). BOQ/Pricing uses authorized rates and tax logic. A quotation revision stores fixed customer/buyer, scope, lines, pricing, terms and approval history. A quote can be started directly or from an MA-005 opportunity; quote issuance and order registration are separate controlled actions.
+      </section>
+      <footer class="footer">CPQ · MA-006 Quotations, Configuration &amp; BOQ · Design wireframe only · No production backend</footer>
+    </main>
+  </div>
+</div>
+<div class="overlay" id="overlay" aria-hidden="true">
+  <div class="dialog ma6-dialog" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="ma6-dialog-head"><div><h2 id="modal-title">Preview</h2><p id="modal-subtitle" class="muted"></p></div><button id="modal-close" type="button" class="btn" aria-label="Close">×</button></div>
+    <div id="modal-body" class="ma6-dialog-body"></div>
+    <div class="ma6-dialog-foot"><button id="modal-ok" type="button" class="btn primary">Close preview</button></div>
+  </div>
+</div>
+<div class="ma6-toast" id="toast" role="status" aria-live="polite" hidden></div>
+<script src="ma-002-data.js"></script>
+<script src="ma-003-data.js"></script>
+<script src="ma-004-data.js"></script>
+<script src="ma-005-data.js"></script>
+<script src="ma-001-data.js"></script>
+<script src="ma-006-data.js"></script>
+<script src="ma-006-app.js"></script>
+<script src="ma-006-actions.js"></script>
+</body>
+</html>
