@@ -48,10 +48,11 @@ const customerTypeHelp={
  Group:"A parent customer relationship with multiple buyer companies. Start with the first buyer company, then add more in the Customer Companies tab."
 };
 function updateCreateType(){
- const pick=$("f-type"),buyerWrap=$("ma4-first-buyer-wrap"),nameLabel=$("ma4-customer-name-label"),buyerLabel=$("ma4-first-buyer-label"),buyerInput=$("f-buyerName"),industryLabel=$("ma4-industry-label"),help=$("ma4-account-type-help");
+ const pick=$("f-type"),buyerWrap=$("ma4-first-buyer-wrap"),personalFields=$("ma4-personal-fields"),nameLabel=$("ma4-customer-name-label"),buyerLabel=$("ma4-first-buyer-label"),buyerInput=$("f-buyerName"),industryLabel=$("ma4-industry-label"),help=$("ma4-account-type-help");
  if(!pick||!buyerWrap||!buyerInput)return;
  const type=pick.value;
  buyerWrap.hidden=type==="Individual";
+ if(personalFields)personalFields.hidden=type!=="Individual";
  buyerInput.required=type==="Group";
  if(nameLabel)nameLabel.textContent=type==="Individual"?"Customer full name *":type==="Group"?"Group / account name *":"Customer / company name *";
  if(buyerLabel)buyerLabel.textContent=type==="Group"?"First buyer company legal name *":"Buyer legal name (only if different)";
@@ -65,9 +66,10 @@ function createCustomer(){
  const buyerField=field("buyerName","Buyer legal name (only if different)","",false,"text",true)
   .replace('class="ma4-form-item full"','class="ma4-form-item full" id="ma4-first-buyer-wrap"')
   .replace('for="f-buyerName"','id="ma4-first-buyer-label" for="f-buyerName"');
+ const personalFields='<div class="ma4-personal-fields" id="ma4-personal-fields" hidden>'+field("personalEmail","Individual email (example.com only)","",false,"email")+field("personalPhone","Individual phone (fictional)")+'</div>';
  const f=wrap(select("type","1. Customer type",typeOptions,"Company",true)+
   '<div class="ma4-form-item full ma4-type-explanation" id="ma4-account-type-help" role="status">'+esc(customerTypeHelp.Company)+'</div>'+
-  nameField+buyerField+select("status","Relationship status",statusOptions,"Prospect")+
+  nameField+buyerField+personalFields+select("status","Relationship status",statusOptions,"Prospect")+
   industryField+field("owner","Relationship owner")+ownFields()+area("notes","Relationship notes"),
   "Individual, Company and Group customers are supported. Only fictional names and details belong in this public wireframe.");
  show("Add Customer","Choose customer type first, then enter only the relevant details",f,fd=>{
@@ -75,7 +77,8 @@ function createCustomer(){
   if(!["Individual","Company","Group"].includes(type)){invalid("Select a valid customer type.");return;}
   if(!name){invalid("Enter the customer or group name.");return;}
   if(type==="Group"&&!enteredBuyer){invalid("Enter the first buyer company legal name for the group.");return;}
-  const buyerName=type==="Individual"?name:(enteredBuyer||name);
+  const buyerName=type==="Individual"?name:(enteredBuyer||name),personalEmail=v(fd,"personalEmail"),personalPhone=v(fd,"personalPhone");
+  if(type==="Individual"&&personalEmail&&!personalEmail.toLowerCase().endsWith("@example.com")){invalid("Use a fictional @example.com email for an individual in this public demo.");return;}
   if(db.customers.some(x=>x.name.toLowerCase()===name.toLowerCase())||db.companies.some(x=>x.name.toLowerCase()===buyerName.toLowerCase())){
    invalid("A matching customer or buyer identity already exists. Review the directory before creating a duplicate.");return;
   }
@@ -83,7 +86,7 @@ function createCustomer(){
   const id=next("CU-",db.customers),buyerId=next("CC-",db.companies);
   const c={id,name,type,status:v(fd,"status"),industry:v(fd,"industry"),owner:v(fd,"owner"),notes:v(fd,"notes"),links:[{companyId:ourCompany,branchId:ourBranch}],created:"07 Nov 2026 (demo)",updated:"07 Nov 2026 (demo)"};
   db.customers.push(c);
-  db.companies.push({id:buyerId,customerId:id,name:buyerName,kind:type==="Individual"?"Individual":"Head office",primary:true,taxStatus:type==="Individual"?"Not applicable":"Not supplied",city:"",state:"",address:"",billingTerms:"Not configured"});
+  db.companies.push({id:buyerId,customerId:id,name:buyerName,kind:type==="Individual"?"Individual":"Head office",primary:true,taxStatus:type==="Individual"?"Not applicable":"Not supplied",email:type==="Individual"?personalEmail:"",phone:type==="Individual"?personalPhone:"",city:"",state:"",address:"",billingTerms:"Not configured"});
   state.company="all";state.branch="all";state.status="all";state.type="all";state.q="";
   $("customer-search").value="";$("status-filter").value="all";$("type-filter").value="all";state.selected=id;
   saved(c,type==="Individual"?"Individual customer created":type==="Group"?"Customer group created":"Company customer created","overview");
@@ -127,7 +130,7 @@ function companyForm(id=null){
  if(!old&&c.type!=="Group"){message("Single-buyer account",c.type==="Individual"?"An Individual customer has one personal buyer identity. Use <b>Edit buyer details</b> instead.":"A Company customer has one buyer legal entity. Add its branches, sites and projects separately. Use a Group customer when multiple distinct buyer companies are required.");return;}
  const x=old||{name:"",kind:c.type==="Group"?"Group company":"Head office",taxStatus:"Not supplied",city:"",state:"",address:"",billingTerms:""};
  const f=wrap(field("name",personal?"Individual buyer full name":"Buyer legal / trading name",x.name,true,"text",true)+
-  (personal?"":select("kind","Customer entity type",[["Head office","Head office"],["Group company","Group company"],["Subsidiary","Subsidiary"],["Division","Division"]],x.kind)+select("taxStatus","Tax ID verification state",taxOptions,x.taxStatus))+
+  (personal?field("email","Individual email (example.com only)",x.email||"",false,"email")+field("phone","Individual phone (fictional)",x.phone||""):select("kind","Customer entity type",[["Head office","Head office"],["Group company","Group company"],["Subsidiary","Subsidiary"],["Division","Division"]],x.kind)+select("taxStatus","Tax ID verification state",taxOptions,x.taxStatus))+
   field("city","Billing city",x.city)+field("state","Billing state",x.state)+
   area("address","Billing address (fictional)",x.address)+area("billingTerms","Sample billing terms",x.billingTerms),
   personal?"One individual buyer profile. Business registration and tax-identity fields do not apply in this demo. Only fictional billing information is allowed.":"Buyer/legal entities are different from the INTERNAL companies in MA-002. Never enter real tax identifiers in this public wireframe.");
@@ -136,7 +139,8 @@ function companyForm(id=null){
   if(!name){invalid("Enter a buyer name.");return;}
   if(db.companies.some(y=>y.id!==old?.id&&y.name.toLowerCase()===name.toLowerCase())){invalid("A buyer identity with this name already exists.");return;}
   if(personal&&db.customers.some(y=>y.id!==c.id&&y.name.toLowerCase()===name.toLowerCase())){invalid("Another customer account already uses this name.");return;}
-  const patch={name,kind:personal?"Individual":v(fd,"kind"),taxStatus:personal?"Not applicable":v(fd,"taxStatus"),city:v(fd,"city"),state:v(fd,"state"),address:v(fd,"address"),billingTerms:v(fd,"billingTerms")};
+  if(personal&&v(fd,"email")&&!v(fd,"email").toLowerCase().endsWith("@example.com")){invalid("Use a fictional @example.com email in this public demo.");return;}
+  const patch={name,kind:personal?"Individual":v(fd,"kind"),taxStatus:personal?"Not applicable":v(fd,"taxStatus"),email:personal?v(fd,"email"):x.email||"",phone:personal?v(fd,"phone"):x.phone||"",city:v(fd,"city"),state:v(fd,"state"),address:v(fd,"address"),billingTerms:v(fd,"billingTerms")};
   if(old)Object.assign(old,patch);
   else db.companies.push({id:next("CC-",db.companies),customerId:c.id,...patch,primary:companies(c.id).length===0});
   if(personal)c.name=name;
