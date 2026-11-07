@@ -152,25 +152,80 @@ function showEffectivePermissions(id){
  else $("ma3-effective-list").innerHTML='<div class="ma3-empty">No company or branch access assigned.</div>';
 }
 function customRoleForm(source=null,copy=false){
- const base=source&&copy?{...source,id:"",name:source.name+" - Custom",system:false}:source||{name:"",description:"",visibility:"assigned",perms:[],system:false};
- const groups=[...new Set(perms.map(p=>p.group))];
- const fields=groups.map(g=>'<div class="ma3-form-item full"><label>'+esc(g)+'</label><div class="ma3-checkbox-grid">'+perms.filter(x=>x.group===g).map(p=>checkbox("grant",p.id,p.name,base.perms.includes(p.id),p.sensitive?"Sensitive: explicit approval required":"")).join("")+'</div></div>').join("");
- const html='<div class="ma3-dialog-warning">Role templates define actions, not company/branch assignments. New sensitive permissions are examples only, and approval actions still require a separately approved policy.</div>'+
- '<form id="ma3-editor"><div class="ma3-form">'+
- field("name","Role name","text",base.name,true)+
- '<div class="ma3-form-item"><label for="ma3-role-visibility">Record visibility template</label><select name="visibility" id="ma3-role-visibility">'+[["own","Own records"],["assigned","Own / assigned records"],["team","Own / assigned / team records"],["all","All records within assigned branches"]].map(([id,label])=>'<option value="'+id+'"'+(base.visibility===id?' selected':'')+'>'+label+'</option>').join("")+'</select></div>'+
- '<div class="ma3-form-item full"><label for="ma3-role-description">Purpose / description</label><textarea name="description" id="ma3-role-description">'+esc(base.description||"")+'</textarea></div>'+
- fields+'<div class="ma3-form-error" id="ma3-form-error" role="alert"></div></div></form>';
+ if(source?.id==="master"&&!copy){msg("Protected Master Admin role","This built-in system example cannot be edited. Use the copy feature to explore a custom role; real elevated access still requires a separately approved policy.");return;}
  const editing=Boolean(source&&!copy);
- open(editing?"Edit Custom Role":"Create Custom Role","Choose capabilities for an example role",html,()=>{
-  const f=$("ma3-editor");if(!f.reportValidity())return;
-  const fd=new FormData(f),name=String(fd.get("name")||"").trim();
-  if(roles.some(r=>r.name.toLowerCase()===name.toLowerCase()&&r.id!==source?.id)){formError("A role with this name already exists.");return;}
-  const record={name,description:String(fd.get("description")||"").trim(),visibility:String(fd.get("visibility")||"assigned"),perms:[...new Set(fd.getAll("grant"))],system:false};
-  if(source&&!copy){Object.assign(source,record);state.selectedRole=source.id;audit("Custom role updated",record.name);}
-  else{roleCounter+=1;const id="custom"+roleCounter;roles.push({id,...record});state.selectedRole=id;audit("Custom role created",record.name);}
-  close();refreshRoleFilters();render();toast("Custom role saved as an in-memory example.");
- });
+ const base=source&&copy?{...source,id:"",name:source.name+" - Custom",system:false,pages:[...source.pages],perms:[...source.perms]}:
+  source?{...source,pages:[...source.pages],perms:[...source.perms]}:
+  {name:"",description:"",visibility:"assigned",pages:[],perms:[],system:false};
+ const pageGroups=[...new Set(a.pages.map(p=>p.section))];
+ const permissionGroups=[...new Set(perms.map(p=>p.group))];
+ const pageFields=pageGroups.map((g,i)=>{
+  const items=a.pages.filter(p=>p.section===g);
+  return '<details class="ma3-config-group"'+(i===0?' open':'')+'><summary>'+esc(g)+' <small>'+items.length+' pages</small></summary><div class="ma3-checkbox-grid">'+
+   items.map(p=>checkbox("pageGrant",p.id,p.name,base.pages.includes(p.id),p.stage==="Available"?p.code+" · Available":"Planned · no live page yet")).join("")+'</div></details>';
+ }).join("");
+ const capabilityFields=permissionGroups.map((g,i)=>{
+  const items=perms.filter(p=>p.group===g);
+  return '<details class="ma3-config-group"'+(i===0?' open':'')+'><summary>'+esc(g)+' <small>'+items.length+' capabilities</small></summary><div class="ma3-checkbox-grid">'+
+   items.map(p=>checkbox("grant",p.id,p.name,base.perms.includes(p.id),p.sensitive?"Restricted · extra approval needed":"")).join("")+'</div></details>';
+ }).join("");
+ const affected=source&&!copy?users.flatMap(u=>u.assignments.filter(x=>x.roles.includes(source.id)).map(x=>({name:u.name,company:entities.find(e=>e.id===x.companyId)?.name||x.companyId,branches:x.branches.length}))):[];
+ const warning='<div class="ma3-dialog-warning"><b>Role permissions are separate from employee assignments.</b> All grants are limited to a company and its assigned branches. Page access alone does not allow actions. Sensitive fields and final approvals also require independent checks. Nothing here changes a production system.</div>';
+ const roleName=field("name","Role name","text",base.name,true,source?.system&&!copy?'readonly':'');
+ const html=warning+'<form id="ma3-editor"><div class="ma3-form">'+
+  roleName+
+  '<div class="ma3-form-item"><label for="ma3-role-visibility">Record visibility template</label><select name="visibility" id="ma3-role-visibility">'+
+  [["own","Own records"],["assigned","Own / assigned records"],["team","Own / assigned / team records"],["all","All authorized records inside assigned branches"]].map(([id,label])=>'<option value="'+id+'"'+(base.visibility===id?' selected':'')+'>'+label+'</option>').join("")+'</select></div>'+
+  '<div class="ma3-form-item full"><label for="ma3-role-description">Role purpose</label><textarea name="description" id="ma3-role-description">'+esc(base.description||"")+'</textarea></div>'+
+  '<div class="ma3-form-item full"><details class="ma3-config-section" open><summary><span>1. Pages this role can open</span><span class="ma3-config-count" id="ma3-page-count">'+base.pages.length+' of '+a.pages.length+' selected</span></summary>'+
+  '<p class="ma3-scope-intro">These control the menu and direct page access. Planned pages are included for future phases but do not exist yet.</p>'+pageFields+'</details></div>'+
+  '<div class="ma3-form-item full"><details class="ma3-config-section"><summary><span>2. Actions &amp; sensitive data</span><span class="ma3-config-count" id="ma3-action-count">'+base.perms.length+' of '+perms.length+' selected</span></summary>'+
+  '<p class="ma3-scope-intro">Select view/create/edit/archive, quotation actions, RFQs, reports and confidential-data grants. Opening a page does not enable these actions.</p>'+capabilityFields+'</details></div>'+
+  '<div class="ma3-form-item full"><div class="ma3-review-impact"><b>3. Employees and approval impact</b><p>'+(
+   affected.length?'This role is assigned in '+affected.length+' company context(s). Changes would affect '+new Set(affected.map(x=>x.name)).size+' employee(s) wherever this role is assigned, but never grant access to an unassigned company.':
+   'This role currently has no assigned employees. You can assign it to selected companies and branches in Add/Edit Employee.')+
+  '</p></div></div>'+
+  '<div class="ma3-form-error" id="ma3-form-error" role="alert"></div></div></form>';
+ open(editing?"Configure Role — "+source.name:copy?"Copy Role as Custom":"Create Custom Role",editing?"Change the sample role template; review impact before applying":"Choose page access, action grants and record visibility",html,()=>{
+  const form=$("ma3-editor");if(!form.reportValidity())return;
+  const fd=new FormData(form);
+  const name=String(fd.get("name")||"").trim();
+  if(!name){formError("Enter a role name.");return;}
+  if(roles.some(r=>r.name.toLowerCase()===name.toLowerCase()&&r.id!==(editing?source.id:""))){formError("A role with this name already exists.");return;}
+  const chosenPages=[...new Set(fd.getAll("pageGrant").map(String).filter(id=>a.pages.some(p=>p.id===id)))];
+  const chosenActions=[...new Set(fd.getAll("grant").map(String).filter(id=>perms.some(p=>p.id===id)))];
+  if(!chosenPages.length){formError("Grant access to at least one page, or cancel the role setup.");return;}
+  const visibility=String(fd.get("visibility")||"assigned");
+  if(!["own","assigned","team","all"].includes(visibility)){formError("Choose a valid record visibility template.");return;}
+  const record={name,description:String(fd.get("description")||"").trim(),visibility,pages:chosenPages,perms:chosenActions,system:editing?source.system:false};
+  const oldPages=editing?source.pages:[],oldActions=editing?source.perms:[];
+  const added=(before,after,lookup)=>after.filter(id=>!before.includes(id)).map(lookup);
+  const removed=(before,after,lookup)=>before.filter(id=>!after.includes(id)).map(lookup);
+  const pageLabel=id=>a.pageBy(id)?.name||id;
+  const actionLabel=id=>perms.find(p=>p.id===id)?.name||id;
+  const diff=(title,arr,sign)=>'<div class="ma3-review-diff"><b>'+esc(title)+' ('+arr.length+')</b><div>'+(arr.length?arr.map(x=>'<span class="ma3-review-pill '+(sign==='+'?'added':'removed')+'">'+sign+' '+esc(x)+'</span>').join(""):'<span class="ma3-review-none">None</span>')+'</div></div>';
+  const sensitive=chosenActions.filter(id=>perms.some(p=>p.id===id&&p.sensitive));
+  const review='<div class="ma3-dialog-warning"><b>Review before applying this demo change.</b> Configuration affects the selected role template. Existing employees retain their own company/branch assignments; no production permissions or records are changed.</div>'+
+   '<div class="ma3-review-card"><b>'+esc(name)+'</b><small>'+chosenPages.length+' pages · '+chosenActions.length+' capabilities · '+esc(visibility)+' record scope</small></div>'+
+   diff("Pages added",added(oldPages,chosenPages,pageLabel),"+")+
+   diff("Pages removed",removed(oldPages,chosenPages,pageLabel),"-")+
+   diff("Actions granted",added(oldActions,chosenActions,actionLabel),"+")+
+   diff("Actions revoked",removed(oldActions,chosenActions,actionLabel),"-")+
+   '<div class="ma3-review-impact"><b>Employees in scope</b><p>'+(affected.length?esc([...new Set(affected.map(x=>x.name+" — "+x.company))].join("; ")):'No employee assignments yet.')+'</p>'+
+   '<p><b>Restricted grants selected:</b> '+(sensitive.length?esc(sensitive.map(actionLabel).join(", ")):'None')+'. Sensitive permissions, quote issuance and approvals still require separate authorizations and policy checks in production.</p></div>';
+  open("Confirm Role Configuration","Inspect proposed page and action changes before saving",review,()=>{
+   if(editing){Object.assign(source,record);state.selectedRole=source.id;audit("Role page & action policy updated",record.name+" · "+record.pages.length+" pages / "+record.perms.length+" actions");}
+   else{roleCounter+=1;const id="custom"+roleCounter;roles.push({id,...record});state.selectedRole=id;audit("Custom role created",record.name+" · "+record.pages.length+" pages / "+record.perms.length+" actions");}
+   state.roleView="pages";close();refreshRoleFilters();render();toast("Role page and action policy updated on this demo page only.");
+  },"Confirm demo changes");
+ },"Review changes");
+ const updateCounters=()=>{
+  const pagesSelected=$("ma3-editor").querySelectorAll('input[name="pageGrant"]:checked').length;
+  const actionsSelected=$("ma3-editor").querySelectorAll('input[name="grant"]:checked').length;
+  $("ma3-page-count").textContent=pagesSelected+" of "+a.pages.length+" selected";
+  $("ma3-action-count").textContent=actionsSelected+" of "+perms.length+" selected";
+ };
+ $("ma3-editor").addEventListener("change",updateCounters);
  $("ma3-editor").addEventListener("submit",e=>{e.preventDefault();saveHandler?.()});
 }
 function updateAccountStatus(id){
