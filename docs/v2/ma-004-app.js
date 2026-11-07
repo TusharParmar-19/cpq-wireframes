@@ -70,7 +70,7 @@ function legalCompanies(c){
  const items=companies(c.id),editable=c.status!=="Archived",personal=c.type==="Individual";
  const headingText=personal?"Individual buyer & billing":c.type==="Group"?"Group buyer companies":"Customer buyer companies";
  const help=personal?"One personal buyer identity; optional billing address. No business registration or tax ID is required here.":"Select the correct buyer/legal company when issuing a quotation. A group can contain multiple distinct buying entities.";
- const action=!editable||personal?"":"add-company",actionLabel=c.type==="Group"?"+ Add group company":"+ Add buyer company";
+ const action=editable&&c.type==="Group"?"add-company":"",actionLabel="+ Add group company";
  return panel(headingText,help,action,actionLabel)+
  '<div class="ma4-card-grid">'+items.map(x=>
  '<article class="ma4-small-card"><h4>'+esc(x.name)+'</h4>'+
@@ -81,7 +81,8 @@ function legalCompanies(c){
  (x.primary||personal?'':'<button type="button" class="btn" data-primary-company="'+esc(x.id)+'">Set primary</button>')+'</div>':'')+
  '</article>').join("")+'</div>'+
  info(personal?'An individual is the buyer. You can record a billing address without creating a fake company or an additional contact. Issued commercial documents retain the buyer details used at issuance.':
- 'Customer legal entities are separate from your internal MA-002 companies. Each issued quotation preserves the exact buyer legal identity and its revision snapshot. Real tax-ID verification is a production requirement.');
+ c.type==="Company"?'A Company customer uses one buyer legal entity. Add different branches, sites and projects in their dedicated tab. Use a Group customer when multiple separate legal buyer companies must be managed together.':
+ 'Group buyer companies are separate from your internal MA-002 companies. Add additional legal buyers as needed; each issued quotation preserves the selected buyer identity and revision snapshot.');
 }
 
 function contactsTab(c){
