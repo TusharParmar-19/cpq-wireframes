@@ -121,7 +121,7 @@ function quotations(o){
  return panel("Linked quotations and evidence","Opportunity references only; the quotation editor and document storage belong to separate modules.","prepare","Prepare quotation")+
  '<div class="ma5-subhead"><h4>Quotation references ('+qs.length+')</h4></div>'+
  (qs.length?'<div class="ma5-table-wrap"><table class="ma5-table"><thead><tr><th>Quotation</th><th>Status</th><th>Revision</th><th>Action</th></tr></thead><tbody>'+qs.map(q=>
- '<tr><td><strong>'+esc(q.id)+'</strong></td><td>'+esc(q.status)+'</td><td>'+esc(q.revision)+'</td><td><button type="button" class="btn" data-quote="'+esc(q.id)+'">Planned page</button></td></tr>').join("")+'</tbody></table></div>':
+ '<tr><td><strong>'+esc(q.id)+'</strong></td><td>'+esc(q.status)+'</td><td>'+esc(q.revision)+'</td><td><a class="btn" href="ma-006-quotations.html?quote='+encodeURIComponent(q.id)+'">View MA-006</a></td></tr>').join("")+'</tbody></table></div>':
  '<div class="ma5-empty">No quotation has been specifically linked to this opportunity.</div>')+
  '<div class="ma5-subhead"><h4>Requirement documents / source evidence ('+files.length+')</h4><button class="btn" type="button" data-action="files">Document workflow</button></div>'+
  (files.length?'<div class="ma5-cards">'+files.map(f=>
