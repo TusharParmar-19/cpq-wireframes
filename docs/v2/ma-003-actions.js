@@ -204,7 +204,9 @@ const presets={
 "sales-own":{user:"U002",action:"quotes.view",company:"e1",branch:"e1a",relation:"own"},
 "sales-other-branch":{user:"U002",action:"quotes.view",company:"e1",branch:"e1s",relation:"own"},
 "sales-margin":{user:"U002",action:"margin.view",company:"e1",branch:"e1a",relation:"own"},
-"finance-margin":{user:"U007",action:"margin.view",company:"e1",branch:"e1a",relation:"assigned"}
+"finance-margin":{user:"U007",action:"margin.view",company:"e1",branch:"e1a",relation:"assigned"},
+"manager-reports-a":{user:"U004",action:"reports.view",company:"e1",branch:"e1a",relation:"team"},
+"manager-reports-b":{user:"U004",action:"reports.view",company:"e2",branch:"e2a",relation:"own"}
 };
 document.addEventListener("click",event=>{
  const t=event.target.closest("[data-select-user],[data-edit-user],[data-toggle-user],[data-effective-user],[data-preview-for],[data-select-role],[data-edit-role],[data-copy-role],[data-scenario],[data-planned]");
