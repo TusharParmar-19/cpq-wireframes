@@ -212,7 +212,5 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{ou
 .ma3-review-dependency{margin-top:12px;padding:12px 14px;border:1px solid #d8e5ed;border-radius:8px;background:#f8fbfd}
 .ma3-review-dependency.has-issues{border-color:#eac9bd;background:#fff5f0;color:#944d3d}
 .ma3-review-dependency.has-issues b{color:#944d3d}
-.ma3-review-blocker{margin:13px 0;padding:13px 14px;border-radius:8px;border:1px solid #e5ad9e;background:#fff0eb;color:#92402f;font-size:12px;line-height:1.6}
-.ma3-review-blocker b{font-weight:850}
 .ma3-dialog #modal-save:disabled{background:#dfe6ec;border-color:#dfe6ec;color:#657987;cursor:not-allowed;opacity:1;filter:none}
 @media(max-width:650px){.ma3-dialog>.dialog-head,.ma3-dialog>#modal-body,.ma3-dialog-actions,.ma3-dialog-tools{padding-left:15px;padding-right:15px}.ma3-dialog-tools select{min-width:0}}
