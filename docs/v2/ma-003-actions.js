@@ -44,64 +44,96 @@ function checkbox(name,id,label,checked=false,meta=""){
  return '<label class="ma3-checklabel"><input type="checkbox" name="'+esc(name)+'" value="'+esc(id)+'"'+(checked?' checked':'')+'><span>'+esc(label)+(meta?'<br><span class="ma3-branch-meta">'+esc(meta)+'</span>':'')+'</span></label>';
 }
 function employeeForm(u=null){
- const creating=!u,person=u||{name:"",email:"",mobile:"",designation:"",department:"",roles:[],branches:[],status:"Invited"};
- const roleHtml=roles.map(r=>checkbox("role",r.id,r.name,person.roles.includes(r.id))).join("");
- const locHtml=entities.map(e=>'<div class="ma3-form-item full"><label>'+esc(e.name)+'</label><div class="ma3-checkbox-grid">'+e.branches.map(b=>checkbox("branch",b.id,b.name,person.branches.includes("*")||person.branches.includes(b.id),b.city)).join("")+'</div></div>').join("");
- const all=person.branches.includes("*");
- const notice='<div class="ma3-dialog-warning">This is a browser-only example. Real employees will activate their account through a secure invitation/password-setup process. No email is sent and no password is collected here.</div>';
+ const creating=!u;
+ const person=u||{name:"",email:"",mobile:"",designation:"",department:"",roles:[],branches:[],assignments:[],status:"Invited"};
+ const scopeHtml=entities.map(e=>{
+  const assigned=person.assignments.find(a=>a.companyId===e.id)||{roles:[],branches:[]};
+  const rolesHtml=roles.map(r=>checkbox("scopeRole",e.id+":"+r.id,r.name,assigned.roles.includes(r.id))).join("");
+  const branchesHtml=e.branches.map(b=>checkbox("scopeBranch",e.id+":"+b.id,b.name,assigned.branches.includes(b.id),b.city)).join("");
+  return '<fieldset class="ma3-scope-card"><legend>'+esc(e.name)+'</legend>'+
+   '<div class="ma3-scope-help">Choose roles and branches for this company only. Leave both empty to grant no access.</div>'+
+   '<div class="ma3-scope-heading">Roles in '+esc(e.name)+'</div><div class="ma3-checkbox-grid">'+rolesHtml+'</div>'+
+   '<div class="ma3-scope-heading">Allowed operating branches</div><div class="ma3-checkbox-grid">'+branchesHtml+'</div></fieldset>';
+ }).join("");
+ const notice='<div class="ma3-dialog-warning">Browser-only example. Real employees activate through a secure invitation. Each company has its own selected roles and branches: a manager role in Company A does not automatically apply in Company B. No email is sent or password collected.</div>';
  const html=notice+'<form id="ma3-editor"><div class="ma3-form">'+
  field("name","Employee full name","text",person.name,true)+
  field("email","Work email","email",person.email,true)+
  field("mobile","Mobile number","tel",person.mobile)+
  field("designation","Designation","text",person.designation)+
  field("department","Department","text",person.department)+
- '<div class="ma3-form-item"><label>Business account</label><input type="text" value="Example Business Group (fixed)" readonly><small>Tenant cannot be expanded using roles or branch filters.</small></div>'+
- '<div class="ma3-form-item full"><label>Roles (select one or more) *</label><div class="ma3-checkbox-grid">'+roleHtml+'</div><small>Multiple roles combine their action grants. Confidential grants remain separate and all actions stay scoped to assigned branches.</small></div>'+
- '<div class="ma3-form-item full"><label>Legal entity &amp; branch assignments *</label><div class="ma3-checkbox-grid">'+checkbox("allScope","*", "All branches inside this business account (explicit broad grant)",all,"For Master Admin / Owner example only")+'</div></div>'+
- locHtml+
+ '<div class="ma3-form-item"><label>Business account</label><input type="text" value="Example Business Group (fixed)" readonly><small>Employee access cannot leave this business account.</small></div>'+
+ '<div class="ma3-form-item full"><label>Company-specific role &amp; branch assignments *</label>'+
+ '<p class="ma3-scope-intro">For each company select one or more roles AND one or more branches. Roles are never automatically copied into another company.</p>'+
+ scopeHtml+'</div>'+
  (creating?'<div class="ma3-form-item full"><label>Initial account status</label><input type="text" value="Invited — secure account setup required" readonly></div>':
  '<div class="ma3-form-item full"><label>Current status</label><input type="text" value="'+esc(person.status)+' (use the dedicated status action to change)" readonly></div>')+
  '<div class="ma3-form-error" id="ma3-form-error" role="alert"></div>'+
  '</div></form>';
- open(creating?"Add Employee (demo)":"Edit Employee & Access",creating?"Create a fictional employee invitation":"Update example identity, roles and branch scope",html,()=>{
+ open(creating?"Add Employee (demo)":"Edit Employee & Access",creating?"Prepare a fictional employee invitation":"Edit role and branch assignments independently for each company",html,()=>{
   const form=$("ma3-editor");if(!form.reportValidity())return;
-  const formData=new FormData(form);
-  const rolesSelected=formData.getAll("role");
-  const branchesSelected=formData.getAll("branch");
-  const allScopes=formData.getAll("allScope").includes("*");
-  const name=String(formData.get("name")||"").trim();
-  const email=String(formData.get("email")||"").trim().toLowerCase();
-  if(!rolesSelected.length){formError("Assign at least one role.");return;}
-  if(!allScopes&&!branchesSelected.length){formError("Assign at least one operating branch.");return;}
-  if(allScopes&&!rolesSelected.some(id=>id==="master"||id==="owner")){formError("This demo-wide scope is reserved for the Master Admin or Owner example role.");return;}
+  const fd=new FormData(form);
+  const roleValues=fd.getAll("scopeRole").map(String);
+  const branchValues=fd.getAll("scopeBranch").map(String);
+  const name=String(fd.get("name")||"").trim(),email=String(fd.get("email")||"").trim().toLowerCase();
+  const assignments=[];
+  for(const e of entities){
+   const pickedRoles=roles.filter(r=>roleValues.includes(e.id+":"+r.id)).map(r=>r.id);
+   const pickedBranches=e.branches.filter(b=>branchValues.includes(e.id+":"+b.id)).map(b=>b.id);
+   if(pickedRoles.length&&!pickedBranches.length){formError("Select a branch for "+e.name+" or deselect that company's roles.");return;}
+   if(pickedBranches.length&&!pickedRoles.length){formError("Select a role for "+e.name+" or deselect that company's branches.");return;}
+   if(pickedRoles.length)assignments.push({companyId:e.id,branches:pickedBranches,roles:pickedRoles});
+  }
+  if(!assignments.length){formError("Assign at least one role and branch in one company.");return;}
   if(users.some(x=>x.id!==u?.id&&x.email.toLowerCase()===email)){formError("A fictional employee with this email already exists.");return;}
-  if(u&&u.status==="Active"&&u.roles.includes("master")&&!rolesSelected.includes("master")&&users.filter(x=>x.id!==u.id&&x.status==="Active"&&x.roles.includes("master")).length===0){
+  const newRoles=[...new Set(assignments.flatMap(a=>a.roles))];
+  if(u&&u.status==="Active"&&u.roles.includes("master")&&!newRoles.includes("master")&&
+     !users.some(x=>x.id!==u.id&&x.status==="Active"&&x.roles.includes("master"))){
    formError("Cannot remove the final active Master Admin from this business account.");return;
   }
-  const change={name,email,mobile:String(formData.get("mobile")||"").trim(),designation:String(formData.get("designation")||"").trim(),department:String(formData.get("department")||"").trim(),roles:rolesSelected,branches:allScopes?["*"]:branchesSelected,updated:"06 Nov 2026 (demo)"};
-  if(u){Object.assign(u,change);audit("Employee access updated",u.name+" · "+u.id);}
+  const change={name,email,mobile:String(fd.get("mobile")||"").trim(),designation:String(fd.get("designation")||"").trim(),
+   department:String(fd.get("department")||"").trim(),assignments,roles:newRoles,
+   branches:[...new Set(assignments.flatMap(a=>a.branches))],updated:"07 Nov 2026 (demo)"};
+  if(u){Object.assign(u,change);audit("Company role assignments updated",u.name+" · "+u.id);}
   else{
    userCounter+=1;
-   const created={...change,id:"U"+String(userCounter).padStart(3,"0"),created:"06 Nov 2026 (demo)",status:"Invited"};
+   const created={...change,id:"U"+String(userCounter).padStart(3,"0"),created:"07 Nov 2026 (demo)",status:"Invited"};
    users.push(created);state.selectedUser=created.id;state.filters={q:"",role:"all",company:"all",status:"all"};
    $("user-search").value="";$("user-role-filter").value="all";$("user-company-filter").value="all";$("user-status-filter").value="all";
    audit("Employee invitation prepared",created.name+" · "+created.id);
   }
-  close();render();toast("Demo employee information updated on this page only.");
+  close();render();toast("Scoped employee roles updated on this demo page only.");
  });
  $("ma3-editor").addEventListener("submit",e=>{e.preventDefault();saveHandler?.()});
 }
 function showEffectivePermissions(id){
  const u=userBy(id);if(!u)return;
- const grants=a.granted(u),all=a.scopeBranches(u);
- const groups=[...new Set(perms.map(x=>x.group))];
- const groupHtml=groups.map(g=>'<section class="ma3-role-group"><h3>'+esc(g)+'</h3>'+
- perms.filter(x=>x.group===g).map(p=>'<div class="ma3-perm-row"><label>'+esc(p.name)+(p.sensitive?' <span class="ma3-sensitive">· Sensitive</span>':'')+'</label><span class="ma3-tag '+(grants.has(p.id)?"good":"neutral")+'">'+(grants.has(p.id)?"✓ Role grant":"— Not granted")+'</span></div>').join("")+'</section>').join("");
- const companies=[...new Set(all.map(b=>b.companyId))].map(id=>entities.find(x=>x.id===id)?.name||id).join(", ");
- const branches=all.map(b=>b.name).join(", ");
- const html='<div class="ma3-dialog-warning"><b>Employee:</b> '+esc(u.name)+' · '+esc(u.status)+'<br><b>Roles:</b> '+esc(u.roles.map(r=>roleBy(r)?.name||r).join(", "))+'<br><b>Companies:</b> '+esc(companies)+'<br><b>Branches:</b> '+esc(branches)+'</div>'+
- groupHtml+'<div class="ma3-inline-note"><b>How to interpret this:</b> Action grants are combined from assigned roles, but records remain within selected branches and their own/team/assigned relationship. This initial sample applies all selected roles across all assigned branches. If different roles are needed in different companies, their role-to-company assignments must be agreed before development. Sensitive approvals require separate policy checks.</div>';
- open("Effective Permissions — "+u.name,"Read-only sample permissions, not an authorization decision",html,null);
+ const available=u.assignments.flatMap(x=>x.branches.map(b=>({companyId:x.companyId,branchId:b})));
+ const groups=[...new Set(perms.map(p=>p.group))];
+ const entries=available.map(c=>'<option value="'+esc(c.companyId+":"+c.branchId)+'">'+
+  esc(entities.find(e=>e.id===c.companyId)?.name||c.companyId)+' / '+
+  esc(a.branchBy(c.branchId)?.name||c.branchId)+'</option>').join("");
+ const build=(c)=>{
+  const roleIds=a.roleIdsAt(u,c.companyId,c.branchId);
+  const grants=a.granted(u,c.companyId,c.branchId);
+  const groupHtml=groups.map(g=>'<section class="ma3-role-group"><h3>'+esc(g)+'</h3>'+
+   perms.filter(p=>p.group===g).map(p=>'<div class="ma3-perm-row"><label>'+esc(p.name)+(p.sensitive?' <span class="ma3-sensitive">· Sensitive</span>':'')+'</label><span class="ma3-tag '+(grants.has(p.id)?"good":"neutral")+'">'+(grants.has(p.id)?"✓ Role grant":"— Not granted")+'</span></div>').join("")+'</section>').join("");
+  return '<div class="ma3-effective-context"><b>Assigned role(s) in this company:</b> '+esc(roleIds.map(r=>roleBy(r)?.name||r).join(", ")||"None")+
+  '<br><b>Record scope:</b> '+esc(a.visibility(u,c.companyId,c.branchId))+'</div>'+groupHtml+
+  '<div class="ma3-inline-note"><b>Access applies only in this selected company/branch.</b> Roles in another company cannot grant actions here. All record ownership, sensitive-field and approval checks still apply independently in the production backend.</div>';
+ };
+ const html='<div class="ma3-dialog-warning"><b>Employee:</b> '+esc(u.name)+' · '+esc(u.status)+
+ '<br><b>Company assignments:</b> '+esc(u.assignments.map(x=>(entities.find(e=>e.id===x.companyId)?.name||x.companyId)+" = "+x.roles.map(r=>roleBy(r)?.name||r).join(", ")).join(" | "))+
+ '</div><div class="ma3-form-item full"><label for="ma3-effective-scope">View permissions in company / branch</label><select id="ma3-effective-scope">'+entries+'</select></div>'+
+ '<div id="ma3-effective-list"></div>';
+ open("Effective Permissions — "+u.name,"Read-only per-company access preview",html,null);
+ const update=()=>{
+  const [companyId,branchId]=String($("ma3-effective-scope").value).split(":");
+  $("ma3-effective-list").innerHTML=build({companyId,branchId});
+ };
+ if(available.length){$("ma3-effective-scope").value=available[0].companyId+":"+available[0].branchId;
+ $("ma3-effective-scope").addEventListener("change",update);update();}
+ else $("ma3-effective-list").innerHTML='<div class="ma3-empty">No company or branch access assigned.</div>';
 }
 function customRoleForm(source=null,copy=false){
  const base=source&&copy?{...source,id:"",name:source.name+" - Custom",system:false}:source||{name:"",description:"",visibility:"assigned",perms:[],system:false};
