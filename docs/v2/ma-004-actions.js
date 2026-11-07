@@ -124,7 +124,7 @@ function companyForm(id=null){
  const c=cust(state.selected);if(!c||c.status==="Archived")return;
  const personal=c.type==="Individual";
  const old=db.companies.find(x=>x.id===id&&x.customerId===c.id);
- if(personal&&!old){message("Individual buyer profile","An individual customer has one buyer identity, not multiple legal companies. Use <b>Edit buyer details</b> to update the personal billing information.");return;}
+ if(!old&&c.type!=="Group"){message("Single-buyer account",c.type==="Individual"?"An Individual customer has one personal buyer identity. Use <b>Edit buyer details</b> instead.":"A Company customer has one buyer legal entity. Add its branches, sites and projects separately. Use a Group customer when multiple distinct buyer companies are required.");return;}
  const x=old||{name:"",kind:c.type==="Group"?"Group company":"Head office",taxStatus:"Not supplied",city:"",state:"",address:"",billingTerms:""};
  const f=wrap(field("name",personal?"Individual buyer full name":"Buyer legal / trading name",x.name,true,"text",true)+
   (personal?"":select("kind","Customer entity type",[["Head office","Head office"],["Group company","Group company"],["Subsidiary","Subsidiary"],["Division","Division"]],x.kind)+select("taxStatus","Tax ID verification state",taxOptions,x.taxStatus))+
@@ -146,7 +146,7 @@ function companyForm(id=null){
 
 function primaryCompany(id){
  const c=cust(state.selected),x=db.companies.find(y=>y.id===id&&y.customerId===c?.id);
- if(!c||!x||c.status==="Archived"||c.type==="Individual")return;
+ if(!c||!x||c.status==="Archived"||c.type!=="Group")return;
  companies(c.id).forEach(y=>y.primary=y.id===id);
  audit(c,"Primary buyer changed");render();toast("Primary buyer changed · demo only");
 }
