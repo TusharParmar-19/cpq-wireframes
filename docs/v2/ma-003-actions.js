@@ -2,14 +2,18 @@
 (()=>{
 "use strict";
 const a=window.CPQ_MA003,{users,roles,perms,entities,state,$,esc,userBy,roleBy,render}=a;
-let saveHandler=null,restoreFocus=null,userCounter=users.length,roleCounter=0;
+let saveHandler=null,cancelHandler=null,restoreFocus=null,userCounter=users.length,roleCounter=0;
 const branchItems=entities.flatMap(e=>e.branches.map(b=>({id:b.id,companyId:e.id,companyName:e.name,name:b.name})));
 function open(title,subtitle,body,handler=null,label="Save demo"){
  restoreFocus=document.activeElement;
  saveHandler=handler;
+ cancelHandler=null;
  $("modal-title").textContent=title;
  $("modal-subtitle").textContent=subtitle;
  $("modal-body").innerHTML=body;
+ $("modal-body").scrollTop=0;
+ $("modal-tools").innerHTML="";
+ $("modal-tools").hidden=true;
  $("modal-cancel").textContent=handler?"Cancel":"Close";
  $("modal-save").hidden=!handler;
  $("modal-save").textContent=label;
@@ -18,7 +22,7 @@ function open(title,subtitle,body,handler=null,label="Save demo"){
  $("modal-close").focus();
 }
 function close(){
- saveHandler=null;$("overlay").classList.remove("open");
+ saveHandler=null;cancelHandler=null;$("overlay").classList.remove("open");
  $("overlay").setAttribute("aria-hidden","true");
  $("modal-body").innerHTML="";
  if(restoreFocus?.isConnected)restoreFocus.focus();
@@ -151,22 +155,23 @@ function showEffectivePermissions(id){
  $("ma3-effective-scope").addEventListener("change",update);update();}
  else $("ma3-effective-list").innerHTML='<div class="ma3-empty">No company or branch access assigned.</div>';
 }
-function customRoleForm(source=null,copy=false){
+function customRoleForm(source=null,copy=false,restoredDraft=null){
  if(source?.id==="master"&&!copy){msg("Protected Master Admin role","This built-in system example cannot be edited. Use the copy feature to explore a custom role; real elevated access still requires a separately approved policy.");return;}
  const editing=Boolean(source&&!copy);
  const base=source&&copy?{...source,id:"",name:source.name+" - Custom",system:false,pages:[...source.pages],perms:[...source.perms]}:
   source?{...source,pages:[...source.pages],perms:[...source.perms]}:
   {name:"",description:"",visibility:"assigned",pages:[],perms:[],system:false};
+ if(restoredDraft)Object.assign(base,{name:restoredDraft.name,description:restoredDraft.description,visibility:restoredDraft.visibility,pages:[...restoredDraft.pages],perms:[...restoredDraft.perms]});
  const pageGroups=[...new Set(a.pages.map(p=>p.section))];
  const permissionGroups=[...new Set(perms.map(p=>p.group))];
  const pageFields=pageGroups.map((g,i)=>{
   const items=a.pages.filter(p=>p.section===g);
-  return '<details class="ma3-config-group"'+(i===0?' open':'')+'><summary>'+esc(g)+' <small>'+items.length+' pages</small></summary><div class="ma3-checkbox-grid">'+
+  return '<details class="ma3-config-group" data-config-anchor="pages:'+esc(g)+'"'+(i===0?' open':'')+'><summary>'+esc(g)+' <small>'+items.length+' pages</small></summary><div class="ma3-checkbox-grid">'+
    items.map(p=>checkbox("pageGrant",p.id,p.name,base.pages.includes(p.id),p.stage==="Available"?p.code+" · Available":"Planned · no live page yet")).join("")+'</div></details>';
  }).join("");
  const capabilityFields=permissionGroups.map((g,i)=>{
   const items=perms.filter(p=>p.group===g);
-  return '<details class="ma3-config-group"'+(i===0?' open':'')+'><summary>'+esc(g)+' <small>'+items.length+' capabilities</small></summary><div class="ma3-checkbox-grid">'+
+  return '<details class="ma3-config-group" data-config-anchor="actions:'+esc(g)+'"'+(i===0?' open':'')+'><summary>'+esc(g)+' <small>'+items.length+' capabilities</small></summary><div class="ma3-checkbox-grid">'+
    items.map(p=>checkbox("grant",p.id,p.name,base.perms.includes(p.id),p.sensitive?"Restricted · extra approval needed":"")).join("")+'</div></details>';
  }).join("");
  const affected=source&&!copy?users.flatMap(u=>u.assignments.filter(x=>x.roles.includes(source.id)).map(x=>({name:u.name,company:entities.find(e=>e.id===x.companyId)?.name||x.companyId,branches:x.branches.length}))):[];
@@ -177,11 +182,11 @@ function customRoleForm(source=null,copy=false){
   '<div class="ma3-form-item"><label for="ma3-role-visibility">Record visibility template</label><select name="visibility" id="ma3-role-visibility">'+
   [["own","Own records"],["assigned","Own / assigned records"],["team","Own / assigned / team records"],["all","All authorized records inside assigned branches"]].map(([id,label])=>'<option value="'+id+'"'+(base.visibility===id?' selected':'')+'>'+label+'</option>').join("")+'</select></div>'+
   '<div class="ma3-form-item full"><label for="ma3-role-description">Role purpose</label><textarea name="description" id="ma3-role-description">'+esc(base.description||"")+'</textarea></div>'+
-  '<div class="ma3-form-item full"><details class="ma3-config-section" open><summary><span>1. Pages this role can open</span><span class="ma3-config-count" id="ma3-page-count">'+base.pages.length+' of '+a.pages.length+' selected</span></summary>'+
+  '<div class="ma3-form-item full"><details class="ma3-config-section" data-config-anchor="pages" open><summary><span>1. Pages this role can open</span><span class="ma3-config-count" id="ma3-page-count">'+base.pages.length+' of '+a.pages.length+' selected</span></summary>'+
   '<p class="ma3-scope-intro">These control the menu and direct page access. Planned pages are included for future phases but do not exist yet.</p>'+pageFields+'</details></div>'+
-  '<div class="ma3-form-item full"><details class="ma3-config-section"><summary><span>2. Actions &amp; sensitive data</span><span class="ma3-config-count" id="ma3-action-count">'+base.perms.length+' of '+perms.length+' selected</span></summary>'+
-  '<p class="ma3-scope-intro">Select view/create/edit/archive, quotation actions, RFQs, reports and confidential-data grants. Opening a page does not enable these actions.</p>'+capabilityFields+'</details></div>'+
-  '<div class="ma3-form-item full"><div class="ma3-review-impact"><b>3. Employees and approval impact</b><p>'+(
+  '<div class="ma3-form-item full"><details class="ma3-config-section" data-config-anchor="actions"><summary><span>2. Actions &amp; sensitive data</span><span class="ma3-config-count" id="ma3-action-count">'+base.perms.length+' of '+perms.length+' selected</span></summary>'+
+  '<p class="ma3-scope-intro">Select view/create/edit/archive, quotation actions, RFQs, reports and confidential-data grants. Opening a page does not enable these actions.</p><div class="ma3-dependency-summary" id="ma3-dependency-summary" role="status" aria-live="polite" hidden></div>'+capabilityFields+'</details></div>'+
+  '<div class="ma3-form-item full"><div class="ma3-review-impact" data-config-anchor="impact"><b>3. Employees and approval impact</b><p>'+(
    affected.length?'This role is assigned in '+affected.length+' company context(s). Changes would affect '+new Set(affected.map(x=>x.name)).size+' employee(s) wherever this role is assigned, but never grant access to an unassigned company.':
    'This role currently has no assigned employees. You can assign it to selected companies and branches in Add/Edit Employee.')+
   '</p></div></div>'+
@@ -213,22 +218,65 @@ function customRoleForm(source=null,copy=false){
    diff("Actions granted",added(oldActions,chosenActions,actionLabel),"+")+
    diff("Actions revoked",removed(oldActions,chosenActions,actionLabel),"-")+
    '<div class="ma3-review-impact"><b>Employees in scope</b><p>'+(affected.length?esc([...new Set(affected.map(x=>x.name+" — "+x.company))].join("; ")):'No employee assignments yet.')+'</p>'+
-   '<p><b>Actions without an accessible page:</b> '+(inactiveActions.length?esc(inactiveActions.map(actionLabel).join(", ")):'None')+'. These actions cannot be used unless an appropriate page is also granted.</p>'+ 
+   '<div class="ma3-review-dependency'+(inactiveActions.length?' has-issues':'')+'"><b>Action/page dependencies: '+(inactiveActions.length?inactiveActions.length+' ineffective grants':'No missing page access')+'</b><p>'+(inactiveActions.length?esc(inactiveActions.map(id=>actionLabel(id)+' → '+a.pages.filter(pg=>pg.actions.includes(id)).map(pg=>pg.name).join(' / ')).join('; '))+' — grant a relevant page or remove the action. These grants cannot be used as currently configured.':'Every selected action has at least one matching page grant. Planned pages remain unavailable until developed.')+'</p></div>'+ 
    '<p><b>Restricted grants selected:</b> '+(sensitive.length?esc(sensitive.map(actionLabel).join(", ")):'None')+'. Sensitive permissions, quote issuance and approvals still require separate authorizations and policy checks in production.</p></div>';
   open("Confirm Role Configuration","Inspect proposed page and action changes before saving",review,()=>{
    if(editing){Object.assign(source,record);state.selectedRole=source.id;audit("Role page & action policy updated",record.name+" · "+record.pages.length+" pages / "+record.perms.length+" actions");}
    else{roleCounter+=1;const id="custom"+roleCounter;roles.push({id,...record});state.selectedRole=id;audit("Custom role created",record.name+" · "+record.pages.length+" pages / "+record.perms.length+" actions");}
    state.roleView="pages";close();refreshRoleFilters();render();toast("Role page and action policy updated on this demo page only.");
   },"Confirm demo changes");
+  const proposed={name,description:record.description,visibility,pages:[...chosenPages],perms:[...chosenActions]};
+  $("modal-cancel").textContent="Back to editor";
+  cancelHandler=()=>customRoleForm(source,copy,proposed);
  },"Review changes");
+ // Keep this category navigator outside the form's scrollable body.
+ const navOptions='<option value="">Jump to a permission section…</option>'+
+  '<option value="pages">1. All pages</option>'+
+  pageGroups.map(g=>'<option value="pages:'+esc(g)+'">Pages: '+esc(g)+'</option>').join("")+
+  '<option value="actions">2. All actions &amp; data</option>'+
+  permissionGroups.map(g=>'<option value="actions:'+esc(g)+'">Actions: '+esc(g)+'</option>').join("")+
+  '<option value="impact">3. Employee impact</option>';
+ const tools=$("modal-tools");
+ tools.innerHTML='<label for="ma3-role-jump">Jump to</label><select id="ma3-role-jump" aria-label="Jump to role permission section">'+navOptions+'</select><span class="ma3-jump-alert" id="ma3-role-alert" role="status" hidden></span>';
+ tools.hidden=false;
+ $("ma3-role-jump").addEventListener("change",event=>{
+  const anchor=event.target.value;
+  if(!anchor)return;
+  const target=[...$("modal-body").querySelectorAll("[data-config-anchor]")].find(node=>node.dataset.configAnchor===anchor);
+  if(target){
+   const parent=target.closest(".ma3-config-section");
+   if(parent)parent.open=true;
+   if(target.tagName==="DETAILS")target.open=true;
+   const scroll=$("modal-body");
+   scroll.scrollTop+=target.getBoundingClientRect().top-scroll.getBoundingClientRect().top-10;
+  }
+  event.target.value="";
+ });
  const updateCounters=()=>{
-  const pagesSelected=$("ma3-editor").querySelectorAll('input[name="pageGrant"]:checked').length;
-  const actionsSelected=$("ma3-editor").querySelectorAll('input[name="grant"]:checked').length;
-  $("ma3-page-count").textContent=pagesSelected+" of "+a.pages.length+" selected";
-  $("ma3-action-count").textContent=actionsSelected+" of "+perms.length+" selected";
+  const form=$("ma3-editor");
+  const selectedPages=new Set([...form.querySelectorAll('input[name="pageGrant"]:checked')].map(x=>x.value));
+  const selectedActions=new Set([...form.querySelectorAll('input[name="grant"]:checked')].map(x=>x.value));
+  $("ma3-page-count").textContent=selectedPages.size+" of "+a.pages.length+" selected";
+  $("ma3-action-count").textContent=selectedActions.size+" of "+perms.length+" selected";
+  const inactive=[...selectedActions].filter(id=>!a.pages.some(pg=>selectedPages.has(pg.id)&&pg.actions.includes(id)));
+  const warning=$("ma3-dependency-summary");
+  warning.hidden=!inactive.length;
+  warning.innerHTML=inactive.length?'<strong>'+inactive.length+' selected action(s) have no accessible page.</strong>'+
+   '<p>These action grants are currently ineffective. Grant a matching page or uncheck the action. Page grants alone never add action rights.</p><ul>'+
+   inactive.map(id=>{
+    const matching=a.pages.filter(p=>p.actions.includes(id)).map(p=>p.name).join(" / ");
+    const label=perms.find(p=>p.id===id)?.name||id;
+    return '<li><b>'+esc(label)+'</b> — needs '+esc(matching||"a matching page")+'</li>';
+   }).join("")+'</ul>':"";
+  const alert=$("ma3-role-alert");alert.hidden=!inactive.length;
+  alert.textContent=inactive.length+" ineffective action"+(inactive.length===1?"":"s");
+  form.querySelectorAll('input[name="grant"]').forEach(box=>{
+   box.closest(".ma3-checklabel")?.classList.toggle("ma3-dependency-missing",inactive.includes(box.value));
+  });
  };
  $("ma3-editor").addEventListener("change",updateCounters);
  $("ma3-editor").addEventListener("submit",e=>{e.preventDefault();saveHandler?.()});
+ updateCounters();
 }
 function updateAccountStatus(id){
  const u=userBy(id);if(!u)return;
@@ -301,7 +349,7 @@ document.addEventListener("click",event=>{
  if(d.planned){msg(d.name||"Module","This module will be designed separately. No access or business data is modified here.");}
 });
 $("modal-close").addEventListener("click",close);
-$("modal-cancel").addEventListener("click",close);
+$("modal-cancel").addEventListener("click",()=>{if(cancelHandler){const back=cancelHandler;cancelHandler=null;back();}else close();});
 $("modal-save").addEventListener("click",()=>saveHandler?.());
 $("overlay").addEventListener("click",e=>{if(e.target===$("overlay"))close()});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("overlay").classList.contains("open"))close()});
