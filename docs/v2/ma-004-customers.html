@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MA-004 — Customers, Companies &amp; Contacts | CPQ</title>
+<link rel="stylesheet" href="ma-001.css"><link rel="stylesheet" href="ma-004.css">
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar">
+ <div class="logo"><span>CP</span><div>CPQ Platform<small>Master Admin Workspace</small></div></div>
+ <nav class="nav" aria-label="CPQ navigation">
+  <div class="nav-title">Workspace</div>
+  <a class="nav-link" href="ma-001-dashboard.html">▦ &nbsp; Dashboard</a>
+  <div class="nav-title">Organization &amp; People</div>
+  <a class="nav-link" href="ma-002-organization.html">▤ &nbsp; Companies &amp; Branches</a>
+  <a class="nav-link" href="ma-003-users-roles.html">♙ &nbsp; Users, Roles &amp; Access</a>
+  <div class="nav-title">Business Records</div>
+  <a class="nav-link active" href="ma-004-customers.html" aria-current="page">◉ &nbsp; Customers <small>MA-004</small></a>
+  <button class="nav-link" type="button" data-planned="Opportunities">◇ &nbsp; Opportunities</button>
+  <button class="nav-link" type="button" data-planned="Quotations">▣ &nbsp; Quotations</button>
+  <button class="nav-link" type="button" data-planned="Vendor RFQs">⇄ &nbsp; Vendor RFQs</button>
+  <button class="nav-link" type="button" data-planned="Orders">☷ &nbsp; Orders</button>
+  <div class="nav-title">Controls</div>
+  <button class="nav-link" type="button" data-planned="Approval Policies">✓ &nbsp; Approval Policies</button>
+  <button class="nav-link" type="button" data-planned="Commercial Settings">⚙ &nbsp; Commercial Settings</button>
+  <button class="nav-link" type="button" data-planned="Reports">▥ &nbsp; Reports</button>
+ </nav>
+ <div class="sidebar-foot"><b>Master Admin · Demo</b><p>Customer master data belongs to this business account. Access is restricted to separately authorized internal company/branch scopes in production.</p></div>
+</aside>
+<div class="app">
+<header class="top"><div>CPQ Workspace / <b>Customers, Companies &amp; Contacts</b></div><span class="avatar">MA</span></header>
+<main class="page">
+<div class="hero">
+ <div><div class="overline">MASTER ADMIN / MA-004</div><h1>Customers, Companies &amp; Contacts</h1><p class="muted">One customer relationship, multiple customer legal entities, contacts, sites and projects — without mixing them with your internal companies.</p></div>
+ <div class="actions"><a class="btn" href="ma-003-users-roles.html">Roles &amp; Access</a><button type="button" class="btn primary" id="new-customer">+ Add Customer</button></div>
+</div>
+<div class="info"><b>WIREFRAME ONLY · Fictional customer data.</b> All changes stay in this browser page and reset on refresh. There is no database, permission enforcement, email sending or production record creation. Never enter real tax IDs, personal contact details or confidential customer information.</div>
+<div class="ma4-guide">
+ <div class="ma4-guide-card"><span class="ma4-guide-icon">1</span><div><b>Your internal companies &amp; branches</b><p>Set up in <a href="ma-002-organization.html">MA-002</a>. Control employee work context and access.</p></div></div>
+ <span class="ma4-guide-divider">≠</span>
+ <div class="ma4-guide-card"><span class="ma4-guide-icon">2</span><div><b>Your customer's companies &amp; sites</b><p>Managed here. Identify the buyer, billing legal entity, delivery site and contacts.</p></div></div>
+</div>
+<section class="ma4-stats" id="customer-summary" aria-label="Customer summary"></section>
+<section class="card ma4-scope">
+ <div class="ma4-scope-head"><div><h2>Internal company / branch context</h2><p class="muted">Filter customer relationships by the company and branch your team works under. A filter is not a permission grant.</p></div><span class="ma4-tag">Scope preview</span></div>
+ <div class="ma4-scope-fields">
+  <div><label for="internal-company">Our legal entity</label><select id="internal-company"><option value="all">All authorized internal companies</option></select></div>
+  <div><label for="internal-branch">Our branch</label><select id="internal-branch"><option value="all">All authorized branches</option></select></div>
+  <button type="button" class="btn" id="clear-filters">Reset filters</button>
+ </div>
+</section>
+<div class="ma4-workspace">
+ <section class="card ma4-directory" aria-label="Customer directory">
+  <div class="ma4-directory-head"><div><h2>Customer directory</h2><p class="muted">Select an account to inspect</p></div><span class="chip" id="customer-count">0</span></div>
+  <div class="ma4-filters">
+   <div><label for="customer-search">Search</label><input id="customer-search" type="search" placeholder="Customer, company, contact or ID" autocomplete="off"></div>
+   <div class="ma4-filter-row">
+    <div><label for="status-filter">Status</label><select id="status-filter"><option value="all">All statuses</option><option>Active</option><option>Prospect</option><option>On Hold</option><option>Archived</option></select></div>
+    <div><label for="type-filter">Type</label><select id="type-filter"><option value="all">All types</option><option>Group</option><option>Company</option><option>Individual</option></select></div>
+   </div>
+  </div>
+  <div id="customer-list" class="ma4-list" aria-live="polite"></div>
+  <div class="ma4-dir-foot">A customer can be connected to several authorized internal branches, but that does not give every employee access. MA-003 role, record and policy checks still apply.</div>
+ </section>
+ <section class="ma4-detail" aria-label="Selected customer details">
+  <div class="card ma4-detail-header" id="detail-head"></div>
+  <div class="card ma4-detail-card">
+   <div id="detail-tabs" class="ma4-tabs" role="tablist" aria-label="Customer record sections">
+    <button type="button" role="tab" data-tab="overview" aria-selected="true" class="active">Overview</button>
+    <button type="button" role="tab" data-tab="companies" aria-selected="false">Customer Companies</button>
+    <button type="button" role="tab" data-tab="contacts" aria-selected="false">Contacts</button>
+    <button type="button" role="tab" data-tab="sites" aria-selected="false">Sites &amp; Projects</button>
+    <button type="button" role="tab" data-tab="related" aria-selected="false">Related Records</button>
+    <button type="button" role="tab" data-tab="activity" aria-selected="false">Activity</button>
+   </div>
+   <div id="detail-body" class="ma4-detail-body" role="tabpanel" aria-live="polite"></div>
+  </div>
+ </section>
+</div>
+<div class="ma4-bottom-note"><b>Data relationships:</b> Customer account → one or more customer legal entities → contacts / sites / projects → opportunities, quotation revisions and orders. The buyer/legal entity and project site must be captured on each commercial record; existing issued documents keep their original snapshots. Tenant/company/branch access and sensitive fields require backend enforcement during development.</div>
+<footer class="footer">CPQ · MA-004 Customers, Companies &amp; Contacts · Prototype only · No production backend</footer>
+</main></div></div>
+<div class="overlay" id="overlay" aria-hidden="true">
+ <div class="dialog ma4-dialog" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="dialog-head"><div><h2 id="modal-title">Customer details</h2><p id="modal-subtitle" class="muted"></p></div><button type="button" class="btn" id="modal-close" aria-label="Close">×</button></div>
+  <div id="modal-body"></div>
+  <div class="ma4-dialog-actions"><button type="button" class="btn" id="modal-cancel">Cancel</button><button type="button" class="btn primary" id="modal-save">Save demo</button></div>
+ </div>
+</div>
+<div role="status" id="toast" class="ma4-toast" aria-live="polite" hidden></div>
+<script src="ma-002-data.js"></script><script src="ma-004-data.js"></script><script src="ma-004-app.js"></script>
+</body>
+</html>
