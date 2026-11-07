@@ -133,7 +133,7 @@ function showEffectivePermissions(id){
   const pagesHtml='<section class="ma3-role-group"><h3>Role page grants in this company ('+allowedPages.size+')</h3>'+
    '<div class="ma3-effective-pages">'+a.pages.filter(p=>allowedPages.has(p.id)).map(p=>
    '<div class="ma3-page-row"><div><b>'+esc(p.name)+'</b><small>'+esc(p.stage==='Available'?p.code:'Planned screen')+'</small></div>'+
-   '<span class="ma3-tag good">✓ Page grant</span></div>').join('')+'</div>'+
+   '<span class="ma3-tag '+(p.stage==='Planned'?'planned':'good')+'">'+(p.stage==='Planned'?'✓ Access planned':'✓ Can open')+'</span></div>').join('')+'</div>'+
    '<details class="ma3-effective-blocked"><summary>Show '+(a.pages.length-allowedPages.size)+' pages without access</summary>'+
    a.pages.filter(p=>!allowedPages.has(p.id)).map(p=>'<div class="ma3-page-row"><b>'+esc(p.name)+'</b><span class="ma3-tag neutral">— Not granted</span></div>').join('')+'</details></section>';
   const groupHtml=groups.map(g=>'<section class="ma3-role-group"><h3>'+esc(g)+'</h3>'+
