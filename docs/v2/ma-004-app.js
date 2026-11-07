@@ -112,10 +112,13 @@ function relatedTab(c){
  info('Cross-company records must not be combined for an unauthorized employee. Production checks tenant, internal company/branch, record relationship, action and snapshot.');
 }
 function activityTab(c){
- const h=state.history.filter(x=>x.customerId===c.id);
- return panel("Customer activity","Browser-session changes only; not a permanent or legal audit.")+
- '<div class="ma4-activity-item"><b>Fictional account created</b><small>'+esc(c.created)+' · Sample</small></div>'+
- (h.length?h.map(x=>'<div class="ma4-activity-item"><b>'+esc(x.text)+'</b><small>'+esc(x.when)+'</small></div>').join(""):info('No changes have been recorded in this browser session. Real changes require attributed immutable history.'));
+ const events=state.history.filter(x=>x.customerId===c.id);
+ const creationRecorded=events.some(x=>/^(?:customer group|company customer|individual customer) created\b/i.test(x.text));
+ // Historic seed accounts have no session creation event; show one fallback entry at the END.
+ const items=creationRecorded?events:[...events,{text:"Fictional account created",when:c.created+" · Sample"}];
+ return panel("Customer activity","Newest events first. Browser-session demonstration only; not a permanent or legal audit.")+
+ items.map(x=>'<div class="ma4-activity-item"><b>'+esc(x.text)+'</b><small>'+esc(x.when)+'</small></div>').join("")+
+ info('Activity disappears on refresh. Production audit records must also retain the actual actor, time, record ID and the before/after values.');
 }
 function detail(){
  const c=cust(state.selected);
