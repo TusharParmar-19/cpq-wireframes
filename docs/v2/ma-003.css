@@ -88,8 +88,17 @@
 .ma3-checks{display:flex;flex-direction:column;gap:10px}
 .ma3-check{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid #edf1f5;padding-bottom:10px;font-size:12px;color:#4a677c}
 .ma3-check:last-child{border-bottom:0}
-.ma3-dialog{width:min(760px,100%);max-height:min(85vh,880px);overflow-y:auto}
-.ma3-dialog-actions{display:flex;justify-content:flex-end;gap:8px;padding-top:14px;margin-top:15px;border-top:1px solid #e6edf2}
+/* Keep the dialog title, navigation and actions visible while only its content scrolls. */
+.ma3-dialog{width:min(760px,100%);max-height:min(85vh,880px);display:flex;flex-direction:column;overflow:hidden;padding:0}
+.ma3-dialog>.dialog-head{flex:0 0 auto;align-items:center;padding:20px 24px 16px;border-bottom:1px solid #e6edf2;background:#fff}
+.ma3-dialog>#modal-body{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding:15px 24px 20px}
+.ma3-dialog-actions{flex:0 0 auto;display:flex;justify-content:flex-end;gap:8px;padding:14px 24px 16px;margin:0;border-top:1px solid #e6edf2;background:#fff}
+.ma3-dialog-tools{flex:0 0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:10px;background:#f3f8fc;border-bottom:1px solid #dce9f2;padding:10px 24px}
+.ma3-dialog-tools[hidden]{display:none}
+.ma3-dialog-tools label{font-size:11px;font-weight:800;color:#315e7c}
+.ma3-dialog-tools select{flex:1 1 250px;max-width:450px;min-width:175px;border:1px solid #cbdce9;border-radius:7px;background:#fff;padding:9px 10px;color:#224b68;font-size:12px}
+.ma3-jump-alert{background:#fff0e9;border:1px solid #eed1c4;border-radius:6px;color:#9e5141;font-size:11px;font-weight:750;padding:8px 10px}
+.ma3-jump-alert[hidden]{display:none}
 .ma3-dialog-warning{background:#fff8ee;border:1px solid #f2e1c6;border-radius:8px;padding:12px;font-size:12px;color:#8c6236;margin:12px 0;line-height:1.6}
 .ma3-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;margin-top:16px}
 .ma3-form-item{min-width:0}
@@ -189,3 +198,18 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{ou
 .ma3-effective-blocked{border:1px dashed #dae6ee;border-radius:7px;margin-top:10px;padding:9px 12px}
 .ma3-effective-blocked>summary{font-size:11px;font-weight:800;color:#567d98;cursor:pointer;padding:4px}
 @media(max-width:700px){.ma3-role-controls{justify-content:flex-start}.ma3-role-subtabs{overflow-x:auto}.ma3-role-subtabs button{white-space:nowrap}.ma3-impact-stats{grid-template-columns:1fr 1fr}.ma3-config-section>summary{flex-wrap:wrap}}
+
+/* Distinguish a planned permission from a page that is actually available. */
+.ma3-tag.planned{background:#f0f5fb;border-color:#d8e5f0;color:#457494}
+.ma3-result-icon.planned{background:#e9f3fb;color:#376c91}
+.ma3-dependency-summary{margin:10px 14px 14px;padding:13px 14px;border:1px solid #edc8bb;background:#fff6f2;border-radius:8px;color:#8f493a;font-size:12px;line-height:1.55}
+.ma3-dependency-summary[hidden]{display:none}
+.ma3-dependency-summary strong{display:block;font-size:12px;margin-bottom:5px}
+.ma3-dependency-summary p{margin:0 0 6px}
+.ma3-dependency-summary ul{margin:6px 0 0;padding-left:20px}
+.ma3-dependency-summary li+li{margin-top:5px}
+.ma3-checklabel.ma3-dependency-missing{background:#fff6f2;border-color:#e8bdac}
+.ma3-review-dependency{margin-top:12px;padding:12px 14px;border:1px solid #d8e5ed;border-radius:8px;background:#f8fbfd}
+.ma3-review-dependency.has-issues{border-color:#eac9bd;background:#fff5f0;color:#944d3d}
+.ma3-review-dependency.has-issues b{color:#944d3d}
+@media(max-width:650px){.ma3-dialog>.dialog-head,.ma3-dialog>#modal-body,.ma3-dialog-actions,.ma3-dialog-tools{padding-left:15px;padding-right:15px}.ma3-dialog-tools select{min-width:0}}
