@@ -75,7 +75,8 @@ function legalCompanies(c){
  '<div class="ma4-card-grid">'+items.map(x=>
  '<article class="ma4-small-card"><h4>'+esc(x.name)+'</h4>'+
  '<p>'+(personal?'Individual purchaser':esc(x.kind))+' · '+val(x.city)+', '+val(x.state)+'</p>'+
- '<p>'+(personal?'Billing location: ':'Tax verification: '+val(x.taxStatus)+'<br>Billing: ')+val(x.address)+'</p>'+
+ '<p>'+(personal?'Billing location: ':'Tax verification: '+val(x.taxStatus)+'<br>Billing: ')+val(x.address)+'</p>'+ 
+ (personal?'<p>Email: '+val(x.email)+'<br>Phone: '+val(x.phone)+'</p>':'')+
  (x.primary?'<span class="ma4-tag active">'+(personal?'Buyer identity':'Primary buyer')+'</span>':'<span class="ma4-tag neutral">Additional buyer</span>')+
  (editable?'<div class="ma4-subheader"><button type="button" class="btn" data-edit-company="'+esc(x.id)+'">'+(personal?'Edit buyer details':'Edit details')+'</button>'+
  (x.primary||personal?'':'<button type="button" class="btn" data-primary-company="'+esc(x.id)+'">Set primary</button>')+'</div>':'')+
@@ -86,8 +87,9 @@ function legalCompanies(c){
 }
 
 function contactsTab(c){
- const items=contacts(c.id),personal=c.type==="Individual";
+ const items=contacts(c.id),personal=c.type==="Individual",self=companies(c.id)[0];
  return panel(personal?"Authorized / additional contacts":"Contact persons",personal?"Optional representatives associated with this individual customer.":"Each contact belongs to a customer buyer company.",c.status!=="Archived"?"add-contact":"",personal?"+ Add representative":"+ Add contact")+
+ (personal?'<div class="ma4-small-card ma4-person-summary"><h4>Individual purchaser (self)</h4><p>'+esc(c.name)+'<br>Email: '+val(self?.email)+'<br>Phone: '+val(self?.phone)+'</p></div>':'')+
  (items.length?'<div class="ma4-table-scroller"><table class="ma4-table"><thead><tr><th>Contact / role</th><th>Buyer identity</th><th>Email / phone</th><th>Status</th><th></th></tr></thead><tbody>'+
  items.map(x=>'<tr><td><strong>'+esc(x.name)+'</strong><small>'+val(x.role)+'</small>'+(x.primary?'<span class="ma4-tag active">Primary</span>':'')+'</td><td>'+val(buyer(x.companyId)?.name)+'</td><td>'+val(x.email)+'<small>'+val(x.phone)+'</small></td><td>'+badge(x.status)+'</td><td>'+(c.status==="Archived"?'':'<button type="button" class="btn" data-edit-contact="'+esc(x.id)+'">Edit</button>')+'</td></tr>').join("")+'</tbody></table></div>':
  '<div class="ma4-empty">'+(personal?'The individual customer is their own purchaser and contact. Add an authorized representative only when needed.':'No contacts yet. Add a fictional contact for this customer company.')+'</div>')+
