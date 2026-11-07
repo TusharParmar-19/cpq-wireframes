@@ -125,10 +125,17 @@ function showEffectivePermissions(id){
  const build=(c)=>{
   const roleIds=a.roleIdsAt(u,c.companyId,c.branchId);
   const grants=a.granted(u,c.companyId,c.branchId);
+  const allowedPages=a.grantedPages(u,c.companyId,c.branchId);
+  const pagesHtml='<section class="ma3-role-group"><h3>Pages this employee can open ('+allowedPages.size+')</h3>'+
+   '<div class="ma3-effective-pages">'+a.pages.filter(p=>allowedPages.has(p.id)).map(p=>
+   '<div class="ma3-page-row"><div><b>'+esc(p.name)+'</b><small>'+esc(p.stage==='Available'?p.code:'Planned screen')+'</small></div>'+
+   '<span class="ma3-tag good">✓ Page grant</span></div>').join('')+'</div>'+
+   '<details class="ma3-effective-blocked"><summary>Show '+(a.pages.length-allowedPages.size)+' pages without access</summary>'+
+   a.pages.filter(p=>!allowedPages.has(p.id)).map(p=>'<div class="ma3-page-row"><b>'+esc(p.name)+'</b><span class="ma3-tag neutral">— Not granted</span></div>').join('')+'</details></section>';
   const groupHtml=groups.map(g=>'<section class="ma3-role-group"><h3>'+esc(g)+'</h3>'+
    perms.filter(p=>p.group===g).map(p=>'<div class="ma3-perm-row"><label>'+esc(p.name)+(p.sensitive?' <span class="ma3-sensitive">· Sensitive</span>':'')+'</label><span class="ma3-tag '+(grants.has(p.id)?"good":"neutral")+'">'+(grants.has(p.id)?"✓ Role grant":"— Not granted")+'</span></div>').join("")+'</section>').join("");
   return '<div class="ma3-effective-context"><b>Assigned role(s) in this company:</b> '+esc(roleIds.map(r=>roleBy(r)?.name||r).join(", ")||"None")+
-  '<br><b>Record scope:</b> '+esc(a.visibility(u,c.companyId,c.branchId))+'</div>'+groupHtml+
+  '<br><b>Record scope:</b> '+esc(a.visibility(u,c.companyId,c.branchId))+'</div>'+pagesHtml+groupHtml+
   '<div class="ma3-inline-note"><b>Access applies only in this selected company/branch.</b> Roles in another company cannot grant actions here. All record ownership, sensitive-field and approval checks still apply independently in the production backend.</div>';
  };
  const html='<div class="ma3-dialog-warning"><b>Employee:</b> '+esc(u.name)+' · '+esc(u.status)+
