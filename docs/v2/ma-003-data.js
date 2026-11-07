@@ -85,11 +85,12 @@ window.CPQ_MA003_PAGE_CATALOG=[
  {id:"users",name:"Users, Roles & Permissions",section:"Organization & People",code:"MA-003",stage:"Available",actions:["users.manage","roles.manage","users.invite"]},
  {id:"customers",name:"Customers, Companies & Contacts",section:"Business Records",code:"MA-004",stage:"Available",actions:["customers.view","customers.create","customers.edit","customers.archive"]},
  {id:"opportunities",name:"Opportunities & Enquiries",section:"Business Records",code:"MA-005",stage:"Available",actions:["opportunities.view","opportunities.create","opportunities.edit","opportunities.close"]},
- {id:"quote-register",name:"Quotation Register",section:"Quotations",code:"Planned",stage:"Planned",actions:["quotes.view","quotes.duplicate"]},
- {id:"quote-builder",name:"Quotation Builder & BOQ",section:"Quotations",code:"Planned",stage:"Planned",actions:["quotes.view","quotes.create","quotes.edit","selling.view","cost.view","margin.view"]},
- {id:"quote-revisions",name:"Quotation Versions & History",section:"Quotations",code:"Planned",stage:"Planned",actions:["quotes.view"]},
- {id:"quote-pdf",name:"Quotation PDF & Issue",section:"Quotations",code:"Planned",stage:"Planned",actions:["quotes.view","quotes.pdf","quotes.issue","documents.download"]},
- {id:"quote-dispatch",name:"Quotation Dispatch & Response",section:"Quotations",code:"Planned",stage:"Planned",actions:["quotes.view","quotes.dispatch","quotes.response"]},
+ {id:"quote-register",name:"Quotation Register",section:"Quotations",code:"MA-006",stage:"Available",actions:["quotes.view","quotes.duplicate"]},
+ {id:"quote-builder",name:"Quotation Builder & BOQ",section:"Quotations",code:"MA-006",stage:"Available",actions:["quotes.view","quotes.create","quotes.edit","selling.view","cost.view","margin.view"]},
+ {id:"quote-revisions",name:"Quotation Versions & History",section:"Quotations",code:"MA-006",stage:"Available",actions:["quotes.view"]},
+ {id:"quote-pdf",name:"Quotation PDF & Issue",section:"Quotations",code:"MA-006",stage:"Available",actions:["quotes.view","quotes.pdf","quotes.issue","documents.download"]},
+ {id:"quote-dispatch",name:"Quotation Dispatch & Response",section:"Quotations",code:"MA-006",stage:"Available",actions:["quotes.view","quotes.dispatch","quotes.response"]},
+ {id:"product-rules",name:"Product Catalog & Configuration Rules",section:"Quotations",code:"Planned",stage:"Planned",actions:["catalog.view","catalog.manage","configuration.rules.manage"]},
  {id:"vendor-rfqs",name:"Vendor RFQs & Supplier Offers",section:"Procurement & Files",code:"Planned",stage:"Planned",actions:["rfq.view","rfq.create","rfq.send","rfq.compare","cost.view"]},
  {id:"documents",name:"Documents & Evidence",section:"Procurement & Files",code:"Planned",stage:"Planned",actions:["documents.view","documents.upload","documents.download","documents.delete"]},
  {id:"orders",name:"Orders & Registration",section:"Orders & Controls",code:"Planned",stage:"Planned",actions:["orders.view","orders.edit","orders.register","records.archive"]},
@@ -99,6 +100,9 @@ window.CPQ_MA003_PAGE_CATALOG=[
  {id:"audit",name:"Activity & Audit History",section:"Reporting & Audit",code:"Planned",stage:"Planned",actions:["audit.view"]}
 ];
 window.CPQ_MA003_PERMISSIONS.push(
+ {id:"catalog.view",name:"View approved product catalog",group:"Catalog & configuration"},
+ {id:"catalog.manage",name:"Maintain product attributes and options",group:"Catalog & configuration",sensitive:true},
+ {id:"configuration.rules.manage",name:"Maintain configuration compatibility rules",group:"Catalog & configuration",sensitive:true},
  {id:"customers.edit",name:"Edit authorized customer details",group:"Customers & opportunities"},
  {id:"customers.archive",name:"Archive customer with safeguards",group:"Customers & opportunities",sensitive:true},
  {id:"opportunities.edit",name:"Edit permitted opportunities",group:"Customers & opportunities"},
