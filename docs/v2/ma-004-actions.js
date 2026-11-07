@@ -30,14 +30,34 @@ function saved(c,text,tab=""){
 }
 const companyOptions=()=>own.map(x=>[x.id,x.name]);
 const branchOptions=companyId=>(ent(companyId)?.branches||[]).map(x=>[x.id,x.name+" · "+x.city]);
-function ownFields(companyId="e1",branchId="e1a"){
- return '<div class="ma4-form-item"><label for="ma4-own-company">Our internal company *</label><select id="ma4-own-company" name="ourCompany" required>'+options(companyOptions(),companyId)+'</select></div>'+
- '<div class="ma4-form-item"><label for="ma4-own-branch">Our internal branch *</label><select id="ma4-own-branch" name="ourBranch" required>'+options(branchOptions(companyId),branchId)+'</select></div>';
+/* Demo-only shortlist. The real backend must check user status, role grants and scopes again. */
+const staff=Array.isArray(window.CPQ_MA003_USERS)?window.CPQ_MA003_USERS:[];
+const assignedTo=(u,companyId,branchId)=>u.status==="Active"&&!!companyId&&!!branchId&&
+ (u.assignments||[]).some(x=>x.companyId===companyId&&x.branches.includes(branchId));
+const scopedOwners=(companyId,branchId)=>staff.filter(u=>assignedTo(u,companyId,branchId)).map(u=>u.name);
+const customerOwners=c=>staff.filter(u=>c.links.some(link=>assignedTo(u,link.companyId,link.branchId))).map(u=>u.name);
+const ownerOptions=(names,selected="")=>'<option value="">Unassigned — assign later</option>'+
+ names.map(name=>'<option value="'+esc(name)+'"'+(name===selected?' selected':'')+'>'+esc(name)+'</option>').join("");
+function ownerField(names=[],selected=""){
+ return '<div class="ma4-form-item full"><label for="f-owner">Relationship owner (optional)</label><select id="f-owner" name="owner">'+ownerOptions(names,selected)+'</select>'+
+ '<p class="ma4-form-help">Choose an active MA-003 employee assigned to the selected internal company/branch. This does not grant permissions.</p></div>';
+}
+function ownFields(companyId="",branchId=""){
+ return '<div class="ma4-form-item"><label for="ma4-own-company">Our internal company *</label><select id="ma4-own-company" name="ourCompany" required><option value="">Select internal company</option>'+options(companyOptions(),companyId)+'</select></div>'+
+ '<div class="ma4-form-item"><label for="ma4-own-branch">Our internal branch *</label><select id="ma4-own-branch" name="ourBranch" required><option value="">Select internal branch</option>'+options(branchOptions(companyId),branchId)+'</select></div>';
+}
+function updateOwners(){
+ const company=$("ma4-own-company"),branch=$("ma4-own-branch"),owner=$("f-owner");
+ if(!company||!branch||!owner)return;
+ const names=scopedOwners(company.value,branch.value),previous=owner.value;
+ owner.innerHTML=ownerOptions(names,previous);
+ owner.value=names.includes(previous)?previous:"";
 }
 function updateOwnBranches(){
  const company=$("ma4-own-company"),br=$("ma4-own-branch");if(!company||!br)return;
- const opts=branchOptions(company.value),choice=opts.some(x=>x[0]===br.value)?br.value:opts[0]?.[0]||"";
- br.innerHTML=options(opts,choice);
+ br.innerHTML='<option value="">Select internal branch</option>'+options(branchOptions(company.value),"");
+ br.value="";
+ updateOwners();
 }
 function allowedLink(companyId,branchId){return !!ent(companyId)?.branches.some(x=>x.id===branchId);}
 const statusOptions=[["Prospect","Prospect"],["Active","Active"],["On Hold","On Hold"]];
@@ -70,7 +90,7 @@ function createCustomer(){
  const f=wrap(select("type","1. Customer type",typeOptions,"Company",true)+
   '<div class="ma4-form-item full ma4-type-explanation" id="ma4-account-type-help" role="status">'+esc(customerTypeHelp.Company)+'</div>'+
   nameField+buyerField+personalFields+select("status","Relationship status",statusOptions,"Prospect")+
-  industryField+field("owner","Relationship owner")+ownFields()+area("notes","Relationship notes"),
+  industryField+ownFields()+ownerField()+area("notes","Relationship notes"),
   "Individual, Company and Group customers are supported. Only fictional names and details belong in this public wireframe.");
  show("Add Customer","Choose customer type first, then enter only the relevant details",f,fd=>{
   const type=v(fd,"type"),name=v(fd,"name"),enteredBuyer=v(fd,"buyerName"),ourCompany=v(fd,"ourCompany"),ourBranch=v(fd,"ourBranch");
@@ -83,8 +103,10 @@ function createCustomer(){
    invalid("A matching customer or buyer identity already exists. Review the directory before creating a duplicate.");return;
   }
   if(!allowedLink(ourCompany,ourBranch)){invalid("Choose a valid internal legal entity and branch.");return;}
+  const owner=v(fd,"owner");
+  if(owner&&!scopedOwners(ourCompany,ourBranch).includes(owner)){invalid("Select an active relationship owner assigned to this internal company and branch.");return;}
   const id=next("CU-",db.customers),buyerId=next("CC-",db.companies);
-  const c={id,name,type,status:v(fd,"status"),industry:v(fd,"industry"),owner:v(fd,"owner"),notes:v(fd,"notes"),links:[{companyId:ourCompany,branchId:ourBranch}],created:"07 Nov 2026 (demo)",updated:"07 Nov 2026 (demo)"};
+  const c={id,name,type,status:v(fd,"status"),industry:v(fd,"industry"),owner,notes:v(fd,"notes"),links:[{companyId:ourCompany,branchId:ourBranch}],created:"07 Nov 2026 (demo)",updated:"07 Nov 2026 (demo)"};
   db.customers.push(c);
   db.companies.push({id:buyerId,customerId:id,name:buyerName,kind:type==="Individual"?"Individual":"Head office",primary:true,taxStatus:type==="Individual"?"Not applicable":"Not supplied",email:type==="Individual"?personalEmail:"",phone:type==="Individual"?personalPhone:"",city:"",state:"",address:"",billingTerms:"Not configured"});
   state.company="all";state.branch="all";state.status="all";state.type="all";state.q="";
@@ -101,11 +123,12 @@ function editCustomer(){
  const f=wrap(field("name",c.type==="Individual"?"Customer full name":"Customer relationship name",c.name,true)+immutableType+
   select("status","Relationship status",statusOptions,c.status)+
   field("industry",c.type==="Individual"?"Purchase interest (optional)":"Industry / segment (optional)",c.industry)+
-  field("owner","Relationship owner",c.owner)+area("notes","Internal notes",c.notes));
+  ownerField(customerOwners(c),c.owner)+area("notes","Internal notes",c.notes));
  show("Edit Customer",c.id+" · customer type cannot be changed here",f,fd=>{
   const name=v(fd,"name");if(!name){invalid("Enter a customer name.");return;}
   if(db.customers.some(x=>x.id!==c.id&&x.name.toLowerCase()===name.toLowerCase())){invalid("A customer with this name already exists.");return;}
   if(currentBuyer&&db.companies.some(x=>x.id!==currentBuyer.id&&x.name.toLowerCase()===name.toLowerCase())){invalid("Another buyer identity already uses this name.");return;}
+  if(v(fd,"owner")&&!customerOwners(c).includes(v(fd,"owner"))){invalid("Select an active employee assigned to one of this customer’s internal branches.");return;}
   Object.assign(c,{name,status:v(fd,"status"),industry:v(fd,"industry"),owner:v(fd,"owner"),notes:v(fd,"notes")});
   if(currentBuyer)currentBuyer.name=name;
   saved(c,"Customer details updated");
@@ -274,6 +297,7 @@ $("modal-save").addEventListener("click",saveForm);
 $("modal-body").addEventListener("submit",e=>{if(e.target.id==="ma4-form"){e.preventDefault();saveForm();}});
 $("modal-body").addEventListener("change",e=>{
  if(e.target.id==="ma4-own-company")updateOwnBranches();
+ if(e.target.id==="ma4-own-branch")updateOwners();
  if(e.target.id==="f-type")updateCreateType();
  if(e.target.id==="ma4-project-company"){
   const c=cust(state.selected),co=e.target.value,site=$("ma4-project-site");
