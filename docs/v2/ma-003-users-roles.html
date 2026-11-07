@@ -31,7 +31,7 @@
 <header class="top"><div>CPQ Workspace / <b>Users, Roles &amp; Permissions</b></div><span class="avatar">MA</span></header>
 <main class="page">
 <div class="hero">
- <div><div class="overline">MASTER ADMIN / MA-003</div><h1>Users, Roles &amp; Permissions</h1><p class="muted">Manage people, assign several roles, control branch access and review who can do what.</p></div>
+ <div><div class="overline">MASTER ADMIN / MA-003</div><h1>Users, Roles &amp; Permissions</h1><p class="muted">Manage employees, page access, role actions, sensitive data and company-specific permissions.</p></div>
  <div class="actions"><a class="btn" href="ma-002-organization.html">Companies &amp; Branches</a><button type="button" class="btn primary" id="new-user">+ Add Employee</button></div>
 </div>
 <div class="info"><b>WIREFRAME ONLY · All employees and access examples are fictional.</b> Editing this screen affects only the current page until refresh. It does not create accounts, send invitations, change production access or enforce security.</div>
@@ -40,7 +40,7 @@
  <div class="ma3-access-flow">
   <div><b>1. Business account</b><span>Stay inside the assigned tenant</span></div><span class="ma3-flow-arrow">+</span>
   <div><b>2. Company &amp; branch</b><span>Assigned organization scope</span></div><span class="ma3-flow-arrow">+</span>
-  <div><b>3. Role permission</b><span>Action and sensitive-field grant</span></div><span class="ma3-flow-arrow">+</span>
+  <div><b>3. Page + action</b><span>Both navigation and action grants must be present</span></div><span class="ma3-flow-arrow">+</span>
   <div><b>4. Record &amp; policy</b><span>Ownership, approval and status checks</span></div>
  </div>
 </section>
@@ -74,6 +74,7 @@
  </section>
 </section>
 <section id="panel-roles" role="tabpanel" aria-labelledby="tab-roles" hidden>
+ <div class="ma3-role-intro"><b>Choose a role to configure</b><span>Review which screens it can open, what actions it can perform, and which company-assigned employees would be affected. These are fictional policy proposals, not approved production rights.</span></div>
  <div class="ma3-main ma3-role-main">
   <section class="card ma3-role-list">
    <div class="ma3-panel-title"><div><h2>Role catalog</h2><p class="muted">Reusable permissions, not company assignments</p></div><button type="button" class="btn" id="new-role">+ Custom Role</button></div>
@@ -83,15 +84,16 @@
    <div id="role-detail"></div>
   </section>
  </div>
- <div class="ma3-inline-note"><b>Important:</b> Built-in roles are illustrative templates, not an approved company permission matrix. Custom role permissions shown here require approval and must be enforced in the production backend.</div>
+ <div class="ma3-inline-note"><b>Important:</b> Built-in roles are illustrative, not approved company policy. This demo lets you configure built-in examples except the protected Master Admin, or create a custom role. All changes are in-memory only and require production review, auditing and server enforcement.</div>
 </section>
 <section id="panel-preview" role="tabpanel" aria-labelledby="tab-preview" hidden>
  <div class="ma3-main ma3-preview-main">
   <section class="card ma3-preview-setup">
-   <div class="ma3-panel-title"><div><h2>Try an access scenario</h2><p class="muted">Choose a user, action and record context</p></div></div>
+   <div class="ma3-panel-title"><div><h2>Try an access scenario</h2><p class="muted">Check page visibility and a specific action for a selected company, branch and record</p></div></div>
    <div class="ma3-preview-fields">
     <div><label for="check-user">Employee</label><select id="check-user"></select></div>
-    <div><label for="check-action">Action</label><select id="check-action"></select></div>
+    <div><label for="check-page">Page / screen</label><select id="check-page"></select></div>
+    <div><label for="check-action">Action on this page</label><select id="check-action"></select></div>
     <div><label for="check-company">Legal entity</label><select id="check-company"></select></div>
     <div><label for="check-branch">Branch</label><select id="check-branch"></select></div>
     <div><label for="check-relation">Relationship to record</label><select id="check-relation">
@@ -105,7 +107,7 @@
   </section>
   <section class="card ma3-preview-result" id="preview-result" aria-live="polite"></section>
  </div>
- <div class="ma3-inline-note"><b>Simulation only.</b> These outcomes explain the proposed permission model, not actual authorization. Production must recheck tenant, role, branch, record ownership, sensitive field access and approval policy on the server.</div>
+ <div class="ma3-inline-note"><b>Simulation only.</b> These outcomes explain the proposed permission model, not actual authorization. Production must recheck tenant, company/branch, page, action, record ownership, sensitive field access and approval policy on every server request. Hiding a menu item is not security.</div>
 </section>
 <div class="ma3-bottom-note"><b>Access rules:</b> Inactive or unaccepted invited accounts cannot log in. User deactivation must preserve audit history. Customer/vendor portal accounts and platform-level Super Admin access are outside this business-account screen.</div>
 <footer class="footer">CPQ · MA-003 Users, Roles &amp; Permissions · Fictional employees · No production backend</footer>
