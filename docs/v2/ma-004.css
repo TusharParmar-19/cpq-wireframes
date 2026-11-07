@@ -1,0 +1,102 @@
+/* MA-004 customer master-data wireframe. Uses MA-001 shell / colors. */
+.ma4-guide{display:flex;align-items:stretch;gap:12px;margin:18px 0 17px}
+.ma4-guide-card{flex:1;display:flex;align-items:flex-start;gap:12px;background:#fff;border:1px solid #dce8f1;border-radius:11px;padding:16px 17px;min-width:0}
+.ma4-guide-icon{background:#e7f2fb;color:#1c5f8b;border-radius:8px;font-weight:850;min-width:31px;height:31px;display:grid;place-items:center}
+.ma4-guide-card b{font-size:12px;color:#244c6a}.ma4-guide-card p{font-size:11px;color:#688498;line-height:1.6;margin:6px 0 0}.ma4-guide-card a{text-decoration:underline;color:#1d6897}
+.ma4-guide-divider{align-self:center;font-size:23px;font-weight:850;color:#7f9aad}
+.ma4-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:16px 0}
+.ma4-stat{padding:17px 19px;display:flex;flex-direction:column;gap:6px}
+.ma4-stat small{color:#698297;font-size:11px;font-weight:750}.ma4-stat strong{font-size:29px;line-height:1.2;color:#173b59;letter-spacing:-.04em}.ma4-stat span{font-size:10px;color:#8297a6;line-height:1.4}
+.ma4-scope{padding:16px 19px;margin:17px 0}
+.ma4-scope-head{display:flex;align-items:start;justify-content:space-between;gap:12px}
+.ma4-scope-head h2{font-size:14px}.ma4-scope-head p{margin:6px 0 0}
+.ma4-scope-fields{margin-top:14px;display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1.3fr) auto;align-items:end;gap:12px}
+.ma4-scope-fields label,.ma4-filters label,.ma4-form label{font-size:11px;color:#56738a;font-weight:750;display:block;margin-bottom:7px}
+.ma4-scope-fields select,.ma4-filters input,.ma4-filters select,.ma4-form input,.ma4-form textarea,.ma4-form select{width:100%;background:#fff;border:1px solid #d0dfeb;border-radius:7px;padding:10px 11px;color:#24475f;font-size:12px;min-height:40px}
+.ma4-scope-fields select:focus,.ma4-filters input:focus,.ma4-filters select:focus,.ma4-form input:focus,.ma4-form select:focus,.ma4-form textarea:focus{outline:2px solid #84bee2;outline-offset:1px}
+.ma4-workspace{display:grid;grid-template-columns:310px minmax(0,1fr);gap:15px;align-items:start;margin-top:17px}
+.ma4-directory,.ma4-detail-card{overflow:hidden}
+.ma4-directory-head{padding:19px 16px 12px;display:flex;justify-content:space-between;align-items:start;gap:9px}
+.ma4-directory-head h2{font-size:16px}.ma4-directory-head p{margin:6px 0 0}
+.ma4-filters{padding:7px 15px 15px;border-bottom:1px solid #e5ecf3}
+.ma4-filter-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
+.ma4-list{padding:12px;display:flex;flex-direction:column;gap:8px;max-height:730px;overflow-y:auto}
+.ma4-customer{border:1px solid #e0e9ef;border-radius:9px;background:white;padding:12px 13px;display:flex;flex-direction:column;gap:7px;width:100%;text-align:left}
+.ma4-customer:hover{border-color:#96c0dc;background:#f8fbfe}
+.ma4-customer.active{background:#f0f8fe;border-color:#79b3d6;box-shadow:inset 3px 0 #2c7aac}
+.ma4-customer-top{display:flex;justify-content:space-between;gap:8px;align-items:start}
+.ma4-customer b{font-size:12px;color:#254862;line-height:1.4}
+.ma4-customer small{font-size:10px;color:#7990a3}
+.ma4-customer-bottom{font-size:10px;color:#62829b;line-height:1.5}
+.ma4-dir-foot{padding:15px;border-top:1px solid #e7eff5;font-size:10px;line-height:1.6;color:#7793a6}
+.ma4-tag{display:inline-flex;align-items:center;border:1px solid #d6e4ed;border-radius:6px;padding:5px 8px;font-size:10px;font-weight:800;color:#49708b;background:#f1f7fc;white-space:nowrap}
+.ma4-tag.active{color:#287653;background:#ecf9f1;border-color:#cfeada}
+.ma4-tag.prospect{color:#875e27;background:#fff5e6;border-color:#f0dfc0}
+.ma4-tag.on-hold{color:#946b28;background:#fff5e8;border-color:#eed8b8}
+.ma4-tag.archived{color:#786a75;background:#f3f1f4;border-color:#e1dce3}
+.ma4-tag.neutral{color:#597185;background:#f2f5f7;border-color:#e0e8ee}
+.ma4-detail{min-width:0;display:flex;flex-direction:column;gap:15px}
+.ma4-detail-header{padding:20px 22px}
+.ma4-detail-heading{display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:15px}
+.ma4-detail-heading h2{font-size:21px;color:#193953;line-height:1.3;margin:6px 0}
+.ma4-detail-heading p{color:#6f8799;font-size:12px;margin:0;line-height:1.6}
+.ma4-head-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+.ma4-meta-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:16px}
+.ma4-header-note{margin-top:16px;padding:11px 13px;background:#f3f8fc;border:1px solid #deebf4;border-radius:8px;color:#53758f;font-size:11px;line-height:1.6}
+.ma4-tabs{display:flex;align-items:stretch;gap:0;border-bottom:1px solid #e1eaf1;overflow-x:auto}
+.ma4-tabs button{background:none;border:0;border-bottom:3px solid transparent;padding:16px 15px;white-space:nowrap;font-size:11px;font-weight:750;color:#678197}
+.ma4-tabs button.active,.ma4-tabs button[aria-selected=true]{background:#f1f8fd;color:#1d6693;border-bottom-color:#2a83b4}
+.ma4-detail-body{min-height:370px;padding:19px 21px 22px}
+.ma4-panel-top{display:flex;align-items:start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:15px}
+.ma4-panel-top h3{margin:0;font-size:15px;color:#254863}.ma4-panel-top p{font-size:11px;line-height:1.6;color:#7a91a4;margin:5px 0 0}
+.ma4-card-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.ma4-small-card{border:1px solid #e1ebf2;border-radius:9px;background:#fcfdff;padding:15px 16px;min-width:0}
+.ma4-small-card h4{font-size:12px;margin:0;color:#234a69;line-height:1.4}.ma4-small-card p{font-size:11px;color:#6f8a9e;line-height:1.6;margin:6px 0 0;overflow-wrap:anywhere}
+.ma4-small-card .ma4-tag{margin-top:10px}
+.ma4-subheader{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:17px 0 10px}
+.ma4-subheader h4{font-size:12px;color:#345b76;margin:0}
+.ma4-kv-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.ma4-kv{border-bottom:1px solid #eaf0f5;padding:10px 0}
+.ma4-kv small{display:block;color:#7e96a8;font-size:10px;margin-bottom:6px}
+.ma4-kv strong{font-size:12px;color:#274b64;line-height:1.55;display:block;overflow-wrap:anywhere}
+.ma4-inline-info{border:1px dashed #cbdde9;background:#f7fbfd;border-radius:9px;padding:13px 14px;font-size:11px;color:#658198;line-height:1.7;margin-top:15px}
+.ma4-empty{padding:35px 22px;text-align:center;border:1px dashed #d4e2eb;background:#fafcfe;border-radius:10px;color:#8096a7;font-size:12px;line-height:1.6}
+.ma4-table-scroller{width:100%;overflow:auto;border:1px solid #e4edf3;border-radius:9px}
+.ma4-table{width:100%;min-width:630px;border-collapse:collapse}
+.ma4-table th{background:#f6f9fc;font-size:10px;color:#667f93;letter-spacing:.03em;text-transform:none}
+.ma4-table th,.ma4-table td{padding:12px 13px;text-align:left;vertical-align:top}
+.ma4-table td{font-size:11px;color:#46677e;border-bottom:1px solid #eef2f6;overflow-wrap:anywhere}
+.ma4-table tbody tr:last-child td{border-bottom:0}
+.ma4-table td strong{font-size:11px;display:block;color:#254b69;margin-bottom:5px}
+.ma4-table td small{font-size:10px;color:#8a9dad;display:block;line-height:1.5}
+.ma4-table .btn{font-size:10px;padding:7px 9px}
+.ma4-table a{color:#1e6d98;text-decoration:underline}
+.ma4-scopes{display:flex;gap:7px;flex-wrap:wrap}
+.ma4-scopes span{font-size:11px;border:1px solid #dce9f1;border-radius:7px;background:#f3f9fd;color:#406b89;padding:8px 10px}
+.ma4-steps{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:13px;color:#6d879a;font-size:11px}
+.ma4-steps b{border:1px solid #dce8f0;background:#f8fbfd;color:#315876;border-radius:7px;padding:8px 10px}
+.ma4-activity-item{padding:13px 0;border-bottom:1px solid #edf2f6;color:#4d6981;font-size:12px}
+.ma4-activity-item:last-child{border-bottom:0}
+.ma4-activity-item small{display:block;margin-top:5px;font-size:10px;color:#90a3b1}
+.ma4-bottom-note{font-size:12px;line-height:1.7;color:#658195;border-radius:10px;border:1px dashed #cbdfea;background:#f5fafc;padding:15px 18px;margin-top:18px}
+.ma4-dialog{width:min(740px,100%);max-height:85vh;overflow:hidden;display:flex;flex-direction:column;padding:0}
+.ma4-dialog .dialog-head{padding:19px 23px;border-bottom:1px solid #e2eaf0;flex:0 0 auto;align-items:center}
+.ma4-dialog #modal-body{padding:18px 23px;min-height:0;overflow-y:auto;flex:1 1 auto;overscroll-behavior:contain}
+.ma4-dialog-actions{border-top:1px solid #e3ecf2;padding:14px 23px;display:flex;justify-content:flex-end;gap:8px;flex:0 0 auto;background:#fff}
+.ma4-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.ma4-form-item{min-width:0}
+.ma4-form-item.full{grid-column:1/-1}
+.ma4-form textarea{resize:vertical;min-height:75px}
+.ma4-form-help{color:#8397a7;font-size:10px;line-height:1.6;margin:6px 0 0}
+.ma4-form-error{grid-column:1/-1;font-size:12px;color:#aa493e;font-weight:750;min-height:16px}
+.ma4-toast{position:fixed;bottom:19px;right:19px;background:#183f61;color:#fff;padding:13px 17px;border-radius:9px;box-shadow:0 8px 20px #17304642;z-index:108;font-size:12px;max-width:390px}
+.ma4-toast[hidden]{display:none}
+.ma4-dialog-warning{background:#fff8ef;border:1px solid #f0dec1;color:#886539;border-radius:9px;padding:13px;font-size:12px;line-height:1.6;margin-bottom:15px}
+.ma4-action-danger{color:#aa5143;border-color:#e9c7bf;background:#fff9f7}
+.ma4-action-danger:hover{background:#ffefeb}
+.ma4-panel-top .btn{white-space:nowrap}
+.ma4-detail-header .btn{white-space:nowrap}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #91bfdc;outline-offset:2px}
+@media(max-width:1260px){.ma4-workspace{grid-template-columns:285px minmax(0,1fr)}.ma4-tabs button{padding:14px 10px}}
+@media(max-width:1000px){.ma4-workspace{grid-template-columns:1fr}.ma4-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));max-height:none}.ma4-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.ma4-guide{flex-wrap:wrap}.ma4-guide-card{flex-basis:42%}}
+@media(max-width:650px){.ma4-scope-fields{grid-template-columns:1fr}.ma4-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.ma4-guide{flex-direction:column}.ma4-guide-divider{display:none}.ma4-list,.ma4-card-grid,.ma4-kv-grid,.ma4-form{grid-template-columns:1fr}.ma4-form-item.full{grid-column:auto}.ma4-detail-header,.ma4-detail-body{padding:16px}.ma4-detail-heading{flex-direction:column}.ma4-head-actions{justify-content:flex-start}.ma4-dialog .dialog-head,.ma4-dialog #modal-body,.ma4-dialog-actions{padding-left:16px;padding-right:16px}}
