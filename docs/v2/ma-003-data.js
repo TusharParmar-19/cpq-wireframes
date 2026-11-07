@@ -47,3 +47,29 @@ window.CPQ_MA003_USERS=[
 {id:"U011",name:"Owner / Director",email:"director@example.com",mobile:"+91 00000 00111",designation:"Director",department:"Leadership",roles:["owner"],branches:["*"],status:"Active",created:"01 Nov 2026",updated:"06 Nov 2026"},
 {id:"U012",name:"Invited User",email:"invited@example.com",mobile:"+91 00000 00112",designation:"Assistant",department:"Operations",roles:["read"],branches:["e1s"],status:"Invited",created:"06 Nov 2026",updated:"06 Nov 2026"}
 ];
+
+/* An employee may have different role grants in each legal entity.
+   Company A's manager rights MUST NOT flow into Company B.
+   Every assignment explicitly names its branches and roles. */
+window.CPQ_MA003_SCOPE_ASSIGNMENTS={
+ U001:[{companyId:"e1",branches:["e1a","e1s"],roles:["master"]},{companyId:"e2",branches:["e2a","e2v"],roles:["master"]},{companyId:"e3",branches:["e3r"],roles:["master"]}],
+ U002:[{companyId:"e1",branches:["e1a"],roles:["sales"]}],
+ U003:[{companyId:"e1",branches:["e1s"],roles:["sales"]}],
+ U004:[{companyId:"e1",branches:["e1a","e1s"],roles:["manager"]},{companyId:"e2",branches:["e2a"],roles:["sales"]}],
+ U005:[{companyId:"e2",branches:["e2a"],roles:["technical"]}],
+ U006:[{companyId:"e2",branches:["e2a","e2v"],roles:["purchase","technical"]}],
+ U007:[{companyId:"e1",branches:["e1a"],roles:["finance"]},{companyId:"e2",branches:["e2a"],roles:["finance"]}],
+ U008:[{companyId:"e2",branches:["e2a"],roles:["sales"]}],
+ U009:[{companyId:"e2",branches:["e2v"],roles:["technical"]}],
+ U010:[{companyId:"e3",branches:["e3r"],roles:["manager"]}],
+ U011:[{companyId:"e1",branches:["e1a","e1s"],roles:["owner"]},{companyId:"e2",branches:["e2a","e2v"],roles:["owner"]},{companyId:"e3",branches:["e3r"],roles:["owner"]}],
+ U012:[{companyId:"e1",branches:["e1s"],roles:["read"]}]
+};
+window.CPQ_MA003_USERS.forEach(u=>{
+ const assignments=window.CPQ_MA003_SCOPE_ASSIGNMENTS[u.id]||[];
+ u.assignments=assignments.map(a=>({companyId:a.companyId,branches:[...a.branches],roles:[...a.roles]}));
+ // Legacy union fields are for directory summary and filters ONLY.
+ // Authorization examples must ALWAYS use assignments in their selected company.
+ u.roles=[...new Set(assignments.flatMap(a=>a.roles))];
+ u.branches=[...new Set(assignments.flatMap(a=>a.branches))];
+});
