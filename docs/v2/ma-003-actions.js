@@ -17,6 +17,8 @@ function open(title,subtitle,body,handler=null,label="Save demo"){
  $("modal-cancel").textContent=handler?"Cancel":"Close";
  $("modal-save").hidden=!handler;
  $("modal-save").textContent=label;
+ $("modal-save").disabled=false;
+ $("modal-save").removeAttribute("title");
  $("overlay").classList.add("open");
  $("overlay").setAttribute("aria-hidden","false");
  $("modal-close").focus();
@@ -211,6 +213,7 @@ function customRoleForm(source=null,copy=false,restoredDraft=null){
   const diff=(title,arr,sign)=>'<div class="ma3-review-diff"><b>'+esc(title)+' ('+arr.length+')</b><div>'+(arr.length?arr.map(x=>'<span class="ma3-review-pill '+(sign==='+'?'added':'removed')+'">'+sign+' '+esc(x)+'</span>').join(""):'<span class="ma3-review-none">None</span>')+'</div></div>';
   const sensitive=chosenActions.filter(id=>perms.some(p=>p.id===id&&p.sensitive));
   const inactiveActions=chosenActions.filter(id=>!a.pages.some(pg=>chosenPages.includes(pg.id)&&pg.actions.includes(id)));
+  const dependencyBlock=inactiveActions.length?'<div class="ma3-review-blocker" role="alert"><b>Cannot confirm yet.</b> '+inactiveActions.length+' selected action grant(s) have no matching page access. Use <b>Back to editor</b> to restore the required page or remove the actions.</div>':"";
   const review='<div class="ma3-dialog-warning"><b>Review before applying this demo change.</b> Configuration affects the selected role template. Existing employees retain their own company/branch assignments; no production permissions or records are changed.</div>'+
    '<div class="ma3-review-card"><b>'+esc(name)+'</b><small>'+chosenPages.length+' pages · '+chosenActions.length+' capabilities · '+esc(visibility)+' record scope</small></div>'+
    diff("Pages added",added(oldPages,chosenPages,pageLabel),"+")+
@@ -219,12 +222,15 @@ function customRoleForm(source=null,copy=false,restoredDraft=null){
    diff("Actions revoked",removed(oldActions,chosenActions,actionLabel),"-")+
    '<div class="ma3-review-impact"><b>Employees in scope</b><p>'+(affected.length?esc([...new Set(affected.map(x=>x.name+" — "+x.company))].join("; ")):'No employee assignments yet.')+'</p>'+
    '<div class="ma3-review-dependency'+(inactiveActions.length?' has-issues':'')+'"><b>Action/page dependencies: '+(inactiveActions.length?inactiveActions.length+' ineffective grants':'No missing page access')+'</b><p>'+(inactiveActions.length?esc(inactiveActions.map(id=>actionLabel(id)+' → '+a.pages.filter(pg=>pg.actions.includes(id)).map(pg=>pg.name).join(' / ')).join('; '))+' — grant a relevant page or remove the action. These grants cannot be used as currently configured.':'Every selected action has at least one matching page grant. Planned pages remain unavailable until developed.')+'</p></div>'+ 
-   '<p><b>Restricted grants selected:</b> '+(sensitive.length?esc(sensitive.map(actionLabel).join(", ")):'None')+'. Sensitive permissions, quote issuance and approvals still require separate authorizations and policy checks in production.</p></div>';
+   dependencyBlock+'<p><b>Restricted grants selected:</b> '+(sensitive.length?esc(sensitive.map(actionLabel).join(", ")):'None')+'. Sensitive permissions, quote issuance and approvals still require separate authorizations and policy checks in production.</p></div>';
   open("Confirm Role Configuration","Inspect proposed page and action changes before saving",review,()=>{
+   if(inactiveActions.length)return; // Inconsistent role grants must not be saved.
    if(editing){Object.assign(source,record);state.selectedRole=source.id;audit("Role page & action policy updated",record.name+" · "+record.pages.length+" pages / "+record.perms.length+" actions");}
    else{roleCounter+=1;const id="custom"+roleCounter;roles.push({id,...record});state.selectedRole=id;audit("Custom role created",record.name+" · "+record.pages.length+" pages / "+record.perms.length+" actions");}
    state.roleView="pages";close();refreshRoleFilters();render();toast("Role page and action policy updated on this demo page only.");
   },"Confirm demo changes");
+  $("modal-save").disabled=inactiveActions.length>0;
+  if(inactiveActions.length)$("modal-save").title="Resolve all ineffective action grants before confirming";
   const proposed={name,description:record.description,visibility,pages:[...chosenPages],perms:[...chosenActions]};
   $("modal-cancel").textContent="Back to editor";
   cancelHandler=()=>customRoleForm(source,copy,proposed);
