@@ -33,14 +33,17 @@
 <main class="page">
 <div class="hero">
  <div><div class="overline">MASTER ADMIN / MA-004</div><h1>Customers, Companies &amp; Contacts</h1><p class="muted">One customer relationship, multiple customer legal entities, contacts, sites and projects — without mixing them with your internal companies.</p></div>
- <div class="actions"><a class="btn" href="ma-003-users-roles.html">Roles &amp; Access</a><button type="button" class="btn primary" id="new-customer">+ Add Customer</button></div>
+ <div class="actions"><a class="btn" href="#customer-workspace">Browse customers</a><a class="btn" href="ma-003-users-roles.html">Roles &amp; Access</a><button type="button" class="btn primary" id="new-customer">+ Add Customer</button></div>
 </div>
 <div class="info"><b>WIREFRAME ONLY · Fictional customer data.</b> All changes stay in this browser page and reset on refresh. There is no database, permission enforcement, email sending or production record creation. Never enter real tax IDs, personal contact details or confidential customer information.</div>
-<div class="ma4-guide">
+<details class="ma4-guide-disclosure">
+ <summary>Understand internal companies vs customer companies <span>Show explanation</span></summary>
+ <div class="ma4-guide">
  <div class="ma4-guide-card"><span class="ma4-guide-icon">1</span><div><b>Your internal companies &amp; branches</b><p>Set up in <a href="ma-002-organization.html">MA-002</a>. Control employee work context and access.</p></div></div>
  <span class="ma4-guide-divider">≠</span>
  <div class="ma4-guide-card"><span class="ma4-guide-icon">2</span><div><b>Your customer's companies &amp; sites</b><p>Managed here. Identify the buyer, billing legal entity, delivery site and contacts.</p></div></div>
 </div>
+</details>
 <section class="ma4-stats" id="customer-summary" aria-label="Customer summary"></section>
 <section class="card ma4-scope">
  <div class="ma4-scope-head"><div><h2>Internal company / branch context</h2><p class="muted">Filter customer relationships by the company and branch your team works under. A filter is not a permission grant.</p></div><span class="ma4-tag">Scope preview</span></div>
@@ -50,7 +53,7 @@
   <button type="button" class="btn" id="clear-filters">Reset filters</button>
  </div>
 </section>
-<div class="ma4-workspace">
+<div class="ma4-workspace" id="customer-workspace">
  <section class="card ma4-directory" aria-label="Customer directory">
   <div class="ma4-directory-head"><div><h2>Customer directory</h2><p class="muted">Select an account to inspect</p></div><span class="chip" id="customer-count">0</span></div>
   <div class="ma4-filters">
