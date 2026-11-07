@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MA-006 — Quotations, Configuration & BOQ | CPQ Platform</title>
+<title>MA-006 — Quotations & BOQ | CPQ Platform</title>
 <link rel="stylesheet" href="ma-001.css">
 <link rel="stylesheet" href="ma-006.css">
 </head>
@@ -19,6 +19,7 @@
       <div class="nav-title">Business Records</div>
       <a class="nav-link" href="ma-004-customers.html">◉ &nbsp; Customers <small>MA-004</small></a>
       <a class="nav-link" href="ma-005-opportunities.html">◇ &nbsp; Opportunities <small>MA-005</small></a>
+      <a class="nav-link" href="ma-006a-configuration.html">⚙ &nbsp; Configurations <small>MA-006A</small></a>
       <a class="nav-link active" href="ma-006-quotations.html" aria-current="page">▣ &nbsp; Quotations <small>MA-006</small></a>
       <button class="nav-link" type="button" data-planned="Vendor RFQs">⇄ &nbsp; Vendor RFQs</button>
       <button class="nav-link" type="button" data-planned="Orders">☷ &nbsp; Orders</button>
@@ -31,23 +32,23 @@
     <div class="sidebar-foot"><b>Master Admin · Wireframe</b><p>Permissions, authorized price lists, sensitive costs, discounts, engineering rules and approvals require separate backend policy checks. Demo selections are not approved offers.</p></div>
   </aside>
   <div class="app">
-    <header class="top"><div>CPQ Workspace / <b>Quotations, Configuration &amp; BOQ</b></div><span class="avatar">MA</span></header>
+    <header class="top"><div>CPQ Workspace / <b>Quotations &amp; BOQ</b></div><span class="avatar">MA</span></header>
     <main class="page ma6-page">
       <div class="hero">
         <div>
           <div class="overline">MASTER ADMIN / MA-006</div>
-          <h1>Quotations, Configuration &amp; BOQ</h1>
-          <p class="muted">Configure products, build the bill of quantities, apply illustrative pricing and prepare a controlled customer offer.</p>
+          <h1>Quotations &amp; BOQ</h1>
+          <p class="muted">Use saved technical configurations, build the BOQ, apply illustrative pricing and prepare the customer offer.</p>
         </div>
         <div class="actions">
-          <a class="btn" href="ma-005-opportunities.html">Opportunities</a>
+          <a class="btn" href="ma-006a-configuration.html">Configure Products First</a>
           <a class="btn" href="#quote-register">Quotation Register</a>
           <button class="btn primary" type="button" id="new-quote">+ New Quotation</button>
         </div>
       </div>
       <div class="info"><b>WIREFRAME ONLY · Fictional commercial values.</b> No product engineering validation, authoritative price list, tax determination, real discount approval, PDF issuance, email, database or order creation. This public demonstration resets on refresh. Never enter real customer, tax, price or confidential margin data.</div>
       <section class="ma6-explainer" aria-label="Configure, price and quote">
-        <div class="ma6-explain"><span class="ma6-circle">C</span><div><b>Configuration</b><small>Select the product, attributes, options and compatible components.</small></div></div>
+        <div class="ma6-explain"><span class="ma6-circle">C</span><div><b>Configuration</b><small>Use the MA-006A workspace or configure a quick item inside a draft.</small></div></div>
         <div class="ma6-explain"><span class="ma6-circle">P</span><div><b>BOQ &amp; Pricing</b><small>Review quantities, selling rates, discounts, tax assumptions and totals.</small></div></div>
         <div class="ma6-explain"><span class="ma6-circle">Q</span><div><b>Quotation</b><small>Review terms and approvals, retain revisions and prepare a customer-facing offer.</small></div></div>
       </section>
@@ -105,7 +106,7 @@
         </div>
       </section>
       <section class="ma6-design-note">
-        <b>Proposed module boundary:</b> Configuration uses catalog attributes and validated compatibility rules (future Product Catalog &amp; Rules administration). BOQ/Pricing uses authorized rates and tax logic. A quotation revision stores fixed customer/buyer, scope, lines, pricing, terms and approval history. A quote can be started directly or from an MA-005 opportunity; quote issuance and order registration are separate controlled actions.
+        <b>Proposed module boundary:</b> MA-006A handles reusable configurations before pricing. Product Catalog &amp; Rules administration will define approved attributes and compatibility. BOQ/Pricing uses authorized rates and tax logic. A quotation revision stores fixed customer/buyer, scope, lines, pricing, terms and approval history. A quote can be started directly or from an MA-005 opportunity; quote issuance and order registration are separate controlled actions.
       </section>
       <footer class="footer">CPQ · MA-006 Quotations, Configuration &amp; BOQ · Design wireframe only · No production backend</footer>
     </main>
