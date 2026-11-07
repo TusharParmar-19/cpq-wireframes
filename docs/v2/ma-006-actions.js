@@ -203,9 +203,61 @@ $("modal-close").addEventListener("click",closeModal);
 $("modal-ok").addEventListener("click",closeModal);
 $("overlay").addEventListener("click",e=>{if(e.target===$("overlay"))closeModal();});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("overlay").classList.contains("open"))closeModal();});
+/* Import only sample configuration choices; never accept user-supplied rates or approval status. */
+function openConfigurationHandoff(raw){
+ if(!raw||raw.length>12000)return false;
+ let c;try{c=JSON.parse(raw);}catch(_){return false;}
+ if(c?.v!==1||typeof c.configId!=="string"||!/^CF-20\d{2}-\d{3,5}$/.test(c.configId)||
+ typeof c.name!=="string"||!Array.isArray(c.items)||c.items.length<1||c.items.length>20)return false;
+ const lines=[];
+ for(let i=0;i<c.items.length;i++){
+  const value=c.items[i];if(!value||typeof value.productId!=="string")return false;
+  const p=product(value.productId),qty=Number(value.quantity);
+  if(!p||!Number.isInteger(qty)||qty<1||qty>100000)return false;
+  const options={};
+  if(p.type==="config"){
+   if(!value.options||typeof value.options!=="object")return false;
+   for(const [key,spec] of Object.entries(p.options)){
+    const choice=value.options[key];
+    if(typeof choice!=="string"||!spec.choices.some(([v])=>v===choice))return false;
+    options[key]=choice;
+   }
+   if(!configCheck(p,options).ok)return false;
+  }
+  lines.push({id:"L"+String(i+1).padStart(2,"0"),productId:p.id,type:p.type,
+   description:p.name,quantity:qty,unit:p.unit,unitPrice:configUnit(p,options),options});
+ }
+ const validCust=master.customers.find(x=>x.id===c.customerId);
+ const validBuyer=validCust?master.companies.find(x=>x.id===c.buyerId&&x.customerId===validCust.id):null;
+ const src=validBuyer?opportunity(c.opportunityId):null;
+ const sameSource=src&&src.customerId===validCust.id&&src.buyerId===validBuyer.id;
+ newBuilder(sameSource?src.id:"");
+ const q=state.builder.quote;
+ if(validCust&&validBuyer){
+  q.customerId=validCust.id;q.buyerId=validBuyer.id;
+  const linked=validCust.links||[];
+  const scope=linked.find(x=>x.companyId===c.companyId&&x.branchId===c.branchId);
+  if(scope){
+   q.companyId=c.companyId;q.branchId=c.branchId;
+   const u=staff.find(x=>x.id===c.ownerId);
+   if(u&&u.status==="Active"&&(u.assignments||[]).some(a=>a.companyId===scope.companyId&&a.branches.includes(scope.branchId)))q.ownerId=u.id;
+  }
+ }
+ q.title="Quotation — "+c.name.slice(0,140);
+ q.lines=lines;
+ q.notes="Demo configuration source: "+c.configId+". Technical approval, actual pricing, tax and discounts must be verified before issue.";
+ renderBuilder();
+ toast("Configuration "+c.configId+" imported into an unissued quotation draft");
+ return true;
+}
 const params=new URLSearchParams(window.location.search);
-const quoteRef=params.get("quote"),opRef=params.get("opportunity");
-if(quoteRef&&quote(quoteRef)){state.selected=quoteRef;state.tab="summary";render();}
+const quoteRef=params.get("quote"),opRef=params.get("opportunity"),configData=params.get("configData");
+if(configData){
+ if(!openConfigurationHandoff(configData)){
+  newBuilder();
+  explain("Configuration handoff unavailable","This demonstration cannot validate the supplied configuration data. Please use the Product Configuration page to select a sample solution, or start a new draft quotation.");
+ }
+}else if(quoteRef&&quote(quoteRef)){state.selected=quoteRef;state.tab="summary";render();}
 else if(opRef&&opportunity(opRef)){newBuilder(opRef);}
 else if(params.get("action")==="new")newBuilder();
 })();
