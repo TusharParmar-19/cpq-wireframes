@@ -199,7 +199,7 @@ function handoff(){
  '<p><b>Site:</b> '+esc(site(o.siteId)?.name||"Not selected")+'</p>'+
  '<p><b>Requirement:</b> '+esc(o.summary)+'</p>'+
  '<p><b>Next module:</b> Create a quotation draft, add technical BOQ lines, price using authorized catalogs, review discounts/margins under policy, approve, issue and track customer response.</p>'+
- '<b>No quotation is created or changed by this button.</b>';
+ '<b>No quotation is created or changed by this button.</b><p><a class="btn primary" href="ma-006-quotations.html?opportunity='+encodeURIComponent(o.id)+'">Open MA-006 with this enquiry</a></p><p>Only the seeded customer/opportunity reference is transferred by this link; browser-session records are not shared across wireframe pages.</p>';
  help(title,description);
 }
 function handleAction(name){
