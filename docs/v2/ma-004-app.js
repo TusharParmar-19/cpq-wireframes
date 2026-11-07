@@ -1,0 +1,115 @@
+/* MA-004: renderer / shared in-memory state. Fictional data only. */
+(()=>{
+"use strict";
+const $=id=>document.getElementById(id);
+const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const db=JSON.parse(JSON.stringify(window.CPQ_MA004_DATA));
+const own=window.CPQ_MA002_DATA.map(e=>({id:e.id,name:e.name,branches:e.branches.map(b=>({id:b.id,name:b.name,city:b.city}))}));
+const state={selected:"CU-001",tab:"overview",company:"all",branch:"all",q:"",status:"all",type:"all",history:[]};
+const cust=id=>db.customers.find(x=>x.id===id);
+const companies=id=>db.companies.filter(x=>x.customerId===id);
+const contacts=id=>db.contacts.filter(x=>x.customerId===id);
+const sites=id=>db.sites.filter(x=>x.customerId===id);
+const projects=id=>db.projects.filter(x=>x.customerId===id);
+const related=id=>db.related.filter(x=>x.customerId===id);
+const buyer=id=>db.companies.find(x=>x.id===id);
+const ent=id=>own.find(x=>x.id===id);
+const branch=id=>own.flatMap(e=>e.branches.map(b=>({...b,companyId:e.id}))).find(b=>b.id===id);
+const next=(prefix,list)=>prefix+String(Math.max(0,...list.map(x=>Number(x.id.slice(prefix.length))||0))+1).padStart(3,"0");
+const val=(x,blank="Not supplied")=>x?esc(x):esc(blank);
+const badge=s=>'<span class="ma4-tag '+({Active:"active",Prospect:"prospect","On Hold":"on-hold",Archived:"archived"}[s]||"neutral")+'">'+esc(s)+'</span>';
+const checkScope=c=>c.links.some(l=>(state.company==="all"||l.companyId===state.company)&&(state.branch==="all"||l.branchId===state.branch));
+function filtered(){
+ const q=state.q.trim().toLowerCase();
+ return db.customers.filter(c=>(state.status==="all"||c.status===state.status)&&(state.type==="all"||c.type===state.type)&&checkScope(c)&&(!q||[c.name,c.id,c.industry,c.owner,...companies(c.id).map(x=>x.name),...contacts(c.id).map(x=>x.name)].some(x=>String(x||"").toLowerCase().includes(q))));
+}
+function scopeControls(){
+ $("internal-company").innerHTML='<option value="all">All authorized internal companies</option>'+own.map(e=>'<option value="'+esc(e.id)+'">'+esc(e.name)+'</option>').join("");
+ $("internal-company").value=state.company;
+ const opts=state.company==="all"?own.flatMap(e=>e.branches.map(b=>[b.id,e.name+" / "+b.name])):(ent(state.company)?.branches||[]).map(b=>[b.id,b.name]);
+ if(state.branch!=="all"&&!opts.some(x=>x[0]===state.branch))state.branch="all";
+ $("internal-branch").innerHTML='<option value="all">All authorized branches</option>'+opts.map(x=>'<option value="'+esc(x[0])+'">'+esc(x[1])+'</option>').join("");
+ $("internal-branch").value=state.branch;
+}
+function summary(){
+ const c=db.customers.filter(checkScope),ids=new Set(c.map(x=>x.id));
+ const v=[["Customer accounts",c.length,"Account-level relationships"],["Customer legal entities",db.companies.filter(x=>ids.has(x.customerId)).length,"Distinct buyers / bill-to entities"],["Contact persons",db.contacts.filter(x=>ids.has(x.customerId)).length,"Linked to customer companies"],["Active projects",db.projects.filter(x=>ids.has(x.customerId)&&!["Completed","Cancelled"].includes(x.stage)).length,"Project and site references"]];
+ $("customer-summary").innerHTML=v.map(x=>'<div class="card ma4-stat"><small>'+esc(x[0])+'</small><strong>'+String(x[1]).padStart(2,"0")+'</strong><span>'+esc(x[2])+'</span></div>').join("");
+}
+function directory(rows){
+ $("customer-count").textContent=rows.length+" shown";
+ $("customer-list").innerHTML=rows.length?rows.map(c=>'<button type="button" class="ma4-customer'+(state.selected===c.id?' active':'')+'" data-customer="'+esc(c.id)+'" aria-pressed="'+String(state.selected===c.id)+'"><span class="ma4-customer-top"><b>'+esc(c.name)+'</b>'+badge(c.status)+'</span><small>'+esc(c.id)+' · '+esc(c.type)+' · '+esc(c.industry)+'</small><span class="ma4-customer-bottom">'+companies(c.id).length+' buyer entities · '+contacts(c.id).length+' contacts<br>'+val(c.owner,"Unassigned owner")+'</span></button>').join(""):'<div class="ma4-empty">No customers match your search and scope. Reset filters or add a fictional customer.</div>';
+}
+function heading(c){
+ const archived=c.status==="Archived";
+ $("detail-head").innerHTML='<div class="ma4-detail-heading"><div><small style="color:#7691a5;font-size:10px">'+esc(c.id)+' · '+esc(c.type)+'</small><h2>'+esc(c.name)+'</h2><p>'+val(c.industry)+' · Owner: '+val(c.owner)+' · Updated: '+esc(c.updated)+'</p></div><div class="ma4-head-actions">'+badge(c.status)+'<button type="button" class="btn" data-action="edit-customer"'+(archived?' disabled':'')+'>Edit customer</button><button type="button" class="btn '+(archived?'':'ma4-action-danger')+'" data-action="archive-customer">'+(archived?'Restore':'Archive')+'</button></div></div>'+
+ '<div class="ma4-meta-row"><span class="ma4-tag neutral">'+companies(c.id).length+' buyer companies</span><span class="ma4-tag neutral">'+contacts(c.id).length+' contacts</span><span class="ma4-tag neutral">'+sites(c.id).length+' sites</span><span class="ma4-tag neutral">'+projects(c.id).length+' projects</span></div>'+
+ '<div class="ma4-header-note"><b>Customer account ≠ customer legal entity.</b> A quotation identifies the exact buyer legal entity and, when relevant, a different project/delivery site.</div>';
+}
+const kv=(name,value)=>'<div class="ma4-kv"><small>'+esc(name)+'</small><strong>'+val(value)+'</strong></div>';
+const panel=(title,subtitle,action="",text="")=>'<div class="ma4-panel-top"><div><h3>'+esc(title)+'</h3><p>'+esc(subtitle)+'</p></div>'+(action?'<button type="button" class="btn primary" data-action="'+action+'">'+esc(text)+'</button>':"")+'</div>';
+const info=text=>'<div class="ma4-inline-info">'+text+'</div>';
+function overview(c){
+ const x=companies(c.id),primary=x.find(y=>y.primary)||x[0],contact=contacts(c.id).find(y=>y.primary);
+ return panel("Relationship overview","Identity, ownership, legal buyer and internal scope")+
+ '<div class="ma4-kv-grid">'+kv("Customer ID",c.id)+kv("Type / status",c.type+" / "+c.status)+kv("Relationship owner",c.owner)+kv("Industry",c.industry)+kv("Primary buyer legal entity",primary?.name)+kv("Primary contact",contact?contact.name+" · "+contact.role:"")+kv("Created",c.created)+kv("Updated",c.updated)+'</div>'+
+ '<div class="ma4-subheader"><h4>Linked internal companies and branches</h4>'+(c.status==="Archived"?'':'<button type="button" class="btn" data-action="link-scope">+ Link internal scope</button>')+'</div>'+
+ '<div class="ma4-scopes">'+c.links.map(l=>'<span>'+val(ent(l.companyId)?.name)+' / '+val(branch(l.branchId)?.name)+'</span>').join("")+'</div>'+
+ info('<b>Scope preview:</b> Linking an internal company never grants employee access. MA-003 company/branch assignment, page/action rights, record scope and approval policy all remain required.')+
+ '<div class="ma4-subheader"><h4>Internal notes</h4></div><div class="ma4-small-card"><p>'+val(c.notes,"No notes")+'</p></div>'+
+ '<div class="ma4-steps"><b>Customer</b> → <b>Buyer entity</b> → <b>Contact / site</b> → <b>Quotation / order</b></div>';
+}
+function legalCompanies(c){
+ const items=companies(c.id),editable=c.status!=="Archived";
+ return panel("Customer legal entities","Buyer, bill-to and tax-verification identities",editable?"add-company":"","+ Add customer company")+
+ '<div class="ma4-card-grid">'+items.map(x=>'<article class="ma4-small-card"><h4>'+esc(x.name)+'</h4><p>'+esc(x.kind)+' · '+val(x.city)+', '+val(x.state)+'</p><p>Tax verification: '+val(x.taxStatus)+'<br>Billing: '+val(x.address)+'</p>'+ (x.primary?'<span class="ma4-tag active">Primary buyer</span>':'<span class="ma4-tag neutral">Additional buyer</span>')+(editable?'<div class="ma4-subheader"><button type="button" class="btn" data-edit-company="'+esc(x.id)+'">Edit details</button>'+(x.primary?'':'<button type="button" class="btn" data-primary-company="'+esc(x.id)+'">Set primary</button>')+'</div>':'')+'</article>').join("")+'</div>'+
+ info('Customer legal entities are separate from your internal MA-002 entities. Each issued quotation stores a fixed buyer legal identity and its own revision snapshot. Real tax-ID verification is a production requirement.');
+}
+function contactsTab(c){
+ const items=contacts(c.id);
+ return panel("Contact persons","Each contact references a customer legal entity.",c.status!=="Archived"?"add-contact":"","+ Add contact")+
+ (items.length?'<div class="ma4-table-scroller"><table class="ma4-table"><thead><tr><th>Contact / role</th><th>Customer company</th><th>Email / phone</th><th>Status</th><th></th></tr></thead><tbody>'+
+ items.map(x=>'<tr><td><strong>'+esc(x.name)+'</strong><small>'+val(x.role)+'</small>'+(x.primary?'<span class="ma4-tag active">Primary</span>':'')+'</td><td>'+val(buyer(x.companyId)?.name)+'</td><td>'+val(x.email)+'<small>'+val(x.phone)+'</small></td><td>'+badge(x.status)+'</td><td>'+(c.status==="Archived"?'':'<button type="button" class="btn" data-edit-contact="'+esc(x.id)+'">Edit</button>')+'</td></tr>').join("")+'</tbody></table></div>':'<div class="ma4-empty">No contacts yet.</div>')+
+ info('Primary contact is designated at customer-account level. Production will validate consent, personal data access and communications separately.');
+}
+function siteTab(c){
+ const s=sites(c.id),p=projects(c.id),edit=c.status!=="Archived";
+ return panel("Sites and delivery addresses","Physical locations associated with the buyer company.",edit?"add-site":"","+ Add site")+
+ (s.length?'<div class="ma4-card-grid">'+s.map(x=>'<article class="ma4-small-card"><h4>'+esc(x.name)+'</h4><p>'+esc(x.type)+' · '+val(x.city)+', '+val(x.state)+'</p><p>'+val(x.address)+'</p><p>Buyer: '+val(buyer(x.companyId)?.name)+'</p>'+(edit?'<div class="ma4-subheader"><button type="button" class="btn" data-edit-site="'+esc(x.id)+'">Edit site</button></div>':'')+'</article>').join("")+'</div>':'<div class="ma4-empty">No sites yet.</div>')+
+ '<div class="ma4-subheader"><h4>Customer projects ('+p.length+')</h4>'+(edit?'<button type="button" class="btn" data-action="add-project">+ Add project</button>':'')+'</div>'+
+ (p.length?'<div class="ma4-table-scroller"><table class="ma4-table"><thead><tr><th>Project</th><th>Buyer / site</th><th>Stage</th><th>Owner</th><th></th></tr></thead><tbody>'+p.map(x=>'<tr><td><strong>'+esc(x.name)+'</strong><small>'+esc(x.id)+'</small></td><td>'+val(buyer(x.companyId)?.name)+'<small>'+val(s.find(y=>y.id===x.siteId)?.name,"Site not selected")+'</small></td><td>'+esc(x.stage)+'</td><td>'+val(x.owner)+'</td><td>'+(edit?'<button type="button" class="btn" data-edit-project="'+esc(x.id)+'">Edit</button>':'')+'</td></tr>').join("")+'</tbody></table></div>':'<div class="ma4-empty">No linked projects yet.</div>')+
+ info('Billing address, delivery/site address, customer legal entity and your own operating branch are separate concepts.');
+}
+function relatedTab(c){
+ const r=related(c.id).filter(x=>(state.company==="all"||x.companyId===state.company)&&(state.branch==="all"||x.branchId===state.branch));
+ return panel("Related commercial records","Illustrative references to future Opportunity, Quotation and Order pages.")+
+ (r.length?'<div class="ma4-table-scroller"><table class="ma4-table"><thead><tr><th>Reference</th><th>Type / status</th><th>Buyer company</th><th>Our internal scope</th><th></th></tr></thead><tbody>'+
+ r.map(x=>'<tr><td><strong>'+esc(x.id)+'</strong></td><td>'+esc(x.type)+'<small>'+esc(x.status)+'</small></td><td>'+val(buyer(x.customerCompanyId)?.name)+'</td><td>'+val(ent(x.companyId)?.name)+'<small>'+val(branch(x.branchId)?.name)+'</small></td><td><button type="button" class="btn" data-record="'+esc(x.id)+'">Planned page</button></td></tr>').join("")+'</tbody></table></div>':'<div class="ma4-empty">No related records for this internal company/branch scope.</div>')+
+ info('Cross-company records must not be combined for an unauthorized employee. Production checks tenant, internal company/branch, record relationship, action and snapshot.');
+}
+function activityTab(c){
+ const h=state.history.filter(x=>x.customerId===c.id);
+ return panel("Customer activity","Browser-session changes only; not a permanent or legal audit.")+
+ '<div class="ma4-activity-item"><b>Fictional account created</b><small>'+esc(c.created)+' · Sample</small></div>'+
+ (h.length?h.map(x=>'<div class="ma4-activity-item"><b>'+esc(x.text)+'</b><small>'+esc(x.when)+'</small></div>').join(""):info('No changes have been recorded in this browser session. Real changes require attributed immutable history.'));
+}
+function detail(){
+ const c=cust(state.selected);
+ if(!c){
+  $("detail-head").innerHTML='<h2 style="font-size:16px">No customer selected</h2><p class="muted">Adjust the filters to view a customer.</p>';
+  $("detail-tabs").hidden=true;$("detail-body").innerHTML='<div class="ma4-empty">No customer records in this filter.</div>';return;
+ }
+ $("detail-tabs").hidden=false;heading(c);
+ for(const b of $("detail-tabs").querySelectorAll("[data-tab]")){const a=b.dataset.tab===state.tab;b.classList.toggle("active",a);b.setAttribute("aria-selected",String(a));}
+ $("detail-body").innerHTML=({overview,companies:legalCompanies,contacts:contactsTab,sites:siteTab,related:relatedTab,activity:activityTab}[state.tab]||overview)(c);
+}
+function render(){
+ scopeControls();summary();
+ const list=filtered();
+ if(!list.some(x=>x.id===state.selected))state.selected=list[0]?.id||"";
+ directory(list);detail();
+}
+function audit(c,text){c.updated="07 Nov 2026 (demo)";state.history.unshift({customerId:c.id,text,when:new Date().toLocaleString("en-IN",{dateStyle:"medium",timeStyle:"short"})+" · Demo"});}
+window.CPQ_MA004={$,esc,db,own,state,cust,companies,contacts,sites,projects,related,buyer,ent,branch,next,filtered,render,detail,directory,summary,scopeControls,audit,checkScope};
+render();
+})();
