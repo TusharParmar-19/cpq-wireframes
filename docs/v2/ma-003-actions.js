@@ -50,10 +50,12 @@ function employeeForm(u=null){
   const assigned=person.assignments.find(a=>a.companyId===e.id)||{roles:[],branches:[]};
   const rolesHtml=roles.map(r=>checkbox("scopeRole",e.id+":"+r.id,r.name,assigned.roles.includes(r.id))).join("");
   const branchesHtml=e.branches.map(b=>checkbox("scopeBranch",e.id+":"+b.id,b.name,assigned.branches.includes(b.id),b.city)).join("");
-  return '<fieldset class="ma3-scope-card"><legend>'+esc(e.name)+'</legend>'+
+  const expanded=assigned.roles.length>0||(!u&&e.id===entities[0].id);
+  const status=assigned.roles.length?assigned.roles.length+" role(s) · "+assigned.branches.length+" branch(es)":"No access selected";
+  return '<details class="ma3-scope-card"'+(expanded?' open':'')+'><summary><span>'+esc(e.name)+'</span><small>'+esc(status)+'</small></summary>'+
    '<div class="ma3-scope-help">Choose roles and branches for this company only. Leave both empty to grant no access.</div>'+
    '<div class="ma3-scope-heading">Roles in '+esc(e.name)+'</div><div class="ma3-checkbox-grid">'+rolesHtml+'</div>'+
-   '<div class="ma3-scope-heading">Allowed operating branches</div><div class="ma3-checkbox-grid">'+branchesHtml+'</div></fieldset>';
+   '<div class="ma3-scope-heading">Allowed operating branches</div><div class="ma3-checkbox-grid">'+branchesHtml+'</div></details>';
  }).join("");
  const notice='<div class="ma3-dialog-warning">Browser-only example. Real employees activate through a secure invitation. Each company has its own selected roles and branches: a manager role in Company A does not automatically apply in Company B. No email is sent or password collected.</div>';
  const html=notice+'<form id="ma3-editor"><div class="ma3-form">'+
