@@ -41,37 +41,74 @@ function updateOwnBranches(){
 }
 function allowedLink(companyId,branchId){return !!ent(companyId)?.branches.some(x=>x.id===branchId);}
 const statusOptions=[["Prospect","Prospect"],["Active","Active"],["On Hold","On Hold"]];
-const typeOptions=[["Company","Company"],["Group","Group / corporate group"],["Individual","Individual"]];
-function createCustomer(){
- const f=wrap(field("name","Customer account / group name","",true)+select("type","Account type",typeOptions,"Company")+
- field("buyerName","First buyer legal name (sample)","",true)+select("status","Relationship status",statusOptions,"Prospect")+
- field("industry","Industry / segment")+field("owner","Relationship owner")+
- ownFields()+area("notes","Relationship notes"),
- "Create a customer relationship and its first buyer legal entity. The INTERNAL company/branch link is for working context, not employee authorization. Only fictional data is permitted.");
- show("Add Customer","Create a sample customer account",f,fd=>{
-  const name=v(fd,"name"),buyerName=v(fd,"buyerName"),ownCo=v(fd,"ourCompany"),ownBr=v(fd,"ourBranch");
-  if(!name||!buyerName){invalid("Customer name and first buyer name are required.");return;}
-  if(db.customers.some(x=>x.name.toLowerCase()===name.toLowerCase())||db.companies.some(x=>x.name.toLowerCase()===buyerName.toLowerCase())){invalid("Possible duplicate customer or buyer. Review the directory before creating.");return;}
-  if(!allowedLink(ownCo,ownBr)){invalid("Choose a valid internal legal entity and branch.");return;}
-  const id=next("CU-",db.customers),bid=next("CC-",db.companies);
-  const c={id,name,type:v(fd,"type"),status:v(fd,"status"),industry:v(fd,"industry"),owner:v(fd,"owner"),notes:v(fd,"notes"),links:[{companyId:ownCo,branchId:ownBr}],created:"07 Nov 2026 (demo)",updated:"07 Nov 2026 (demo)"};
-  db.customers.push(c);
-  db.companies.push({id:bid,customerId:id,name:buyerName,kind:"Head office",primary:true,taxStatus:"Not supplied",city:"",state:"",address:"",billingTerms:"Not configured"});
-  state.company="all";state.branch="all";state.status="all";state.type="all";state.q="";$("customer-search").value="";$("status-filter").value="all";$("type-filter").value="all";state.selected=id;
-  saved(c,"Customer created","overview");
- },"Create customer (demo)");
+const typeOptions=[["Company","Company"],["Individual","Individual person"],["Group","Group / corporate group"]];
+const customerTypeHelp={
+ Company:"One company buying products or services. If its registered buyer name matches the account name, leave the optional buyer-name field blank.",
+ Individual:"One person buying directly. Their buyer identity uses their name automatically; no separate company or tax ID is required to create this account.",
+ Group:"A parent customer relationship with multiple buyer companies. Start with the first buyer company, then add more in the Customer Companies tab."
+};
+function updateCreateType(){
+ const pick=$("f-type"),buyerWrap=$("ma4-first-buyer-wrap"),nameLabel=$("ma4-customer-name-label"),buyerLabel=$("ma4-first-buyer-label"),buyerInput=$("f-buyerName"),industryLabel=$("ma4-industry-label"),help=$("ma4-account-type-help");
+ if(!pick||!buyerWrap||!buyerInput)return;
+ const type=pick.value;
+ buyerWrap.hidden=type==="Individual";
+ buyerInput.required=type==="Group";
+ if(nameLabel)nameLabel.textContent=type==="Individual"?"Customer full name *":type==="Group"?"Group / account name *":"Customer / company name *";
+ if(buyerLabel)buyerLabel.textContent=type==="Group"?"First buyer company legal name *":"Buyer legal name (only if different)";
+ if(industryLabel)industryLabel.textContent=type==="Individual"?"Purchase interest (optional)":"Industry / segment (optional)";
+ if(help)help.textContent=customerTypeHelp[type]||"";
 }
+
+function createCustomer(){
+ const nameField=field("name","Customer / company name","",true,"text",true).replace('for="f-name"','id="ma4-customer-name-label" for="f-name"');
+ const industryField=field("industry","Industry / segment (optional)").replace('for="f-industry"','id="ma4-industry-label" for="f-industry"');
+ const buyerField=field("buyerName","Buyer legal name (only if different)","",false,"text",true)
+  .replace('class="ma4-form-item full"','class="ma4-form-item full" id="ma4-first-buyer-wrap"')
+  .replace('for="f-buyerName"','id="ma4-first-buyer-label" for="f-buyerName"');
+ const f=wrap(select("type","1. Customer type",typeOptions,"Company",true)+
+  '<div class="ma4-form-item full ma4-type-explanation" id="ma4-account-type-help" role="status">'+esc(customerTypeHelp.Company)+'</div>'+
+  nameField+buyerField+select("status","Relationship status",statusOptions,"Prospect")+
+  industryField+field("owner","Relationship owner")+ownFields()+area("notes","Relationship notes"),
+  "Individual, Company and Group customers are supported. Only fictional names and details belong in this public wireframe.");
+ show("Add Customer","Choose customer type first, then enter only the relevant details",f,fd=>{
+  const type=v(fd,"type"),name=v(fd,"name"),enteredBuyer=v(fd,"buyerName"),ourCompany=v(fd,"ourCompany"),ourBranch=v(fd,"ourBranch");
+  if(!["Individual","Company","Group"].includes(type)){invalid("Select a valid customer type.");return;}
+  if(!name){invalid("Enter the customer or group name.");return;}
+  if(type==="Group"&&!enteredBuyer){invalid("Enter the first buyer company legal name for the group.");return;}
+  const buyerName=type==="Individual"?name:(enteredBuyer||name);
+  if(db.customers.some(x=>x.name.toLowerCase()===name.toLowerCase())||db.companies.some(x=>x.name.toLowerCase()===buyerName.toLowerCase())){
+   invalid("A matching customer or buyer identity already exists. Review the directory before creating a duplicate.");return;
+  }
+  if(!allowedLink(ourCompany,ourBranch)){invalid("Choose a valid internal legal entity and branch.");return;}
+  const id=next("CU-",db.customers),buyerId=next("CC-",db.companies);
+  const c={id,name,type,status:v(fd,"status"),industry:v(fd,"industry"),owner:v(fd,"owner"),notes:v(fd,"notes"),links:[{companyId:ourCompany,branchId:ourBranch}],created:"07 Nov 2026 (demo)",updated:"07 Nov 2026 (demo)"};
+  db.customers.push(c);
+  db.companies.push({id:buyerId,customerId:id,name:buyerName,kind:type==="Individual"?"Individual":"Head office",primary:true,taxStatus:type==="Individual"?"Not applicable":"Not supplied",city:"",state:"",address:"",billingTerms:"Not configured"});
+  state.company="all";state.branch="all";state.status="all";state.type="all";state.q="";
+  $("customer-search").value="";$("status-filter").value="all";$("type-filter").value="all";state.selected=id;
+  saved(c,type==="Individual"?"Individual customer created":type==="Group"?"Customer group created":"Company customer created","overview");
+ },"Create customer (demo)");
+ updateCreateType();
+}
+
 function editCustomer(){
  const c=cust(state.selected);if(!c||c.status==="Archived")return;
- const f=wrap(field("name","Customer relationship name",c.name,true)+select("type","Account type",typeOptions,c.type)+
- select("status","Relationship status",statusOptions,c.status)+field("industry","Industry",c.industry)+field("owner","Relationship owner",c.owner)+area("notes","Internal notes",c.notes));
- show("Edit Customer",c.id+" · fictional record",f,fd=>{
+ const currentBuyer=companies(c.id).find(x=>x.kind==="Individual");
+ const immutableType='<div class="ma4-form-item"><label>Customer type</label><div class="ma4-readonly-value">'+esc(c.type)+'</div><p class="ma4-form-help">Fixed after creation to protect linked buyer, contact and quotation relationships.</p></div>';
+ const f=wrap(field("name",c.type==="Individual"?"Customer full name":"Customer relationship name",c.name,true)+immutableType+
+  select("status","Relationship status",statusOptions,c.status)+
+  field("industry",c.type==="Individual"?"Purchase interest (optional)":"Industry / segment (optional)",c.industry)+
+  field("owner","Relationship owner",c.owner)+area("notes","Internal notes",c.notes));
+ show("Edit Customer",c.id+" · customer type cannot be changed here",f,fd=>{
   const name=v(fd,"name");if(!name){invalid("Enter a customer name.");return;}
   if(db.customers.some(x=>x.id!==c.id&&x.name.toLowerCase()===name.toLowerCase())){invalid("A customer with this name already exists.");return;}
-  Object.assign(c,{name,type:v(fd,"type"),status:v(fd,"status"),industry:v(fd,"industry"),owner:v(fd,"owner"),notes:v(fd,"notes")});
+  if(currentBuyer&&db.companies.some(x=>x.id!==currentBuyer.id&&x.name.toLowerCase()===name.toLowerCase())){invalid("Another buyer identity already uses this name.");return;}
+  Object.assign(c,{name,status:v(fd,"status"),industry:v(fd,"industry"),owner:v(fd,"owner"),notes:v(fd,"notes")});
+  if(currentBuyer)currentBuyer.name=name;
   saved(c,"Customer details updated");
  },"Save customer (demo)");
 }
+
 function linkScope(){
  const c=cust(state.selected);if(!c||c.status==="Archived")return;
  const f=wrap(ownFields(),"Link the customer to another INTERNAL company and branch. This does not grant permissions to employees, and cross-company record access must be checked by the backend.");
