@@ -126,3 +126,13 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{ou
 .ma3-effective-context{background:#eef6fb;border:1px solid #d5e6f1;color:#2a5676;border-radius:8px;font-size:12px;line-height:1.85;padding:11px 13px;margin:14px 0 19px}
 #ma3-effective-scope{width:100%;font-size:12px;border:1px solid #cddfec;border-radius:7px;background:white;color:#214c67;min-height:41px;padding:9px 10px}
 @media(max-width:650px){.ma3-scope-card{padding:12px 11px}}
+
+/* Compact accessible company assignment accordions. */
+.ma3-scope-card{padding:0;overflow:hidden}
+.ma3-scope-card>summary{cursor:pointer;padding:15px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px;font-weight:800;color:#194563}
+.ma3-scope-card>summary small{font-size:11px;font-weight:600;color:#6c879c;text-align:right}
+.ma3-scope-card[open]>summary{border-bottom:1px solid #dce9f2;background:#eef7fd}
+.ma3-scope-card>.ma3-scope-help,.ma3-scope-card>.ma3-scope-heading,.ma3-scope-card>.ma3-checkbox-grid{margin-left:15px;margin-right:15px}
+.ma3-scope-card>.ma3-scope-help{margin-top:13px}
+.ma3-scope-card>.ma3-checkbox-grid:last-child{margin-bottom:17px}
+.ma3-scope-card>summary:focus-visible{outline:3px solid #8bbadb;outline-offset:-3px}
