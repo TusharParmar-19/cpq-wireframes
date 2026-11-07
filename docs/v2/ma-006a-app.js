@@ -353,8 +353,14 @@ $("config-modal-close").addEventListener("click",closeDialog);$("config-modal-ok
 $("config-overlay").addEventListener("click",e=>{if(e.target===$("config-overlay"))closeDialog();});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("config-overlay").classList.contains("open"))closeDialog();});
 const params=new URLSearchParams(window.location.search);
-const selected=params.get("configuration");
-if(selected&&record(selected))state.selected=selected;
-render();
+const selected=params.get("configuration"),opRef=params.get("opportunity");
+if(selected&&record(selected)){state.selected=selected;render();}
+else if(opRef&&opportunity(opRef)){
+ const o=opportunity(opRef);
+ newBuilder();
+ const c=state.builder.value;
+ Object.assign(c,{kind:"Customer configuration",customerId:o.customerId,buyerId:o.buyerId,opportunityId:o.id,companyId:o.companyId,branchId:o.branchId,ownerId:o.ownerId,name:"Configuration — "+o.title,notes:"From sample enquiry "+o.id+": "+o.summary});
+ renderBuilder();
+}else render();
 window.CPQ_MA006A={state,records,products,review,record,visible,quotationLink,payload,save,newBuilder,addItem};
 })();
