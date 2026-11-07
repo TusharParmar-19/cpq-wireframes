@@ -2,7 +2,7 @@
 (()=>{
 "use strict";
 const entities=window.CPQ_MA002_DATA.map(e=>({id:e.id,name:e.name,branches:e.branches.map(b=>({id:b.id,name:b.name,city:b.city,status:b.status}))}));
-const users=window.CPQ_MA003_USERS.map(u=>({...u,roles:[...u.roles],branches:[...u.branches]}));
+const users=window.CPQ_MA003_USERS.map(u=>({...u,roles:[...u.roles],branches:[...u.branches],assignments:u.assignments.map(a=>({...a,branches:[...a.branches],roles:[...a.roles]}))}));
 const roles=window.CPQ_MA003_ROLES.map(r=>({...r,perms:[...r.perms]}));
 const perms=window.CPQ_MA003_PERMISSIONS.map(p=>({...p}));
 const state={panel:"users",selectedUser:"U002",selectedRole:"sales",filters:{q:"",role:"all",company:"all",status:"all"},preview:{user:"U002",action:"quotes.view",company:"e1",branch:"e1a",relation:"own"},history:[]};
@@ -14,40 +14,43 @@ const companyBy=id=>entities.find(e=>e.id===id);
 const branchBy=id=>entities.flatMap(e=>e.branches.map(b=>({...b,companyId:e.id,companyName:e.name}))).find(b=>b.id===id);
 const roleName=id=>roleBy(id)?.name||"Unknown role";
 const allBranches=()=>entities.flatMap(e=>e.branches.map(b=>({id:b.id,name:b.name,companyId:e.id,companyName:e.name})));
-const scopeBranches=u=>u.branches.includes("*")?allBranches():u.branches.map(id=>branchBy(id)).filter(Boolean);
-const scopeEntities=u=>[...new Set(scopeBranches(u).map(b=>b.companyId))];
+const assignmentsAt=(u,companyId,branchId)=>u?.assignments?.filter(a=>a.companyId===companyId&&(!branchId||a.branches.includes(branchId)))||[];
+const scopeBranches=u=>[...new Set((u?.assignments||[]).flatMap(a=>a.branches))].map(id=>branchBy(id)).filter(Boolean);
+const scopeEntities=u=>[...new Set((u?.assignments||[]).map(a=>a.companyId))];
 const scopeShort=u=>{
- if(u.branches.includes("*"))return "All 3 tenant entities / 5 branches (sample grant)";
- const labels=scopeBranches(u);
- const ent=scopeEntities(u);
- return ent.length+" "+(ent.length===1?"company":"companies")+" / "+labels.length+" "+(labels.length===1?"branch":"branches");
+ const ent=scopeEntities(u),b=scopeBranches(u);
+ return ent.length+" "+(ent.length===1?"company":"companies")+" / "+b.length+" "+(b.length===1?"branch":"branches");
 };
-const granted=u=>new Set(u.roles.flatMap(id=>roleBy(id)?.perms||[]));
-const visibility=u=>{
- const v=u.roles.map(id=>roleBy(id)?.visibility||"own");
+const roleIdsAt=(u,companyId,branchId)=>[...new Set(assignmentsAt(u,companyId,branchId).flatMap(a=>a.roles))];
+const granted=(u,companyId,branchId)=>new Set(roleIdsAt(u,companyId,branchId).flatMap(id=>roleBy(id)?.perms||[]));
+const visibility=(u,companyId,branchId)=>{
+ const v=roleIdsAt(u,companyId,branchId).map(id=>roleBy(id)?.visibility||"own");
  for(const x of ["all","team","assigned","own"])if(v.includes(x))return x;
- return "own";
+ return "none";
 };
-const isRoleMember=(u,id)=>u.roles.includes(id);
+const isRoleMember=(u,id,companyId=null)=>companyId?assignmentsAt(u,companyId).some(a=>a.roles.includes(id)):u.roles.includes(id);
 const badge=(v)=>'<span class="ma3-tag '+(v==="Active"?"good":v==="Invited"?"warn":v==="Inactive"?"danger":"neutral")+'">'+esc(v)+'</span>';
 const roleChips=u=>'<span class="ma3-badges">'+u.roles.map(id=>'<span class="ma3-tag">'+esc(roleName(id))+'</span>').join("")+'</span>';
 const shortScope=u=>{
- if(u.branches.includes("*"))return '<b>All tenant branches</b><small>Explicit demo-wide assignment</small>';
- const b=scopeBranches(u);const ent=scopeEntities(u);
- return '<b>'+esc(ent.map(id=>companyBy(id)?.name||id).join(", "))+'</b><small>'+esc(b.map(x=>x.name).join(", "))+'</small>';
+ if(!u.assignments.length)return '<b>No access assigned</b>';
+ const lines=u.assignments.map(a=>{
+  const name=companyBy(a.companyId)?.name||a.companyId;
+  return '<b>'+esc(name)+'</b><small>'+esc(a.branches.map(id=>branchBy(id)?.name||id).join(", "))+' · '+esc(a.roles.map(roleName).join(", "))+'</small>';
+ });
+ return lines.join('<div class="ma3-scope-divider"></div>');
 };
 const groups=[...new Set(perms.map(p=>p.group))];
 function assess(input){
  const u=userBy(input.user),b=branchBy(input.branch);
  if(!u||!b)return {kind:"deny",reason:"Choose a valid employee and branch.",checks:[]};
  const tenantOk=true; // The sample selector contains this one demo business account only.
- const locationOk=b.companyId===input.company&&(u.branches.includes("*")||u.branches.includes(input.branch));
+ const locationOk=b.companyId===input.company&&assignmentsAt(u,input.company,input.branch).length>0;
  const activeOk=u.status==="Active";
- const grantOk=granted(u).has(input.action);
+ const grantOk=granted(u,input.company,input.branch).has(input.action);
  const recordActions=["customers.view","customers.create","opportunities.view","opportunities.create","quotes.view","quotes.create","quotes.edit","quotes.pdf","rfq.view","rfq.create","documents.view","documents.upload","orders.view","orders.register","records.archive"];
  const related=()=>{
   if(!recordActions.includes(input.action))return true;
-  const v=visibility(u),rel=input.relation;
+  const v=visibility(u,input.company,input.branch),rel=input.relation;
   if(v==="all")return true;
   if(v==="team")return ["own","assigned","team"].includes(rel);
   if(v==="assigned")return ["own","assigned"].includes(rel);
@@ -59,7 +62,7 @@ function assess(input){
   {label:"Active employee account",pass:activeOk},
   {label:"Correct business account (demo tenant)",pass:tenantOk},
   {label:"Assigned legal entity and branch",pass:locationOk},
-  {label:"One of the employee's roles grants this action",pass:grantOk},
+  {label:"Role assigned in this company grants this action",pass:grantOk},
   {label:"Permitted record relationship",pass:recordOk}
  ];
  const fail=checks.find(x=>!x.pass);
@@ -67,7 +70,7 @@ function assess(input){
  const reason=fail?"Blocked in this example: "+fail.label.toLowerCase()+".":policyNeeded?
   "Role and branch checks pass, but additional issuance, registration or approval policy must be verified before the action is permitted.":
   "The sample role, branch and record checks pass. A production server must still authorize the request.";
- return {kind,reason,checks,employee:u,branch:b,action:perms.find(p=>p.id===input.action)?.name||input.action,visibility:visibility(u)};
+ return {kind,reason,checks,employee:u,branch:b,action:perms.find(p=>p.id===input.action)?.name||input.action,visibility:visibility(u,input.company,input.branch)};
 }
 function renderStats(){
  const figures=[
@@ -82,7 +85,7 @@ function filterUsers(){
  const f=state.filters;
  return users.filter(u=>{
   if(f.status!=="all"&&u.status!==f.status)return false;
-  if(f.role!=="all"&&!isRoleMember(u,f.role))return false;
+  if(f.role!=="all"&&!isRoleMember(u,f.role,f.company==="all"?null:f.company))return false;
   if(f.company!=="all"&&!scopeEntities(u).includes(f.company))return false;
   const s=(u.name+" "+u.email+" "+u.id+" "+u.department).toLowerCase();
   if(f.q&&!s.includes(f.q.toLowerCase()))return false;
@@ -97,12 +100,13 @@ function renderUserRows(){
 function renderProfile(){
  const u=userBy(state.selectedUser)||users[0];if(!u)return;
  const branches=scopeBranches(u);
+ const scopedRoles=u.assignments.map(a=>(companyBy(a.companyId)?.name||a.companyId)+": "+a.roles.map(roleName).join(", ")+" ["+a.branches.map(id=>branchBy(id)?.name||id).join(", ")+"]").join(" | ");
  $("user-profile").innerHTML=
  '<div class="ma3-panel-title"><div><h2>Employee profile</h2><p class="muted">Identity, roles and access scope</p></div>'+badge(u.status)+'</div>'+
  '<div class="ma3-profile-content"><div class="ma3-profile-head"><div class="ma3-avatar">'+esc(u.name.split(" ").map(x=>x[0]).join("").slice(0,2))+'</div><div><h3>'+esc(u.name)+'</h3><p>'+esc(u.designation||u.department)+'</p></div></div>'+
  '<div class="ma3-key-values">'+
- ['Email',u.email,'Department',u.department,'Role assignments',roleChips(u),'Legal entities',scopeEntities(u).map(id=>companyBy(id)?.name).join(", "),'Branches',u.branches.includes("*")?"All tenant branches (explicit grant)":branches.map(b=>b.name).join(", "),'Record visibility example',visibility(u).toUpperCase(),'Last updated',u.updated||"Not recorded"].reduce((out,item,i,arr)=>{
-  if(i%2)return out;const label=arr[i],val=arr[i+1];return out+'<div class="ma3-kv"><label>'+esc(label)+'</label><strong>'+(label==="Role assignments"?val:esc(val||"Not assigned"))+'</strong></div>';
+ ['Email',u.email,'Department',u.department,'Roles (all companies)',roleChips(u),'Roles by company',scopedRoles,'Legal entities',scopeEntities(u).map(id=>companyBy(id)?.name).join(", "),'Branches',branches.map(b=>b.companyName+" / "+b.name).join(", "),'Record visibility','Depends on selected company and role','Last updated',u.updated||"Not recorded"].reduce((out,item,i,arr)=>{
+  if(i%2)return out;const label=arr[i],val=arr[i+1];return out+'<div class="ma3-kv"><label>'+esc(label)+'</label><strong>'+(label==="Roles (all companies)"?val:esc(val||"Not assigned"))+'</strong></div>';
  },"")+'</div>'+
  '<div class="ma3-profile-actions"><button type="button" class="btn primary" data-edit-user="'+esc(u.id)+'">Edit Employee &amp; Access</button><button type="button" class="btn" data-effective-user="'+esc(u.id)+'">Effective Permissions</button><button type="button" class="btn" data-preview-for="'+esc(u.id)+'">Preview Access</button><button type="button" class="btn" data-toggle-user="'+esc(u.id)+'">'+(u.status==="Active"?"Deactivate":u.status==="Invited"?"Invitation Details":"Reactivate")+' (demo)</button></div>'+
  '<p class="ma3-profile-note">This account belongs to the demo business tenant. Deactivation keeps historical employee and quotation references. Password setup uses secure invitations in the real system.</p></div>';
@@ -159,6 +163,6 @@ function render(){
  }
  renderUserRows();renderProfile();renderAudit();renderRoleList();renderRoleDetail();updatePreviewInputs();renderPreviewResult();
 }
-window.CPQ_MA003={entities,users,roles,perms,state,$,esc,roleBy,userBy,companyBy,branchBy,scopeBranches,scopeEntities,granted,visibility,assess,render,filterUsers};
+window.CPQ_MA003={entities,users,roles,perms,state,$,esc,roleBy,userBy,companyBy,branchBy,scopeBranches,scopeEntities,assignmentsAt,roleIdsAt,granted,visibility,assess,render,filterUsers};
 render();
 })();
