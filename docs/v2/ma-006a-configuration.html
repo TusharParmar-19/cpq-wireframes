@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MA-006A — Product Configuration | CPQ Platform</title>
+<link rel="stylesheet" href="ma-001.css">
+<link rel="stylesheet" href="ma-006.css">
+<link rel="stylesheet" href="ma-006a.css">
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="logo"><span>CP</span><div>CPQ Platform<small>Master Admin Workspace</small></div></div>
+    <nav class="nav" aria-label="CPQ navigation">
+      <div class="nav-title">Workspace</div>
+      <a class="nav-link" href="ma-001-dashboard.html">▦ &nbsp; Dashboard</a>
+      <div class="nav-title">Organization &amp; People</div>
+      <a class="nav-link" href="ma-002-organization.html">▤ &nbsp; Companies &amp; Branches</a>
+      <a class="nav-link" href="ma-003-users-roles.html">♙ &nbsp; Users, Roles &amp; Access</a>
+      <div class="nav-title">Business Records</div>
+      <a class="nav-link" href="ma-004-customers.html">◉ &nbsp; Customers <small>MA-004</small></a>
+      <a class="nav-link" href="ma-005-opportunities.html">◇ &nbsp; Opportunities <small>MA-005</small></a>
+      <a class="nav-link active" href="ma-006a-configuration.html" aria-current="page">⚙ &nbsp; Configurations <small>MA-006A</small></a>
+      <a class="nav-link" href="ma-006-quotations.html">▣ &nbsp; Quotations <small>MA-006</small></a>
+      <button class="nav-link" type="button" data-planned="Vendor RFQs">⇄ &nbsp; Vendor RFQs</button>
+      <button class="nav-link" type="button" data-planned="Orders">☷ &nbsp; Orders</button>
+      <div class="nav-title">Controls</div>
+      <button class="nav-link" type="button" data-planned="Product Catalog & Configuration Rules">⚙ &nbsp; Product Catalog &amp; Rules</button>
+      <button class="nav-link" type="button" data-planned="Approval Policies">✓ &nbsp; Approval Policies</button>
+      <button class="nav-link" type="button" data-planned="Commercial Settings">⚙ &nbsp; Commercial Settings</button>
+      <button class="nav-link" type="button" data-planned="Reports">▥ &nbsp; Reports</button>
+    </nav>
+    <div class="sidebar-foot"><b>Configuration ≠ Quotation</b><p>Configurations define technical selections. Pricing, approved commercial rates, discounts, tax, issued revisions and dispatch belong to Quotations. Engineering validation needs approved catalog/rule masters.</p></div>
+  </aside>
+  <div class="app">
+    <header class="top"><div>CPQ Workspace / <b>Product Configuration</b></div><span class="avatar">MA</span></header>
+    <main class="page ma6-page ma6a-page">
+      <div class="hero">
+        <div>
+          <div class="overline">MASTER ADMIN / MA-006A</div>
+          <h1>Product Configuration</h1>
+          <p class="muted">Create reusable product or solution configurations, choose specifications and accessories, check sample compatibility and hand over to quotation.</p>
+        </div>
+        <div class="actions">
+          <a class="btn" href="ma-006-quotations.html">Go to Quotations</a>
+          <a class="btn" href="#configuration-register">Browse Configurations</a>
+          <button type="button" class="btn primary" id="new-configuration">+ New Configuration</button>
+        </div>
+      </div>
+      <div class="info"><b>WIREFRAME ONLY · All configuration records are fictional.</b> Sample compatibility rules are not certified technical checks. Nothing is saved to a database, and this page does not authorize BOMs, prices, quotations or orders. Browser edits reset on refresh.</div>
+      <section class="ma6a-flow" aria-label="Configuration to quotation workflow">
+        <div class="ma6a-flow-step current"><span class="ma6a-flow-num">1</span><div><b>Configure</b><small>Choose product options, items and quantities</small></div></div>
+        <div class="ma6a-flow-arrow">→</div>
+        <div class="ma6a-flow-step"><span class="ma6a-flow-num">2</span><div><b>Check &amp; Save</b><small>Resolve sample rules and save a draft solution</small></div></div>
+        <div class="ma6a-flow-arrow">→</div>
+        <div class="ma6a-flow-step"><span class="ma6a-flow-num">3</span><div><b>Price in MA-006</b><small>BOQ, authorized rates and commercial terms</small></div></div>
+      </section>
+      <section class="ma6-stats" id="configuration-stats" aria-label="Configuration summary"></section>
+      <section class="card ma6-scope">
+        <div class="ma6-section-heading"><div><h2>Internal company / branch context</h2><p class="muted">View associated configurations by internal scope. Customer-neutral configurations can be reused when authorized.</p></div><span class="ma6-chip">Scope preview</span></div>
+        <div class="ma6-scope-grid">
+          <div><label for="cfg-company-filter">Our legal entity</label><select id="cfg-company-filter"><option value="all">All internal companies / unassigned</option></select></div>
+          <div><label for="cfg-branch-filter">Our branch</label><select id="cfg-branch-filter"><option value="all">All branches / unassigned</option></select></div>
+          <button class="btn" type="button" id="cfg-reset-filters">Reset filters</button>
+        </div>
+      </section>
+      <section class="ma6-workspace" id="configuration-register">
+        <section class="card ma6-list-panel" aria-label="Configuration register">
+          <div class="ma6-list-heading"><div><h2>Configuration Register</h2><p class="muted">Select a saved sample solution</p></div><span class="chip" id="configuration-count">0 shown</span></div>
+          <div class="ma6-filter-fields">
+            <div><label for="cfg-search">Search</label><input id="cfg-search" type="search" placeholder="Configuration, product, customer or ID"></div>
+            <div><label for="cfg-status-filter">Configuration state</label><select id="cfg-status-filter"><option value="all">All states</option><option value="passed">Demo check passed</option><option value="invalid">Needs changes</option></select></div>
+          </div>
+          <div id="configuration-list" class="ma6-quote-list" aria-live="polite"></div>
+          <div class="ma6-list-note">A configuration is a reusable technical selection. It does not contain approved selling prices or a formal customer offer.</div>
+        </section>
+        <section class="ma6-details">
+          <div class="card ma6-detail-header" id="configuration-header"></div>
+          <div class="card ma6-detail-panel">
+            <nav id="configuration-tabs" class="ma6-tabs" aria-label="Configuration details" role="tablist">
+              <button data-tab="overview" role="tab" aria-selected="true" type="button" class="active">Overview</button>
+              <button data-tab="items" role="tab" aria-selected="false" type="button">Selected Items</button>
+              <button data-tab="validation" role="tab" aria-selected="false" type="button">Technical Checks</button>
+              <button data-tab="handoff" role="tab" aria-selected="false" type="button">Use in Quotation</button>
+            </nav>
+            <div class="ma6-tab-body" id="configuration-tab-body" aria-live="polite"></div>
+          </div>
+        </section>
+      </section>
+      <section class="card ma6-builder" id="configuration-builder" hidden>
+        <div class="ma6-builder-head">
+          <div><span class="ma6-eyebrow">MA-006A / Configuration Builder</span><h2 id="config-builder-title">New Configuration</h2><p class="muted" id="config-builder-subtitle">Product and solution details only · No selling price</p></div>
+          <button type="button" class="btn" id="config-builder-exit">Back to Register</button>
+        </div>
+        <nav id="config-builder-steps" class="ma6-stepper ma6a-stepper" aria-label="Configuration steps"></nav>
+        <div id="config-builder-body" class="ma6-builder-content"></div>
+        <div class="ma6-builder-footer">
+          <span class="ma6-builder-hint" id="config-builder-hint">Fictional products · Browser-session only</span>
+          <div class="ma6-builder-actions">
+            <button type="button" class="btn" id="config-builder-prev">Previous</button>
+            <button type="button" class="btn primary" id="config-builder-next">Next</button>
+            <button type="button" class="btn primary" id="config-builder-save">Save Configuration (demo)</button>
+          </div>
+        </div>
+      </section>
+      <section class="ma6-design-note"><b>Scope boundary:</b> This page stores product attributes, selected items, quantities and optional customer/owner context. The Product Catalog &amp; Rules administration will define technical attributes, approved choices, compatibility and BOM generation. MA-006 Quotations will apply pricing and commercial policies, allow direct quotes for standard items and retain the final revision snapshot.</section>
+      <footer class="footer">CPQ · MA-006A Product Configuration · Wireframe only · No production backend</footer>
+    </main>
+  </div>
+</div>
+<div class="overlay" id="config-overlay" aria-hidden="true">
+  <div class="dialog ma6-dialog" role="dialog" aria-modal="true" aria-labelledby="config-modal-title">
+    <div class="ma6-dialog-head"><div><h2 id="config-modal-title">Information</h2><p class="muted" id="config-modal-subtitle">Wireframe only</p></div><button type="button" class="btn" id="config-modal-close" aria-label="Close">×</button></div>
+    <div class="ma6-dialog-body" id="config-modal-body"></div>
+    <div class="ma6-dialog-foot"><button class="btn primary" type="button" id="config-modal-ok">Close</button></div>
+  </div>
+</div>
+<div id="config-toast" class="ma6-toast" aria-live="polite" role="status" hidden></div>
+<script src="ma-002-data.js"></script>
+<script src="ma-003-data.js"></script>
+<script src="ma-004-data.js"></script>
+<script src="ma-005-data.js"></script>
+<script src="ma-006-data.js"></script>
+<script src="ma-006a-data.js"></script>
+<script src="ma-006a-app.js"></script>
+</body></html>
