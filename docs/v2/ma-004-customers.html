@@ -32,7 +32,7 @@
 <header class="top"><div>CPQ Workspace / <b>Customers, Companies &amp; Contacts</b></div><span class="avatar">MA</span></header>
 <main class="page">
 <div class="hero">
- <div><div class="overline">MASTER ADMIN / MA-004</div><h1>Customers, Companies &amp; Contacts</h1><p class="muted">One customer relationship, multiple customer legal entities, contacts, sites and projects — without mixing them with your internal companies.</p></div>
+ <div><div class="overline">MASTER ADMIN / MA-004</div><h1>Customers, Companies &amp; Contacts</h1><p class="muted">Manage individual buyers, companies and corporate groups, with their contacts, billing identities, sites and projects — separate from your own internal companies.</p></div>
  <div class="actions"><a class="btn" href="#customer-workspace">Browse customers</a><a class="btn" href="ma-003-users-roles.html">Roles &amp; Access</a><button type="button" class="btn primary" id="new-customer">+ Add Customer</button></div>
 </div>
 <div class="info"><b>WIREFRAME ONLY · Fictional customer data.</b> All changes stay in this browser page and reset on refresh. There is no database, permission enforcement, email sending or production record creation. Never enter real tax IDs, personal contact details or confidential customer information.</div>
@@ -41,7 +41,7 @@
  <div class="ma4-guide">
  <div class="ma4-guide-card"><span class="ma4-guide-icon">1</span><div><b>Your internal companies &amp; branches</b><p>Set up in <a href="ma-002-organization.html">MA-002</a>. Control employee work context and access.</p></div></div>
  <span class="ma4-guide-divider">≠</span>
- <div class="ma4-guide-card"><span class="ma4-guide-icon">2</span><div><b>Your customer's companies &amp; sites</b><p>Managed here. Identify the buyer, billing legal entity, delivery site and contacts.</p></div></div>
+ <div class="ma4-guide-card"><span class="ma4-guide-icon">2</span><div><b>Your customer's buyer identities &amp; sites</b><p>Managed here. The buyer can be an individual or a legal company; groups may have several buyer companies.</p></div></div>
 </div>
 </details>
 <section class="ma4-stats" id="customer-summary" aria-label="Customer summary"></section>
@@ -71,7 +71,7 @@
   <div class="card ma4-detail-card">
    <div id="detail-tabs" class="ma4-tabs" role="tablist" aria-label="Customer record sections">
     <button type="button" role="tab" data-tab="overview" aria-selected="true" class="active">Overview</button>
-    <button type="button" role="tab" data-tab="companies" aria-selected="false">Customer Companies</button>
+    <button type="button" role="tab" data-tab="companies" aria-selected="false">Buyers &amp; Billing</button>
     <button type="button" role="tab" data-tab="contacts" aria-selected="false">Contacts</button>
     <button type="button" role="tab" data-tab="sites" aria-selected="false">Branches, Sites &amp; Projects</button>
     <button type="button" role="tab" data-tab="related" aria-selected="false">Related Records</button>
@@ -81,7 +81,7 @@
   </div>
  </section>
 </div>
-<div class="ma4-bottom-note"><b>Data relationships:</b> Customer account → one or more customer legal entities → contacts / sites / projects → opportunities, quotation revisions and orders. The buyer/legal entity and project site must be captured on each commercial record; existing issued documents keep their original snapshots. Tenant/company/branch access and sensitive fields require backend enforcement during development.</div>
+<div class="ma4-bottom-note"><b>Data relationships:</b> Customer account (Individual / Company / Group) → buyer identity (person or legal company) → optional contacts / sites / projects → opportunities, quotations and orders. The correct buyer and relevant delivery/project site must be confirmed on each commercial record; issued documents retain their original snapshots. Tenant/company/branch access and sensitive fields require backend enforcement during development.</div>
 <footer class="footer">CPQ · MA-004 Customers, Companies &amp; Contacts · Prototype only · No production backend</footer>
 </main></div></div>
 <div class="overlay" id="overlay" aria-hidden="true">
