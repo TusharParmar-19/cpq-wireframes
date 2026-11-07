@@ -73,8 +73,9 @@ function assess(input){
   {label:"Permitted record relationship",pass:recordOk}
  ];
  const fail=checks.find(x=>!x.pass);
- const kind=fail?"deny":policyNeeded?"review":"allow";
- const reason=fail?"Blocked in this example: "+fail.label.toLowerCase()+".":policyNeeded?
+ const kind=fail?"deny":targetPage.stage==="Planned"?"planned":policyNeeded?"review":"allow";
+ const reason=fail?"Blocked in this example: "+fail.label.toLowerCase()+".":targetPage.stage==="Planned"?
+   "The example grants match, but this screen has not been built. Access is planned, not currently available. Production policy checks still apply.":policyNeeded?
   "Page and action grants pass, but an independent policy or evidence check is still required before this sensitive or final action.":
   "The sample page, action, company, branch and record checks pass. A production server must still authorize each request.";
  const stageNote=targetPage.stage==="Planned"?" This screen is not implemented in Version 2 yet.":"";
@@ -137,9 +138,10 @@ function renderRoleDetail(){
  const allPageSections=[...new Set(pages.map(p=>p.section))];
  const pageBody=allPageSections.map(g=>'<section class="ma3-role-group"><h3>'+esc(g)+'</h3>'+
   pages.filter(p=>p.section===g).map(p=>{
-   const enabled=r.pages.includes(p.id);
+   const enabled=r.pages.includes(p.id),planned=p.stage==="Planned";
+   const status=enabled?(planned?"✓ Access planned":"✓ Can open"):"— No page access";
    return '<div class="ma3-page-row"><div><b>'+esc(p.name)+'</b><small>'+esc(p.code==='Planned'?"Planned screen":p.code)+' · '+esc(p.stage)+'</small></div>'+
-    '<span class="ma3-tag '+(enabled?"good":"neutral")+'">'+(enabled?"✓ Can open":"— No page access")+'</span></div>';
+    '<span class="ma3-tag '+(enabled?(planned?"planned":"good"):"neutral")+'">'+status+'</span></div>';
   }).join("")+'</section>').join("");
  const actionBody=groups.map(g=>'<section class="ma3-role-group"><h3>'+esc(g)+'</h3>'+
   perms.filter(x=>x.group===g).map(x=>'<div class="ma3-perm-row"><label>'+esc(x.name)+(x.sensitive?' <span class="ma3-sensitive">· Restricted</span>':'')+'</label><span class="ma3-tag '+(r.perms.includes(x.id)?"good":"neutral")+'">'+(r.perms.includes(x.id)?"✓ Granted":"— No grant")+'</span></div>').join("")+'</section>').join("");
@@ -173,10 +175,10 @@ function updatePreviewInputs(){
 }
 function renderPreviewResult(){
  const result=assess(state.preview),u=userBy(state.preview.user);
- const outcome=result.kind==="deny"?"Would be denied":result.kind==="review"?"Requires policy check":"Passes example checks";
- const css=result.kind==="allow"?"good":"danger";
+ const outcome=result.kind==="deny"?"Would be denied":result.kind==="planned"?"Access planned — page not built":result.kind==="review"?"Requires policy check":"Passes example checks";
+ const css=result.kind==="allow"?"good":result.kind==="planned"?"planned":"danger";
  const msg=result.kind==="review"?"Needs further review":outcome;
- $("preview-result").innerHTML='<div class="ma3-result-header"><span class="ma3-result-icon '+css+'">'+(result.kind==="allow"?"✓":result.kind==="review"?"!":"×")+'</span><div><h2>'+esc(msg)+'</h2><p>'+esc(u?.name||"No employee")+' · '+esc(perms.find(k=>k.id===state.preview.action)?.name||"Unknown action")+'</p></div></div>'+
+ $("preview-result").innerHTML='<div class="ma3-result-header"><span class="ma3-result-icon '+css+'">'+(result.kind==="allow"?"✓":result.kind==="planned"?"…":result.kind==="review"?"!":"×")+'</span><div><h2>'+esc(msg)+'</h2><p>'+esc(u?.name||"No employee")+' · '+esc(state.preview.action==="__open__"?"Open page only":perms.find(k=>k.id===state.preview.action)?.name||"Unknown action")+'</p></div></div>'+
  '<div class="ma3-preview-explanation"><b>Page:</b> '+esc(result.page?.name||"Not selected")+'<br>'+esc(result.reason)+'</div><h3 style="font-size:13px;margin:20px 0 15px">Illustrative access checks</h3><div class="ma3-checks">'+result.checks.map(x=>'<div class="ma3-check"><span>'+esc(x.label)+'</span><span class="ma3-tag '+(x.pass?"good":"danger")+'">'+(x.pass?"✓ Pass":"× Blocked")+'</span></div>').join("")+'</div>'+
  '<div class="ma3-inline-note">Selected record: '+esc(companyBy(state.preview.company)?.name||"—")+' / '+esc(branchBy(state.preview.branch)?.name||"—")+'. Record relationship: '+esc(state.preview.relation)+'. No real database record or financial data is accessed.</div>';
 }
