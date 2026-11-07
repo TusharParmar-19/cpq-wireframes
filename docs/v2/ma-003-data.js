@@ -80,6 +80,7 @@ window.CPQ_MA003_USERS.forEach(u=>{
    Every role's assignments are still evaluated separately per legal entity/branch. */
 window.CPQ_MA003_PAGE_CATALOG=[
  {id:"dashboard",name:"Master Admin Dashboard",section:"Workspace",code:"MA-001",stage:"Available",actions:[]},
+ {id:"staff-dashboard",name:"Role Dashboard & My Work",section:"Workspace",code:"Planned",stage:"Planned",actions:[]},
  {id:"organization",name:"Companies & Branches",section:"Organization & People",code:"MA-002",stage:"Available",actions:["organization.manage"]},
  {id:"users",name:"Users, Roles & Permissions",section:"Organization & People",code:"MA-003",stage:"Available",actions:["users.manage","roles.manage","users.invite"]},
  {id:"customers",name:"Customers, Companies & Contacts",section:"Business Records",code:"MA-004",stage:"Planned",actions:["customers.view","customers.create","customers.edit","customers.archive"]},
@@ -123,13 +124,13 @@ window.CPQ_MA003_PERMISSIONS.push(
 );
 window.CPQ_MA003_ROLE_PAGE_DEFAULTS={
  master:["dashboard","organization","users","customers","opportunities","quote-register","quote-builder","quote-revisions","quote-pdf","quote-dispatch","vendor-rfqs","documents","orders","approvals","commercial","reports","audit"],
- owner:["dashboard","customers","opportunities","quote-register","quote-revisions","quote-pdf","quote-dispatch","documents","orders","approvals","reports","audit"],
- manager:["dashboard","customers","opportunities","quote-register","quote-builder","quote-revisions","quote-pdf","quote-dispatch","documents","orders","approvals","reports"],
- sales:["dashboard","customers","opportunities","quote-register","quote-builder","quote-revisions","quote-pdf","quote-dispatch","documents"],
- technical:["dashboard","opportunities","quote-register","quote-builder","vendor-rfqs","documents"],
- purchase:["dashboard","quote-register","vendor-rfqs","documents"],
- finance:["dashboard","quote-register","quote-builder","quote-revisions","quote-pdf","orders","approvals","commercial","reports"],
- read:["dashboard","customers","opportunities","quote-register","quote-revisions","documents","orders"]
+ owner:["staff-dashboard","customers","opportunities","quote-register","quote-revisions","quote-pdf","quote-dispatch","documents","orders","approvals","reports","audit"],
+ manager:["staff-dashboard","customers","opportunities","quote-register","quote-builder","quote-revisions","quote-pdf","quote-dispatch","documents","orders","approvals","reports"],
+ sales:["staff-dashboard","customers","opportunities","quote-register","quote-builder","quote-revisions","quote-pdf","quote-dispatch","documents"],
+ technical:["staff-dashboard","opportunities","quote-register","quote-builder","vendor-rfqs","documents"],
+ purchase:["staff-dashboard","quote-register","vendor-rfqs","documents"],
+ finance:["staff-dashboard","quote-register","quote-builder","quote-revisions","quote-pdf","orders","approvals","commercial","reports"],
+ read:["staff-dashboard","customers","opportunities","quote-register","quote-revisions","documents","orders"]
 };
 window.CPQ_MA003_ROLE_EXTRA_GRANTS={
  master:["customers.edit","customers.archive","opportunities.edit","opportunities.close","quotes.duplicate","quotes.issue","quotes.dispatch","quotes.response","rfq.send","rfq.compare","documents.download","orders.edit","approvals.view","selling.view","commercial.view","commercial.manage","reports.export","audit.view","users.invite"],
