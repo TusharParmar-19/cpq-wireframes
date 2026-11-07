@@ -73,3 +73,75 @@ window.CPQ_MA003_USERS.forEach(u=>{
  u.roles=[...new Set(assignments.flatMap(a=>a.roles))];
  u.branches=[...new Set(assignments.flatMap(a=>a.branches))];
 });
+
+
+/* MA-003 role configuration — prototype inventory, NOT an approved business policy.
+   Page visibility and action grants are independent. Planned routes are not live links.
+   Every role's assignments are still evaluated separately per legal entity/branch. */
+window.CPQ_MA003_PAGE_CATALOG=[
+ {id:"dashboard",name:"Master Admin Dashboard",section:"Workspace",code:"MA-001",stage:"Available",actions:[]},
+ {id:"organization",name:"Companies & Branches",section:"Organization & People",code:"MA-002",stage:"Available",actions:["organization.manage"]},
+ {id:"users",name:"Users, Roles & Permissions",section:"Organization & People",code:"MA-003",stage:"Available",actions:["users.manage","roles.manage","users.invite"]},
+ {id:"customers",name:"Customers, Companies & Contacts",section:"Business Records",code:"MA-004",stage:"Planned",actions:["customers.view","customers.create","customers.edit","customers.archive"]},
+ {id:"opportunities",name:"Opportunities & Enquiries",section:"Business Records",code:"Planned",stage:"Planned",actions:["opportunities.view","opportunities.create","opportunities.edit","opportunities.close"]},
+ {id:"quote-register",name:"Quotation Register",section:"Quotations",code:"Planned",stage:"Planned",actions:["quotes.view","quotes.duplicate"]},
+ {id:"quote-builder",name:"Quotation Builder & BOQ",section:"Quotations",code:"Planned",stage:"Planned",actions:["quotes.view","quotes.create","quotes.edit","selling.view"]},
+ {id:"quote-revisions",name:"Quotation Versions & History",section:"Quotations",code:"Planned",stage:"Planned",actions:["quotes.view"]},
+ {id:"quote-pdf",name:"Quotation PDF & Issue",section:"Quotations",code:"Planned",stage:"Planned",actions:["quotes.view","quotes.pdf","quotes.issue","documents.download"]},
+ {id:"quote-dispatch",name:"Quotation Dispatch & Response",section:"Quotations",code:"Planned",stage:"Planned",actions:["quotes.view","quotes.dispatch","quotes.response"]},
+ {id:"vendor-rfqs",name:"Vendor RFQs & Supplier Offers",section:"Procurement & Files",code:"Planned",stage:"Planned",actions:["rfq.view","rfq.create","rfq.send","rfq.compare","cost.view"]},
+ {id:"documents",name:"Documents & Evidence",section:"Procurement & Files",code:"Planned",stage:"Planned",actions:["documents.view","documents.upload","documents.download","documents.delete"]},
+ {id:"orders",name:"Orders & Registration",section:"Orders & Controls",code:"Planned",stage:"Planned",actions:["orders.view","orders.edit","orders.register","records.archive"]},
+ {id:"approvals",name:"Approval Queue & Policy",section:"Orders & Controls",code:"Planned",stage:"Planned",actions:["approvals.view","approvals.decide","discount.approve"]},
+ {id:"commercial",name:"Commercial Settings & Tax",section:"Orders & Controls",code:"Planned",stage:"Planned",actions:["commercial.view","commercial.manage","bank.view"]},
+ {id:"reports",name:"Reports & Export",section:"Reporting & Audit",code:"Planned",stage:"Planned",actions:["reports.view","reports.export"]},
+ {id:"audit",name:"Activity & Audit History",section:"Reporting & Audit",code:"Planned",stage:"Planned",actions:["audit.view"]}
+];
+window.CPQ_MA003_PERMISSIONS.push(
+ {id:"customers.edit",name:"Edit authorized customer details",group:"Customers & opportunities"},
+ {id:"customers.archive",name:"Archive customer with safeguards",group:"Customers & opportunities",sensitive:true},
+ {id:"opportunities.edit",name:"Edit permitted opportunities",group:"Customers & opportunities"},
+ {id:"opportunities.close",name:"Record opportunity outcome",group:"Customers & opportunities"},
+ {id:"quotes.duplicate",name:"Duplicate an authorized draft",group:"Quotations"},
+ {id:"quotes.issue",name:"Issue an approved quotation revision",group:"Quotations",sensitive:true},
+ {id:"quotes.dispatch",name:"Record quotation dispatch",group:"Quotations"},
+ {id:"quotes.response",name:"Record customer response",group:"Quotations"},
+ {id:"rfq.send",name:"Send authorized vendor RFQ",group:"Vendor RFQs & documents"},
+ {id:"rfq.compare",name:"Compare supplier offers",group:"Vendor RFQs & documents"},
+ {id:"documents.download",name:"Download permitted attachments",group:"Vendor RFQs & documents"},
+ {id:"documents.delete",name:"Remove an authorized draft attachment",group:"Vendor RFQs & documents",sensitive:true},
+ {id:"orders.edit",name:"Edit permitted draft order",group:"Orders & records"},
+ {id:"approvals.view",name:"View assigned approval queue",group:"Sensitive & approvals"},
+ {id:"approvals.decide",name:"Approve/reject under explicit policy",group:"Sensitive & approvals",sensitive:true},
+ {id:"selling.view",name:"View customer-facing selling prices",group:"Sensitive & approvals"},
+ {id:"bank.view",name:"View verified unmasked bank details",group:"Sensitive & approvals",sensitive:true},
+ {id:"commercial.view",name:"View standard commercial settings",group:"Administration"},
+ {id:"commercial.manage",name:"Edit permitted non-sensitive settings",group:"Administration"},
+ {id:"reports.export",name:"Export authorized reports",group:"Administration",sensitive:true},
+ {id:"audit.view",name:"View authorized audit activity",group:"Administration"},
+ {id:"users.invite",name:"Prepare secure employee invitation",group:"Administration"}
+);
+window.CPQ_MA003_ROLE_PAGE_DEFAULTS={
+ master:["dashboard","organization","users","customers","opportunities","quote-register","quote-builder","quote-revisions","quote-pdf","quote-dispatch","vendor-rfqs","documents","orders","approvals","commercial","reports","audit"],
+ owner:["dashboard","customers","opportunities","quote-register","quote-revisions","quote-pdf","quote-dispatch","documents","orders","approvals","reports","audit"],
+ manager:["dashboard","customers","opportunities","quote-register","quote-builder","quote-revisions","quote-pdf","quote-dispatch","documents","orders","approvals","reports"],
+ sales:["dashboard","customers","opportunities","quote-register","quote-builder","quote-revisions","quote-pdf","quote-dispatch","documents"],
+ technical:["dashboard","opportunities","quote-register","quote-builder","vendor-rfqs","documents"],
+ purchase:["dashboard","quote-register","vendor-rfqs","documents"],
+ finance:["dashboard","quote-register","quote-revisions","quote-pdf","orders","approvals","commercial","reports"],
+ read:["dashboard","customers","opportunities","quote-register","quote-revisions","documents","orders"]
+};
+window.CPQ_MA003_ROLE_EXTRA_GRANTS={
+ master:["customers.edit","customers.archive","opportunities.edit","opportunities.close","quotes.duplicate","quotes.issue","quotes.dispatch","quotes.response","rfq.send","rfq.compare","documents.download","orders.edit","approvals.view","selling.view","commercial.view","commercial.manage","reports.export","audit.view","users.invite"],
+ owner:["approvals.view","selling.view","commercial.view","audit.view","documents.download"],
+ manager:["customers.edit","opportunities.edit","opportunities.close","quotes.duplicate","quotes.dispatch","quotes.response","orders.edit","approvals.view","selling.view","documents.download"],
+ sales:["customers.edit","opportunities.edit","opportunities.close","quotes.duplicate","quotes.dispatch","quotes.response","selling.view","documents.download"],
+ technical:["opportunities.edit","rfq.compare","documents.download"],
+ purchase:["rfq.send","rfq.compare","documents.download"],
+ finance:["approvals.view","selling.view","commercial.view","reports.export","documents.download"],
+ read:[]
+};
+window.CPQ_MA003_ROLES.forEach(r=>{
+ r.pages=[...(window.CPQ_MA003_ROLE_PAGE_DEFAULTS[r.id]||[])];
+ r.perms=[...new Set([...r.perms,...(window.CPQ_MA003_ROLE_EXTRA_GRANTS[r.id]||[])])];
+});
