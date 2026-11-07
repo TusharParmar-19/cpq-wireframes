@@ -84,7 +84,7 @@ window.CPQ_MA003_PAGE_CATALOG=[
  {id:"organization",name:"Companies & Branches",section:"Organization & People",code:"MA-002",stage:"Available",actions:["organization.manage"]},
  {id:"users",name:"Users, Roles & Permissions",section:"Organization & People",code:"MA-003",stage:"Available",actions:["users.manage","roles.manage","users.invite"]},
  {id:"customers",name:"Customers, Companies & Contacts",section:"Business Records",code:"MA-004",stage:"Available",actions:["customers.view","customers.create","customers.edit","customers.archive"]},
- {id:"opportunities",name:"Opportunities & Enquiries",section:"Business Records",code:"Planned",stage:"Planned",actions:["opportunities.view","opportunities.create","opportunities.edit","opportunities.close"]},
+ {id:"opportunities",name:"Opportunities & Enquiries",section:"Business Records",code:"MA-005",stage:"Available",actions:["opportunities.view","opportunities.create","opportunities.edit","opportunities.close"]},
  {id:"quote-register",name:"Quotation Register",section:"Quotations",code:"Planned",stage:"Planned",actions:["quotes.view","quotes.duplicate"]},
  {id:"quote-builder",name:"Quotation Builder & BOQ",section:"Quotations",code:"Planned",stage:"Planned",actions:["quotes.view","quotes.create","quotes.edit","selling.view","cost.view","margin.view"]},
  {id:"quote-revisions",name:"Quotation Versions & History",section:"Quotations",code:"Planned",stage:"Planned",actions:["quotes.view"]},
