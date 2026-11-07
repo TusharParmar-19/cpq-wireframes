@@ -264,32 +264,36 @@ $("user-search").addEventListener("input",e=>{state.filters.q=e.target.value;ren
 $("user-role-filter").addEventListener("change",e=>{state.filters.role=e.target.value;render()});
 $("user-company-filter").addEventListener("change",e=>{state.filters.company=e.target.value;render()});
 $("user-status-filter").addEventListener("change",e=>{state.filters.status=e.target.value;render()});
-for(const [id,key] of [["check-user","user"],["check-action","action"],["check-company","company"],["check-branch","branch"],["check-relation","relation"]]){
+for(const [id,key] of [["check-user","user"],["check-page","page"],["check-action","action"],["check-company","company"],["check-branch","branch"],["check-relation","relation"]]){
  $(id).addEventListener("change",e=>{
   state.preview[key]=e.target.value;
   if(key==="company")state.preview.branch=entities.find(x=>x.id===state.preview.company)?.branches[0]?.id||"";
+  if(key==="page")state.preview.action=a.pageBy(state.preview.page)?.actions[0]||"__open__";
   render();
  });
 }
 const presets={
-"sales-own":{user:"U002",action:"quotes.view",company:"e1",branch:"e1a",relation:"own"},
-"sales-other-branch":{user:"U002",action:"quotes.view",company:"e1",branch:"e1s",relation:"own"},
-"sales-margin":{user:"U002",action:"margin.view",company:"e1",branch:"e1a",relation:"own"},
-"finance-margin":{user:"U007",action:"margin.view",company:"e1",branch:"e1a",relation:"assigned"},
-"manager-reports-a":{user:"U004",action:"reports.view",company:"e1",branch:"e1a",relation:"team"},
-"manager-reports-b":{user:"U004",action:"reports.view",company:"e2",branch:"e2a",relation:"own"}
+ "sales-own":{user:"U002",page:"quote-register",action:"quotes.view",company:"e1",branch:"e1a",relation:"own"},
+ "sales-other-branch":{user:"U002",page:"quote-register",action:"quotes.view",company:"e1",branch:"e1s",relation:"own"},
+ "sales-margin":{user:"U002",page:"quote-builder",action:"margin.view",company:"e1",branch:"e1a",relation:"own"},
+ "finance-margin":{user:"U007",page:"quote-builder",action:"margin.view",company:"e1",branch:"e1a",relation:"assigned"},
+ "manager-reports-a":{user:"U004",page:"reports",action:"reports.view",company:"e1",branch:"e1a",relation:"team"},
+ "manager-reports-b":{user:"U004",page:"reports",action:"reports.view",company:"e2",branch:"e2a",relation:"own"},
+ "sales-quote-page":{user:"U002",page:"quote-builder",action:"__open__",company:"e1",branch:"e1a",relation:"own"},
+ "sales-admin-page":{user:"U002",page:"organization",action:"__open__",company:"e1",branch:"e1a",relation:"own"}
 };
 document.addEventListener("click",event=>{
- const t=event.target.closest("[data-select-user],[data-edit-user],[data-toggle-user],[data-effective-user],[data-preview-for],[data-select-role],[data-edit-role],[data-copy-role],[data-scenario],[data-planned]");
+ const t=event.target.closest("[data-select-user],[data-edit-user],[data-toggle-user],[data-effective-user],[data-preview-for],[data-select-role],[data-role-view],[data-edit-role],[data-copy-role],[data-scenario],[data-planned]");
  if(!t)return;
  const d=t.dataset;
  if(d.selectUser){state.selectedUser=d.selectUser;render();return;}
  if(d.editUser){employeeForm(userBy(d.editUser));return;}
  if(d.toggleUser){updateAccountStatus(d.toggleUser);return;}
  if(d.effectiveUser){showEffectivePermissions(d.effectiveUser);return;}
- if(d.previewFor){const u=userBy(d.previewFor),b=u?.branches.includes("*")?entities[0].branches[0]:a.scopeBranches(u)[0];setPreview({user:d.previewFor,company:b?.companyId||"e1",branch:b?.id||"e1a",action:"quotes.view",relation:"own"});return;}
- if(d.selectRole){state.selectedRole=d.selectRole;render();return;}
- if(d.editRole){const role=roleBy(d.editRole);if(role&&!role.system)customRoleForm(role);else msg("Protected example template","Copy built-in roles to create editable sample role templates.");return;}
+ if(d.previewFor){const u=userBy(d.previewFor),b=u?.branches.includes("*")?entities[0].branches[0]:a.scopeBranches(u)[0];setPreview({user:d.previewFor,page:"quote-register",company:b?.companyId||"e1",branch:b?.id||"e1a",action:"quotes.view",relation:"own"});return;}
+ if(d.selectRole){state.selectedRole=d.selectRole;state.roleView="pages";render();return;}
+  if(d.roleView){state.roleView=d.roleView;render();return;}
+ if(d.editRole){const role=roleBy(d.editRole);if(role&&role.id!=="master")customRoleForm(role);else msg("Protected Master Admin role","Use Copy as Custom Role to explore a separate template. Real elevated access requires explicit review.");return;}
  if(d.copyRole){const role=roleBy(d.copyRole);if(role)customRoleForm(role,true);return;}
  if(d.scenario){setPreview(presets[d.scenario]||presets["sales-own"]);return;}
  if(d.planned){msg(d.name||"Module","This module will be designed separately. No access or business data is modified here.");}
