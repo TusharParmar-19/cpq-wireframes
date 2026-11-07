@@ -74,7 +74,7 @@ function contactsTab(c){
 }
 function siteTab(c){
  const s=sites(c.id),p=projects(c.id),edit=c.status!=="Archived";
- return panel("Sites and delivery addresses","Physical locations associated with the buyer company.",edit?"add-site":"","+ Add site")+
+ return panel("Customer branches, sites & delivery addresses","Each location belongs to a specific customer buyer company.",edit?"add-site":"","+ Add site")+
  (s.length?'<div class="ma4-card-grid">'+s.map(x=>'<article class="ma4-small-card"><h4>'+esc(x.name)+'</h4><p>'+esc(x.type)+' · '+val(x.city)+', '+val(x.state)+'</p><p>'+val(x.address)+'</p><p>Buyer: '+val(buyer(x.companyId)?.name)+'</p>'+(edit?'<div class="ma4-subheader"><button type="button" class="btn" data-edit-site="'+esc(x.id)+'">Edit site</button></div>':'')+'</article>').join("")+'</div>':'<div class="ma4-empty">No sites yet.</div>')+
  '<div class="ma4-subheader"><h4>Customer projects ('+p.length+')</h4>'+(edit?'<button type="button" class="btn" data-action="add-project">+ Add project</button>':'')+'</div>'+
  (p.length?'<div class="ma4-table-scroller"><table class="ma4-table"><thead><tr><th>Project</th><th>Buyer / site</th><th>Stage</th><th>Owner</th><th></th></tr></thead><tbody>'+p.map(x=>'<tr><td><strong>'+esc(x.name)+'</strong><small>'+esc(x.id)+'</small></td><td>'+val(buyer(x.companyId)?.name)+'<small>'+val(s.find(y=>y.id===x.siteId)?.name,"Site not selected")+'</small></td><td>'+esc(x.stage)+'</td><td>'+val(x.owner)+'</td><td>'+(edit?'<button type="button" class="btn" data-edit-project="'+esc(x.id)+'">Edit</button>':'')+'</td></tr>').join("")+'</tbody></table></div>':'<div class="ma4-empty">No linked projects yet.</div>')+
