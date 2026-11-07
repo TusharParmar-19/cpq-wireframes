@@ -163,7 +163,7 @@ function renderRoleDetail(){
  $("role-detail").innerHTML='<div class="ma3-role-inner"><div class="ma3-role-header"><div><h2>'+esc(r.name)+'</h2><p>'+esc(r.description)+'</p></div><div class="ma3-role-controls">'+configure+copy+'</div></div>'+
   '<div class="ma3-role-meta"><span class="ma3-tag neutral">'+(r.system?"Built-in example":"Custom demo role")+'</span><span class="ma3-tag">'+r.pages.length+' page grants</span><span class="ma3-tag">'+r.perms.length+' action grants</span><span class="ma3-tag neutral">Record visibility: '+esc(r.visibility)+'</span></div>'+
   roleIssueNote+tabs+'<div class="ma3-role-view">'+(state.roleView==="pages"?pageBody:state.roleView==="actions"?actionBody:impactBody)+'</div>'+
-  '<div class="ma3-inline-note"><b>Page access ≠ action permission.</b> Both are needed. Record ownership, company/branch assignment and protected financial/approval policies remain separate. MA-001 through MA-004 are built as wireframes; the other pages are planned.</div></div>';
+  '<div class="ma3-inline-note"><b>Page access ≠ action permission.</b> Both are needed. Record ownership, company/branch assignment and protected financial/approval policies remain separate. MA-001 through MA-005 are built as wireframes; the other pages are planned.</div></div>';
 }
 function updatePreviewInputs(){
  const p=state.preview;
