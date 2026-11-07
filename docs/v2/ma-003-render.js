@@ -53,7 +53,7 @@ function assess(input){
  const activeOk=u.status==="Active";
  const pageOk=grantedPages(u,input.company,input.branch).has(targetPage.id);
  const grantOk=openOnly||(targetPage.actions.includes(input.action)&&granted(u,input.company,input.branch).has(input.action));
- const recordActions=["customers.view","customers.create","customers.edit","customers.archive","opportunities.view","opportunities.create","opportunities.edit","opportunities.close","quotes.view","quotes.create","quotes.edit","quotes.duplicate","quotes.pdf","quotes.issue","quotes.dispatch","quotes.response","rfq.view","rfq.create","rfq.send","rfq.compare","documents.view","documents.upload","documents.download","documents.delete","orders.view","orders.edit","orders.register","records.archive"];
+ const recordActions=["customers.view","customers.create","customers.edit","customers.archive","opportunities.view","opportunities.create","opportunities.edit","opportunities.close","quotes.view","quotes.create","quotes.edit","quotes.duplicate","quotes.pdf","quotes.issue","quotes.dispatch","quotes.response","rfq.view","rfq.create","rfq.send","rfq.compare","documents.view","documents.upload","documents.download","documents.delete","orders.view","orders.edit","orders.register","records.archive","selling.view","cost.view","margin.view","discount.approve","approvals.view","approvals.decide"];
  const related=()=>{
   if(openOnly||!recordActions.includes(input.action))return true;
   const v=visibility(u,input.company,input.branch),rel=input.relation;
@@ -77,7 +77,8 @@ function assess(input){
  const reason=fail?"Blocked in this example: "+fail.label.toLowerCase()+".":policyNeeded?
   "Page and action grants pass, but an independent policy or evidence check is still required before this sensitive or final action.":
   "The sample page, action, company, branch and record checks pass. A production server must still authorize each request.";
- return {kind,reason,checks,employee:u,page:targetPage,branch:b,action:openOnly?"Open page":perms.find(p=>p.id===input.action)?.name||input.action,visibility:visibility(u,input.company,input.branch)};
+ const stageNote=targetPage.stage==="Planned"?" This screen is not implemented in Version 2 yet.":"";
+ return {kind,reason:reason+stageNote,checks,employee:u,page:targetPage,branch:b,action:openOnly?"Open page":perms.find(p=>p.id===input.action)?.name||input.action,visibility:visibility(u,input.company,input.branch)};
 }
 function renderStats(){
  const figures=[
