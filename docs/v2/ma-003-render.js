@@ -143,8 +143,14 @@ function renderRoleDetail(){
    return '<div class="ma3-page-row"><div><b>'+esc(p.name)+'</b><small>'+esc(p.code==='Planned'?"Planned screen":p.code)+' · '+esc(p.stage)+'</small></div>'+
     '<span class="ma3-tag '+(enabled?(planned?"planned":"good"):"neutral")+'">'+status+'</span></div>';
   }).join("")+'</section>').join("");
+ const inactiveGrants=r.perms.filter(id=>!pages.some(pg=>r.pages.includes(pg.id)&&pg.actions.includes(id)));
  const actionBody=groups.map(g=>'<section class="ma3-role-group"><h3>'+esc(g)+'</h3>'+
-  perms.filter(x=>x.group===g).map(x=>'<div class="ma3-perm-row"><label>'+esc(x.name)+(x.sensitive?' <span class="ma3-sensitive">· Restricted</span>':'')+'</label><span class="ma3-tag '+(r.perms.includes(x.id)?"good":"neutral")+'">'+(r.perms.includes(x.id)?"✓ Granted":"— No grant")+'</span></div>').join("")+'</section>').join("");
+  perms.filter(x=>x.group===g).map(x=>{
+   const checked=r.perms.includes(x.id),ineffective=inactiveGrants.includes(x.id);
+   return '<div class="ma3-perm-row"><label>'+esc(x.name)+(x.sensitive?' <span class="ma3-sensitive">· Restricted</span>':'')+'</label><span class="ma3-tag '+(ineffective?"danger":checked?"good":"neutral")+'">'+(ineffective?"! Ineffective grant":checked?"✓ Granted":"— No grant")+'</span></div>';
+  }).join("")+'</section>').join("");
+ const roleIssueNote=inactiveGrants.length?
+  '<div class="ma3-review-dependency has-issues" role="status"><b>'+inactiveGrants.length+' action grant(s) have no matching page</b><p>These grants cannot currently be used: '+esc(inactiveGrants.map(id=>perms.find(p=>p.id===id)?.name||id).join("; "))+'. Configure Permissions to resolve the conflicts.</p></div>':"";
  const assignments=users.flatMap(u=>u.assignments.filter(a=>a.roles.includes(r.id)).map(a=>({name:u.name,status:u.status,company:companyBy(a.companyId)?.name||a.companyId,branches:a.branches.map(b=>branchBy(b)?.name||b)})));
  const effect=assignments.length?'<div class="ma3-assigned-list">'+assignments.map(a=>'<div class="ma3-page-row"><div><b>'+esc(a.name)+'</b><small>'+esc(a.company)+' / '+esc(a.branches.join(", "))+'</small></div>'+badge(a.status)+'</div>').join("")+'</div>':'<div class="ma3-empty">No employees assigned to this role in the sample.</div>';
  const impactBody='<div class="ma3-role-advice"><b>How the role applies</b><p>These permissions apply only where the employee has this role in a particular company and branch. Multiple roles combine within the assigned company, never across companies.</p></div>'+
@@ -156,7 +162,7 @@ function renderRoleDetail(){
  const copy='<button type="button" class="btn" data-copy-role="'+esc(r.id)+'">Copy as Custom Role</button>';
  $("role-detail").innerHTML='<div class="ma3-role-inner"><div class="ma3-role-header"><div><h2>'+esc(r.name)+'</h2><p>'+esc(r.description)+'</p></div><div class="ma3-role-controls">'+configure+copy+'</div></div>'+
   '<div class="ma3-role-meta"><span class="ma3-tag neutral">'+(r.system?"Built-in example":"Custom demo role")+'</span><span class="ma3-tag">'+r.pages.length+' page grants</span><span class="ma3-tag">'+r.perms.length+' action grants</span><span class="ma3-tag neutral">Record visibility: '+esc(r.visibility)+'</span></div>'+
-  tabs+'<div class="ma3-role-view">'+(state.roleView==="pages"?pageBody:state.roleView==="actions"?actionBody:impactBody)+'</div>'+
+  roleIssueNote+tabs+'<div class="ma3-role-view">'+(state.roleView==="pages"?pageBody:state.roleView==="actions"?actionBody:impactBody)+'</div>'+
   '<div class="ma3-inline-note"><b>Page access ≠ action permission.</b> Both are needed. Record ownership, company/branch assignment and protected financial/approval policies remain separate. Only MA-001, MA-002 and MA-003 are built so far; the other pages are planned.</div></div>';
 }
 function updatePreviewInputs(){
