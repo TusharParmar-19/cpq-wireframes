@@ -8,7 +8,8 @@ window.CPQ_MA004_DATA={
   {id:"CU-005",name:"Delta Engineering",type:"Company",status:"Active",industry:"Engineering",owner:"Service Manager",notes:"Service quotation requires separate approval policy.",links:[{companyId:"e3",branchId:"e3r"}],created:"02 Nov 2026",updated:"06 Nov 2026"},
   {id:"CU-006",name:"Apex Retail",type:"Company",status:"Active",industry:"Retail",owner:"Salesperson A",notes:"Repeat electrical-equipment buyer.",links:[{companyId:"e1",branchId:"e1a"}],created:"03 Nov 2026",updated:"05 Nov 2026"},
   {id:"CU-007",name:"Northstar Components",type:"Company",status:"Prospect",industry:"Components",owner:"Technical User",notes:"Pre-sales lead, awaiting customer clarification.",links:[{companyId:"e2",branchId:"e2a"}],created:"04 Nov 2026",updated:"05 Nov 2026"},
-  {id:"CU-008",name:"Westline Logistics",type:"Company",status:"On Hold",industry:"Logistics",owner:"Service Manager",notes:"On hold pending verified customer requirements.",links:[{companyId:"e3",branchId:"e3r"}],created:"04 Nov 2026",updated:"05 Nov 2026"}
+  {id:"CU-008",name:"Westline Logistics",type:"Company",status:"On Hold",industry:"Logistics",owner:"Service Manager",notes:"On hold pending verified customer requirements.",links:[{companyId:"e3",branchId:"e3r"}],created:"04 Nov 2026",updated:"05 Nov 2026"},
+  {id:"CU-009",name:"Example Individual Customer",type:"Individual",status:"Prospect",industry:"Personal purchase",owner:"Salesperson A",notes:"Individual buyer example. No company registration, tax ID or separate contact is required just to create the account.",links:[{companyId:"e1",branchId:"e1a"}],created:"07 Nov 2026",updated:"07 Nov 2026"}
  ],
  companies:[
   {id:"CC-001",customerId:"CU-001",name:"ABC Industries Private Ltd. (sample)",kind:"Head office",primary:true,taxStatus:"Not supplied",city:"Ahmedabad",state:"Gujarat",address:"Demo Industrial Estate, Ahmedabad",billingTerms:"Customer-specific terms pending verification"},
@@ -19,7 +20,8 @@ window.CPQ_MA004_DATA={
   {id:"CC-006",customerId:"CU-005",name:"Delta Engineering Services (sample)",kind:"Head office",primary:true,taxStatus:"Not supplied",city:"Rajkot",state:"Gujarat",address:"Example Engineering Complex, Rajkot",billingTerms:"Not configured"},
   {id:"CC-007",customerId:"CU-006",name:"Apex Retail Network (sample)",kind:"Head office",primary:true,taxStatus:"Pending",city:"Ahmedabad",state:"Gujarat",address:"Sample Retail Avenue, Ahmedabad",billingTerms:"Not configured"},
   {id:"CC-008",customerId:"CU-007",name:"Northstar Components Works (sample)",kind:"Head office",primary:true,taxStatus:"Not supplied",city:"Ahmedabad",state:"Gujarat",address:"Demo Components Estate, Ahmedabad",billingTerms:"Not configured"},
-  {id:"CC-009",customerId:"CU-008",name:"Westline Logistics Services (sample)",kind:"Head office",primary:true,taxStatus:"Not supplied",city:"Rajkot",state:"Gujarat",address:"Sample Freight Hub, Rajkot",billingTerms:"Not configured"}
+  {id:"CC-009",customerId:"CU-008",name:"Westline Logistics Services (sample)",kind:"Head office",primary:true,taxStatus:"Not supplied",city:"Rajkot",state:"Gujarat",address:"Sample Freight Hub, Rajkot",billingTerms:"Not configured"},
+  {id:"CC-010",customerId:"CU-009",name:"Example Individual Customer",kind:"Individual",primary:true,taxStatus:"Not applicable",city:"Ahmedabad",state:"Gujarat",address:"Not supplied (fictional demo)",billingTerms:"Not configured"}
  ],
  contacts:[
   {id:"CT-001",customerId:"CU-001",companyId:"CC-001",name:"Demo Contact A",role:"Procurement Lead",email:"contact-a@example.com",phone:"+91 00000 01001",primary:true,status:"Active"},
