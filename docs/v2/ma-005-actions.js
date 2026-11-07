@@ -11,6 +11,7 @@ const section=title=>'<div class="ma5-form-section">'+esc(title)+'</div>';
 const wrap=(content,help="")=> (help?'<div class="ma5-dialog-message">'+help+'</div>':"")+'<form class="ma5-form" id="op-form">'+content+'<div class="ma5-form-error" role="alert" id="form-error"></div></form>';
 const v=(fd,key)=>String(fd.get(key)||"").trim();
 const today=()=>new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"});
+const todayInput=()=>{const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-");};
 const dateText=s=>{if(!s)return"";const d=new Date(s+"T12:00:00");return Number.isNaN(+d)?s:d.toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"});};
 const dateValue=s=>{if(!s)return"";const m=s.match(/^(\d{1,2})\s([A-Za-z]{3})\s(\d{4})/);if(!m)return"";const mon=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].indexOf(m[2]);return mon<0?"":m[3]+"-"+String(mon+1).padStart(2,"0")+"-"+m[1].padStart(2,"0")};
 const activeOwners=(comp,br)=>staff.filter(u=>u.status==="Active"&&(u.assignments||[]).some(x=>x.companyId===comp&&x.branches.includes(br)));
@@ -56,6 +57,7 @@ function createForm(){
  select("kind","Enquiry type",db.kinds.map(x=>[x,x]),"Products / Equipment")+
  select("source","Enquiry source",db.sources.map(x=>[x,x]),"Direct Enquiry")+
  select("priority","Priority",db.priorities.map(x=>[x,x]),"Medium")+
+ field("received","Enquiry received on",todayInput(),true,"date")+
  field("needBy","Customer required-by date (optional)","",false,"date")+
  area("summary","Customer requirement summary","",true,true)+
  section("3 · Next action")+
@@ -65,7 +67,7 @@ function createForm(){
  area("requirements","Initial requirements — one per line","")+
  area("remarks","Internal qualification notes (optional)","")+
  '</div></details>',
- "Fields marked * are required. The opportunity ID, received date and New stage are automatic. Other details can be added later; BOQ and pricing belong in the quotation module.");
+ "Fields marked * are required. The opportunity ID and New stage are automatic. Received date defaults to today but can be adjusted for an earlier enquiry. BOQ and pricing belong in the quotation module.");
  open("New Enquiry","Create a sample opportunity from an existing customer",f,fd=>{
   const customerId=v(fd,"customerId"),buyerId=v(fd,"buyerId"),companyId=v(fd,"companyId"),branchId=v(fd,"branchId"),ownerId=v(fd,"ownerId");
   const title=v(fd,"title"),summary=v(fd,"summary");
@@ -80,7 +82,7 @@ function createForm(){
   if(projectId&&!projectFor(customerId,buyerId).some(x=>x.id===projectId)){error("Project must belong to the selected buyer company.");return;}
   const nextIndex=Math.max(17,...db.opportunities.map(x=>Number(x.id.split("-").at(-1))||0))+1;
   const id="OP-2026-"+String(nextIndex).padStart(3,"0");
-  const record={id,title,customerId,buyerId,contactId,siteId,projectId,companyId,branchId,ownerId,stage:"New",priority:v(fd,"priority")||"Medium",source:v(fd,"source")||"Direct Enquiry",kind:v(fd,"kind")||"Mixed Requirement",summary,requirements:v(fd,"requirements").split(/\n/).map(x=>x.trim()).filter(Boolean),received:today(),needBy:dateText(v(fd,"needBy")),expectedClose:"",nextFollowUp:dateText(v(fd,"nextFollowUp")),nextAction:v(fd,"nextAction"),remarks:v(fd,"remarks"),lostReason:"",linkedQuotes:[],lastUpdated:"07 Nov 2026 (demo)"};
+  const record={id,title,customerId,buyerId,contactId,siteId,projectId,companyId,branchId,ownerId,stage:"New",priority:v(fd,"priority")||"Medium",source:v(fd,"source")||"Direct Enquiry",kind:v(fd,"kind")||"Mixed Requirement",summary,requirements:v(fd,"requirements").split(/\n/).map(x=>x.trim()).filter(Boolean),received:dateText(v(fd,"received"))||today(),needBy:dateText(v(fd,"needBy")),expectedClose:"",nextFollowUp:dateText(v(fd,"nextFollowUp")),nextAction:v(fd,"nextAction"),remarks:v(fd,"remarks"),lostReason:"",linkedQuotes:[],lastUpdated:"07 Nov 2026 (demo)"};
   db.opportunities.unshift(record);
   state.company="all";state.branch="all";state.stage="all";state.owner="all";state.priority="all";state.query="";state.selected=id;
   done(record,"Enquiry created: "+id,title,"overview");
