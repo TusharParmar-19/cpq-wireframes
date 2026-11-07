@@ -155,3 +155,10 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
  .ma4-guide-disclosure .ma4-guide{margin:9px 10px 12px}
  .ma4-stat{padding:11px 12px}
 }
+
+/* Customer type-aware form support: personal buyers, companies, and groups. */
+.ma4-type-explanation{background:#eef7fd;border:1px solid #d0e5f4;border-radius:8px;padding:12px 14px;color:#285b7d;font-size:12px;line-height:1.65}
+.ma4-readonly-value{min-height:40px;padding:10px 12px;background:#f3f7fa;border:1px solid #e0e9f0;border-radius:7px;color:#315b78;font-size:12px;font-weight:750}
+.ma4-form-item[hidden]{display:none!important}
+.ma4-form-help{font-size:11px;color:#647f92;line-height:1.5;margin:6px 0 0}
+.ma4-dialog .ma4-form-item.full>.ma4-readonly-value{width:100%}
