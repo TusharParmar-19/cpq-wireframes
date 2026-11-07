@@ -1,0 +1,60 @@
+/* MA-006A — dedicated technical configuration before quotation */
+.ma6a-page .info{margin-bottom:13px}
+.ma6a-flow{display:flex;align-items:stretch;gap:9px;margin:12px 0 16px}
+.ma6a-flow-step{flex:1 1 0;background:#fff;border:1px solid #dce9f3;border-radius:10px;padding:14px;display:flex;gap:11px;align-items:center}
+.ma6a-flow-step.current{border-color:#9dc6e0;background:#eff8ff}
+.ma6a-flow-num{height:30px;width:30px;flex:0 0 30px;border-radius:8px;display:grid;place-items:center;font-weight:900;background:#e7f1fa;color:#306c98;font-size:13px}
+.ma6a-flow-step.current .ma6a-flow-num{background:#246992;color:white}
+.ma6a-flow-step b{display:block;font-size:12px;color:#285471;margin:0 0 4px}
+.ma6a-flow-step small{display:block;font-size:11px;line-height:1.5;color:#69859a}
+.ma6a-flow-arrow{display:flex;align-items:center;justify-content:center;color:#88a8bc;font-size:20px}
+.ma6a-stat .ma6-stat strong{font-size:25px}
+.ma6a-chip-ok{background:#ebf8f0;color:#287a50;border:1px solid #cde9d9;border-radius:6px;padding:5px 8px;font-size:10px;font-weight:850}
+.ma6a-chip-bad{background:#fff0e8;color:#9f5934;border:1px solid #f3d7c1;border-radius:6px;padding:5px 8px;font-size:10px;font-weight:850}
+.ma6a-chip-neutral{background:#f4f7fb;color:#66829b;border:1px solid #e0e8ef;border-radius:6px;padding:5px 8px;font-size:10px;font-weight:850}
+.ma6a-details-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;margin:12px 0 0}
+.ma6a-detail-card{border:1px solid #dceaf3;border-radius:9px;padding:13px 14px;background:#fbfdff}
+.ma6a-detail-card h4{color:#275878;font-size:12px;margin:0 0 7px;line-height:1.45}
+.ma6a-detail-card p{font-size:11px;margin:6px 0;color:#608198;line-height:1.6}
+.ma6a-config-item{border:1px solid #dbe8f2;border-radius:9px;padding:15px;background:white;margin-top:10px}
+.ma6a-config-item-head{display:flex;align-items:start;justify-content:space-between;gap:12px}
+.ma6a-config-item-head strong{display:block;color:#285474;font-size:13px;margin-bottom:5px}
+.ma6a-config-item-head small{display:block;color:#728ea1;font-size:11px;line-height:1.6}
+.ma6a-config-options{display:flex;flex-wrap:wrap;gap:7px;margin:11px 0 0}
+.ma6a-config-options span{border:1px solid #dbe8f1;background:#f2f8fc;color:#567a94;border-radius:6px;padding:5px 8px;font-size:11px;line-height:1.4}
+.ma6a-check-row{display:flex;gap:11px;align-items:start;padding:13px;border:1px solid #dde9f2;border-radius:9px;background:#fbfdff;margin:9px 0}
+.ma6a-check-row .ma6a-check-symbol{font-size:20px;color:#408aab;line-height:1}
+.ma6a-check-row.bad{background:#fffaf2;border-color:#f2e2c9}
+.ma6a-check-row.bad .ma6a-check-symbol{color:#b07836}
+.ma6a-check-row strong{display:block;font-size:12px;color:#27506e;margin-bottom:4px}
+.ma6a-check-row p{font-size:11px;line-height:1.65;color:#6a859a;margin:0}
+.ma6a-quiet-box{margin-top:14px;padding:13px;border-radius:9px;background:#f4f9fd;border:1px solid #dceaf4;color:#507994;font-size:12px;line-height:1.75}
+.ma6a-choice-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.ma6a-stepper{grid-template-columns:repeat(4,minmax(0,1fr))}
+.ma6a-scope-panel{border:1px solid #dbe8f2;border-radius:8px;background:#f8fcff;padding:12px 14px;margin:13px 0}
+.ma6a-scope-panel h4{color:#315c7a;font-size:12px;margin:0 0 8px}
+.ma6a-pick-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.03fr);gap:14px;align-items:start}
+.ma6a-catalog{display:flex;flex-direction:column;gap:9px;max-height:440px;overflow-y:auto;overscroll-behavior:contain}
+.ma6a-catalog .ma6-product-card{flex-shrink:0}
+.ma6a-spec-editor{background:#fcfdff;border:1px solid #deebf3;padding:16px;border-radius:10px}
+.ma6a-spec-editor h3{font-size:14px;color:#265374;margin:0 0 12px}
+.ma6a-spec-editor .ma6-field{margin-bottom:11px}
+.ma6a-spec-editor .ma6-field-grid{gap:11px}
+.ma6a-editor-qty{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:end}
+.ma6a-editor-qty small{color:#748a9f;font-size:11px}
+.ma6a-selected-lines{margin-top:18px}
+.ma6a-line-row{display:flex;justify-content:space-between;align-items:start;gap:12px;background:#fcfdff;border:1px solid #e0eaf3;border-radius:9px;padding:12px;margin:8px 0}
+.ma6a-line-row h4{margin:0 0 7px;color:#2b5774;font-size:12px}
+.ma6a-line-row p{font-size:11px;line-height:1.65;color:#66849c;margin:5px 0}
+.ma6a-line-row-actions{display:flex;gap:6px;flex-wrap:wrap}
+.ma6a-line-qty{width:79px!important;min-width:79px!important}
+.ma6a-status-note{display:flex;gap:8px;align-items:center;margin:13px 0 0}
+.ma6a-status-note p{font-size:11px;color:#668199;line-height:1.6;margin:0}
+.ma6a-handoff{padding:16px;background:#f4faff;border:1px solid #dae9f4;border-radius:9px}
+.ma6a-handoff h4{color:#2a5a79;font-size:14px;margin:0 0 8px}
+.ma6a-handoff p{font-size:12px;color:#5f7e94;line-height:1.7}
+.ma6a-handoff .btn{display:inline-flex;margin-top:10px}
+.ma6a-table-foot{margin:12px 0 0;font-size:11px;color:#70899e;line-height:1.6}
+.ma6a-selected-lines .ma6a-line-qty{border:1px solid #d8e5ef;border-radius:7px;padding:7px}
+@media(max-width:1000px){.ma6a-pick-grid{grid-template-columns:1fr}.ma6a-catalog{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));max-height:none}}
+@media(max-width:700px){.ma6a-flow{flex-direction:column}.ma6a-flow-arrow{transform:rotate(90deg)}.ma6a-details-grid,.ma6a-choice-row,.ma6a-editor-qty,.ma6a-catalog{grid-template-columns:1fr}.ma6a-config-item-head,.ma6a-line-row{flex-direction:column}}
