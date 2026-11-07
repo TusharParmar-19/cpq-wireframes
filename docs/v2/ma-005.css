@@ -117,3 +117,14 @@ button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible,te
 @media(max-width:1250px){.ma5-workspace{grid-template-columns:285px minmax(0,1fr)}.ma5-tabs button{padding:13px 10px}.ma5-cards{grid-template-columns:1fr}}
 @media(max-width:1000px){.ma5-workspace{grid-template-columns:1fr}.ma5-directory{position:static;max-height:none}.ma5-register-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));overflow:visible}.ma5-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:690px){.ma5-page{padding-top:18px}.ma5-scope-grid{grid-template-columns:1fr}.ma5-register-list,.ma5-stats,.ma5-cards,.ma5-kvs,.ma5-form{grid-template-columns:1fr}.ma5-field.full,.ma5-form-section{grid-column:auto}.ma5-steps>div{min-width:100%}.ma5-steps i{display:none}.ma5-detail-hero,.ma5-detail-body{padding:15px}.ma5-modal-body,.ma5-dialog-head,.ma5-dialog-actions{padding-left:15px;padding-right:15px}.ma5-dialog{max-height:94vh}}
+
+/* MA-005 wireframe review: keep the first enquiry entry simple. */
+.ma5-optional{grid-column:1/-1;border:1px solid #dce9f3;border-radius:9px;background:#fafcff;overflow:hidden}
+.ma5-optional>summary{cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;list-style:none;color:#2b5877;font-size:12px}
+.ma5-optional>summary::-webkit-details-marker{display:none}
+.ma5-optional>summary b{font-weight:800}
+.ma5-optional>summary small{font-size:11px;color:#637f94;text-align:right}
+.ma5-optional[open]>summary{background:#eef7fd;border-bottom:1px solid #dce9f3}
+.ma5-optional-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;padding:15px}
+.ma5-optional-grid .ma5-field.full{grid-column:1/-1}
+@media(max-width:690px){.ma5-optional-grid{grid-template-columns:1fr}.ma5-optional-grid .ma5-field.full{grid-column:auto}.ma5-optional>summary{align-items:flex-start;flex-direction:column;gap:5px}.ma5-optional>summary small{text-align:left}}
