@@ -126,7 +126,7 @@ function showEffectivePermissions(id){
   const roleIds=a.roleIdsAt(u,c.companyId,c.branchId);
   const grants=a.granted(u,c.companyId,c.branchId);
   const allowedPages=a.grantedPages(u,c.companyId,c.branchId);
-  const pagesHtml='<section class="ma3-role-group"><h3>Pages this employee can open ('+allowedPages.size+')</h3>'+
+  const pagesHtml='<section class="ma3-role-group"><h3>Role page grants in this company ('+allowedPages.size+')</h3>'+
    '<div class="ma3-effective-pages">'+a.pages.filter(p=>allowedPages.has(p.id)).map(p=>
    '<div class="ma3-page-row"><div><b>'+esc(p.name)+'</b><small>'+esc(p.stage==='Available'?p.code:'Planned screen')+'</small></div>'+
    '<span class="ma3-tag good">✓ Page grant</span></div>').join('')+'</div>'+
@@ -135,7 +135,7 @@ function showEffectivePermissions(id){
   const groupHtml=groups.map(g=>'<section class="ma3-role-group"><h3>'+esc(g)+'</h3>'+
    perms.filter(p=>p.group===g).map(p=>'<div class="ma3-perm-row"><label>'+esc(p.name)+(p.sensitive?' <span class="ma3-sensitive">· Sensitive</span>':'')+'</label><span class="ma3-tag '+(grants.has(p.id)?"good":"neutral")+'">'+(grants.has(p.id)?"✓ Role grant":"— Not granted")+'</span></div>').join("")+'</section>').join("");
   return '<div class="ma3-effective-context"><b>Assigned role(s) in this company:</b> '+esc(roleIds.map(r=>roleBy(r)?.name||r).join(", ")||"None")+
-  '<br><b>Record scope:</b> '+esc(a.visibility(u,c.companyId,c.branchId))+'</div>'+pagesHtml+groupHtml+
+  '<br><b>Record scope:</b> '+esc(a.visibility(u,c.companyId,c.branchId))+'<br><b>Account:</b> '+esc(u.status)+(u.status!=='Active'?' — cannot log in or open any page until activated':'')+'</div>'+pagesHtml+groupHtml+
   '<div class="ma3-inline-note"><b>Access applies only in this selected company/branch.</b> Roles in another company cannot grant actions here. All record ownership, sensitive-field and approval checks still apply independently in the production backend.</div>';
  };
  const html='<div class="ma3-dialog-warning"><b>Employee:</b> '+esc(u.name)+' · '+esc(u.status)+
@@ -205,6 +205,7 @@ function customRoleForm(source=null,copy=false){
   const actionLabel=id=>perms.find(p=>p.id===id)?.name||id;
   const diff=(title,arr,sign)=>'<div class="ma3-review-diff"><b>'+esc(title)+' ('+arr.length+')</b><div>'+(arr.length?arr.map(x=>'<span class="ma3-review-pill '+(sign==='+'?'added':'removed')+'">'+sign+' '+esc(x)+'</span>').join(""):'<span class="ma3-review-none">None</span>')+'</div></div>';
   const sensitive=chosenActions.filter(id=>perms.some(p=>p.id===id&&p.sensitive));
+  const inactiveActions=chosenActions.filter(id=>!a.pages.some(pg=>chosenPages.includes(pg.id)&&pg.actions.includes(id)));
   const review='<div class="ma3-dialog-warning"><b>Review before applying this demo change.</b> Configuration affects the selected role template. Existing employees retain their own company/branch assignments; no production permissions or records are changed.</div>'+
    '<div class="ma3-review-card"><b>'+esc(name)+'</b><small>'+chosenPages.length+' pages · '+chosenActions.length+' capabilities · '+esc(visibility)+' record scope</small></div>'+
    diff("Pages added",added(oldPages,chosenPages,pageLabel),"+")+
@@ -212,6 +213,7 @@ function customRoleForm(source=null,copy=false){
    diff("Actions granted",added(oldActions,chosenActions,actionLabel),"+")+
    diff("Actions revoked",removed(oldActions,chosenActions,actionLabel),"-")+
    '<div class="ma3-review-impact"><b>Employees in scope</b><p>'+(affected.length?esc([...new Set(affected.map(x=>x.name+" — "+x.company))].join("; ")):'No employee assignments yet.')+'</p>'+
+   '<p><b>Actions without an accessible page:</b> '+(inactiveActions.length?esc(inactiveActions.map(actionLabel).join(", ")):'None')+'. These actions cannot be used unless an appropriate page is also granted.</p>'+ 
    '<p><b>Restricted grants selected:</b> '+(sensitive.length?esc(sensitive.map(actionLabel).join(", ")):'None')+'. Sensitive permissions, quote issuance and approvals still require separate authorizations and policy checks in production.</p></div>';
   open("Confirm Role Configuration","Inspect proposed page and action changes before saving",review,()=>{
    if(editing){Object.assign(source,record);state.selectedRole=source.id;audit("Role page & action policy updated",record.name+" · "+record.pages.length+" pages / "+record.perms.length+" actions");}
