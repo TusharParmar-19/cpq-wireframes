@@ -136,3 +136,56 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{ou
 .ma3-scope-card>.ma3-scope-help{margin-top:13px}
 .ma3-scope-card>.ma3-checkbox-grid:last-child{margin-bottom:17px}
 .ma3-scope-card>summary:focus-visible{outline:3px solid #8bbadb;outline-offset:-3px}
+
+
+/* MA-003: Page Access + Actions & Data role matrix, with impact preview. */
+.ma3-role-intro{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:13px 17px;background:#eef6fb;border:1px solid #d9e9f3;border-radius:10px;margin-bottom:15px;font-size:12px;line-height:1.55;color:#587b94}
+.ma3-role-intro b{color:#1b5277;font-size:13px}
+.ma3-role-controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
+.ma3-role-controls .btn{font-size:11px}
+.ma3-role-subtabs{display:flex;flex-wrap:wrap;gap:6px;border-bottom:1px solid #dce8f0;margin:20px 0 5px}
+.ma3-role-subtabs button{border:0;border-bottom:3px solid transparent;border-radius:7px 7px 0 0;background:transparent;color:#69859a;font-weight:800;font-size:12px;padding:12px 13px}
+.ma3-role-subtabs button small{display:inline-block;font-size:10px;margin-left:7px;color:#7893a5}
+.ma3-role-subtabs button.active{color:#145a88;border-bottom-color:#267fb1;background:#edf6fc}
+.ma3-role-view>.ma3-role-group:first-child{margin-top:16px}
+.ma3-page-row{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:11px 0;border-bottom:1px solid #edf1f5;min-width:0}
+.ma3-page-row:last-child{border-bottom:0}
+.ma3-page-row div{min-width:0;flex:1}
+.ma3-page-row b{display:block;font-size:12px;font-weight:750;color:#284d65;line-height:1.45}
+.ma3-page-row small{display:block;font-size:10px;color:#869aac;margin-top:3px}
+.ma3-page-row .ma3-tag{white-space:nowrap}
+.ma3-role-advice{background:#f3f9fd;border:1px solid #dceaf4;border-radius:9px;padding:15px 17px;margin:18px 0;font-size:12px;color:#4f758e;line-height:1.55}
+.ma3-role-advice b{color:#1d5176}
+.ma3-role-advice p{margin:7px 0 0}
+.ma3-impact-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:14px}
+.ma3-impact-stats div{padding:12px 10px;border-radius:8px;background:#f7fafc;border:1px solid #e0eaf1}
+.ma3-impact-stats b{display:block;font-size:19px;color:#174d74}.ma3-impact-stats span{font-size:10px;color:#7791a4;line-height:1.4}
+.ma3-impact-title{font-size:13px;color:#244f6d;margin:22px 0 6px}
+.ma3-assigned-list{border:1px solid #e2ecf2;border-radius:9px;padding:0 13px}
+.ma3-config-section{background:#f8fbfe;border:1px solid #d5e5f0;border-radius:10px;overflow:hidden}
+.ma3-config-section>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;background:#f1f7fb;color:#1e5275;font-size:13px;font-weight:850;padding:16px}
+.ma3-config-section[open]>summary{border-bottom:1px solid #dceaf2}
+.ma3-config-section>.ma3-scope-intro{padding:0 15px;margin:14px 0}
+.ma3-config-count{font-size:11px;font-weight:700;background:#fff;border:1px solid #d9e6ef;border-radius:6px;padding:5px 8px;color:#37647d;white-space:nowrap}
+.ma3-config-group{background:#fff;border:1px solid #e0eaf1;border-radius:8px;margin:10px 14px;overflow:hidden}
+.ma3-config-group:last-child{margin-bottom:15px}
+.ma3-config-group>summary{display:flex;justify-content:space-between;gap:10px;align-items:center;cursor:pointer;padding:12px 14px;color:#2c5c7a;font-size:12px;font-weight:800}
+.ma3-config-group>summary small{font-size:10px;color:#8aa0b0}
+.ma3-config-group[open]>summary{background:#f6fafc;border-bottom:1px solid #e3edf2}
+.ma3-config-group .ma3-checkbox-grid{padding:12px}
+.ma3-config-section>summary:focus-visible,.ma3-config-group>summary:focus-visible{outline:3px solid #8bbadb;outline-offset:-3px}
+.ma3-review-impact{border-radius:9px;background:#f2f8fc;border:1px solid #d9eaf5;padding:14px 16px;font-size:12px;color:#53768e;line-height:1.6}
+.ma3-review-impact b{font-size:12px;color:#285a7c}
+.ma3-review-impact p{margin:7px 0 0}
+.ma3-review-card{border:1px solid #d9e6ef;background:#f8fbfd;border-radius:10px;padding:14px;margin:14px 0 20px}
+.ma3-review-card b{display:block;font-size:16px;color:#1c4b6d}.ma3-review-card small{display:block;color:#6887a0;font-size:11px;margin-top:6px}
+.ma3-review-diff{border-bottom:1px solid #e4edf2;padding:12px 0}.ma3-review-diff b{display:block;font-size:12px;color:#2a506c;margin-bottom:8px}
+.ma3-review-diff>div{display:flex;gap:6px;flex-wrap:wrap}
+.ma3-review-pill{font-size:11px;line-height:1.4;padding:5px 9px;border-radius:6px;overflow-wrap:anywhere}
+.ma3-review-pill.added{background:#e8f7ee;color:#2b7854}
+.ma3-review-pill.removed{background:#fff0ed;color:#9f4e40}
+.ma3-review-none{font-size:11px;color:#8399aa}
+.ma3-effective-pages{border:1px solid #e1eaf1;border-radius:7px;padding:0 12px}
+.ma3-effective-blocked{border:1px dashed #dae6ee;border-radius:7px;margin-top:10px;padding:9px 12px}
+.ma3-effective-blocked>summary{font-size:11px;font-weight:800;color:#567d98;cursor:pointer;padding:4px}
+@media(max-width:700px){.ma3-role-controls{justify-content:flex-start}.ma3-role-subtabs{overflow-x:auto}.ma3-role-subtabs button{white-space:nowrap}.ma3-impact-stats{grid-template-columns:1fr 1fr}.ma3-config-section>summary{flex-wrap:wrap}}
