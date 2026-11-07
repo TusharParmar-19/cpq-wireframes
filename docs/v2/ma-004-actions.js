@@ -136,7 +136,7 @@ function siteForm(id=null){
  const old=db.sites.find(x=>x.id===id&&x.customerId===c.id);
  const x=old||{name:"",companyId:companies(c.id)[0]?.id||"",type:"Project / delivery site",status:"Active",city:"",state:"",address:""};
  const f=wrap(field("name","Site / delivery address label",x.name,true)+select("companyId","Buyer legal entity",companies(c.id).map(y=>[y.id,y.name]),x.companyId,true)+
- select("type","Location type",[["Project / delivery site","Project / delivery site"],["Delivery address","Delivery address"],["Service site","Service site"],["Billing address","Billing address"]],x.type)+
+ select("type","Location type",[["Customer branch / office","Customer branch / office"],["Project / delivery site","Project / delivery site"],["Delivery address","Delivery address"],["Service site","Service site"],["Billing address","Billing address"]],x.type)+
  select("status","Site status",[["Active","Active"],["Inactive","Inactive"]],x.status)+
  field("city","City",x.city)+field("state","State",x.state)+area("address","Site address (fictional)",x.address));
  show(old?"Edit Site":"Add Site",c.name+" · sites and delivery locations",f,fd=>{
