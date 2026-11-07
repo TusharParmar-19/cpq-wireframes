@@ -21,7 +21,7 @@ window.CPQ_MA004_DATA={
   {id:"CC-007",customerId:"CU-006",name:"Apex Retail Network (sample)",kind:"Head office",primary:true,taxStatus:"Pending",city:"Ahmedabad",state:"Gujarat",address:"Sample Retail Avenue, Ahmedabad",billingTerms:"Not configured"},
   {id:"CC-008",customerId:"CU-007",name:"Northstar Components Works (sample)",kind:"Head office",primary:true,taxStatus:"Not supplied",city:"Ahmedabad",state:"Gujarat",address:"Demo Components Estate, Ahmedabad",billingTerms:"Not configured"},
   {id:"CC-009",customerId:"CU-008",name:"Westline Logistics Services (sample)",kind:"Head office",primary:true,taxStatus:"Not supplied",city:"Rajkot",state:"Gujarat",address:"Sample Freight Hub, Rajkot",billingTerms:"Not configured"},
-  {id:"CC-010",customerId:"CU-009",name:"Example Individual Customer",kind:"Individual",primary:true,taxStatus:"Not applicable",city:"Ahmedabad",state:"Gujarat",address:"Not supplied (fictional demo)",billingTerms:"Not configured"}
+  {id:"CC-010",customerId:"CU-009",name:"Example Individual Customer",kind:"Individual",primary:true,taxStatus:"Not applicable",email:"individual-buyer@example.com",phone:"+91 00000 01999",city:"Ahmedabad",state:"Gujarat",address:"Not supplied (fictional demo)",billingTerms:"Not configured"}
  ],
  contacts:[
   {id:"CT-001",customerId:"CU-001",companyId:"CC-001",name:"Demo Contact A",role:"Procurement Lead",email:"contact-a@example.com",phone:"+91 00000 01001",primary:true,status:"Active"},
