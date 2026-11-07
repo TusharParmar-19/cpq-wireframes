@@ -156,8 +156,8 @@ function companyForm(id=null){
   (personal?field("email","Individual email (example.com only)",x.email||"",false,"email")+field("phone","Individual phone (fictional)",x.phone||""):select("kind","Customer entity type",[["Head office","Head office"],["Group company","Group company"],["Subsidiary","Subsidiary"],["Division","Division"]],x.kind)+select("taxStatus","Tax ID verification state",taxOptions,x.taxStatus))+
   field("city","Billing city",x.city)+field("state","Billing state",x.state)+
   area("address","Billing address (fictional)",x.address)+area("billingTerms","Sample billing terms",x.billingTerms),
-  personal?"One individual buyer profile. Business registration and tax-identity fields do not apply in this demo. Only fictional billing information is allowed.":"Buyer/legal entities are different from the INTERNAL companies in MA-002. Never enter real tax identifiers in this public wireframe.");
- show(personal?"Edit Individual Buyer":old?"Edit Customer Company":"Add Customer Company",c.name+" · buyer / billing identity",f,fd=>{
+  personal?"One individual buyer profile. Business registration and tax-identity fields do not apply in this demo. Only fictional billing information is allowed.":old?"Edit this buyer identity without changing the existing group relationship. Never enter real tax identifiers in this public wireframe.":"Enter a distinct buyer legal name. Entity type, billing address and sample billing terms can be completed now or later. The existing primary buyer will remain unchanged. Do not enter real tax identifiers.");
+ show(personal?"Edit Individual Buyer":old?"Edit Buyer Company":"Add Group Buyer Company",c.name+" · buyer / billing identity",f,fd=>{
   const name=v(fd,"name");
   if(!name){invalid("Enter a buyer name.");return;}
   if(db.companies.some(y=>y.id!==old?.id&&y.name.toLowerCase()===name.toLowerCase())){invalid("A buyer identity with this name already exists.");return;}
@@ -168,7 +168,7 @@ function companyForm(id=null){
   else db.companies.push({id:next("CC-",db.companies),customerId:c.id,...patch,primary:companies(c.id).length===0});
   if(personal)c.name=name;
   saved(c,personal?"Individual billing profile updated":old?"Buyer company updated":"Buyer company added","companies");
- },"Save buyer details (demo)");
+ },personal?"Save individual buyer (demo)":old?"Save buyer changes (demo)":"Add buyer company (demo)");
 }
 
 function primaryCompany(id){
