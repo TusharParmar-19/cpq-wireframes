@@ -5,8 +5,8 @@ const a=window.CPQ_MA005;
 const {$,esc,db,master,org,staff,state,customer,buyer,person,site,project,employee,entity,branch,opp,render,audit}=a;
 const options=(items,selected)=>items.map(([v,t])=>'<option value="'+esc(v)+'"'+(String(v)===String(selected)?' selected':'')+'>'+esc(t)+'</option>').join("");
 const field=(id,label,value="",required=false,type="text",full=false)=>'<div class="ma5-field'+(full?' full':'')+'"><label for="f-'+esc(id)+'">'+esc(label)+(required?' *':'')+'</label><input name="'+esc(id)+'" id="f-'+esc(id)+'" type="'+esc(type)+'" value="'+esc(value)+'"'+(required?' required':'')+'></div>';
-const select=(id,label,items,value="",full=false,placeholder="Select...")=>'<div class="ma5-field'+(full?' full':'')+'"><label for="f-'+esc(id)+'">'+esc(label)+'</label><select name="'+esc(id)+'" id="f-'+esc(id)+'"><option value="">'+esc(placeholder)+'</option>'+options(items,value)+'</select></div>';
-const area=(id,label,value="",full=true)=>'<div class="ma5-field'+(full?' full':'')+'"><label for="f-'+esc(id)+'">'+esc(label)+'</label><textarea name="'+esc(id)+'" id="f-'+esc(id)+'" rows="3">'+esc(value)+'</textarea></div>';
+const select=(id,label,items,value="",full=false,placeholder="Select...",required=false)=>'<div class="ma5-field'+(full?' full':'')+'"><label for="f-'+esc(id)+'">'+esc(label)+(required?' *':'')+'</label><select name="'+esc(id)+'" id="f-'+esc(id)+'"'+(required?' required':'')+'><option value="">'+esc(placeholder)+'</option>'+options(items,value)+'</select></div>';
+const area=(id,label,value="",full=true,required=false)=>'<div class="ma5-field'+(full?' full':'')+'"><label for="f-'+esc(id)+'">'+esc(label)+(required?' *':'')+'</label><textarea name="'+esc(id)+'" id="f-'+esc(id)+'" rows="3"'+(required?' required':'')+'>'+esc(value)+'</textarea></div>';
 const section=title=>'<div class="ma5-form-section">'+esc(title)+'</div>';
 const wrap=(content,help="")=> (help?'<div class="ma5-dialog-message">'+help+'</div>':"")+'<form class="ma5-form" id="op-form">'+content+'<div class="ma5-form-error" role="alert" id="form-error"></div></form>';
 const v=(fd,key)=>String(fd.get(key)||"").trim();
@@ -35,33 +35,37 @@ function error(msg){const node=$("form-error");if(node){node.textContent=msg;nod
 function notify(msg){const n=$("toast");n.textContent=msg;n.hidden=false;if(toastHandle)clearTimeout(toastHandle);toastHandle=setTimeout(()=>n.hidden=true,3900);}
 function done(o,title,detail,tab=""){audit(o,title,detail);if(tab)state.tab=tab;close();render();notify(title+" · demo only");}
 function refList(){
- return '<span class="ma5-form-help">Customers and buyer identities come from <a href="ma-004-customers.html" style="color:#1c729b;text-decoration:underline">MA-004</a>. Add a missing customer there before creating an enquiry.</span>';
+ return '<span class="ma5-form-help">Select an existing customer from MA-004. <a href="ma-004-customers.html" target="_blank" rel="noopener" style="color:#1c729b;text-decoration:underline">Open Customer Master</a> to review the directory. New records in one wireframe do not synchronize to other wireframe pages; production should allow quick prospect creation.</span>';
 }
 function createForm(){
  const f=wrap(
- section("1 · Customer and internal company")+
- select("customerId","Customer account",master.customers.filter(c=>c.status!=="Archived").map(c=>[c.id,c.name+" ("+c.type+")"]),"",true,"Choose customer account")+
+ section("1 · Customer and ownership")+
+ select("customerId","Customer account",master.customers.filter(c=>c.status!=="Archived").map(c=>[c.id,c.name+" ("+c.type+")"]),"",true,"Choose customer account",true)+
  '<div class="ma5-field full">'+refList()+'</div>'+
- select("buyerId","Buyer / bill-to identity",[],"",false,"Choose buyer")+
+ select("buyerId","Buyer / bill-to identity",[],"",true,"Choose buyer",true)+
+ select("companyId","Our legal entity",[],"",false,"Choose internal company",true)+
+ select("branchId","Our internal branch",[],"",false,"Choose internal branch",true)+
+ select("ownerId","Responsible employee",[],"",true,"Choose owner",true)+
+ '<details class="ma5-optional"><summary><b>Additional customer links</b><small>Optional contact, site and project</small></summary><div class="ma5-optional-grid">'+
  select("contactId","Contact person (optional)",[],"",false,"Select contact")+
- select("companyId","Our legal entity",[],"",false,"Choose internal company")+
- select("branchId","Our internal branch",[],"",false,"Choose internal branch")+
- select("ownerId","Responsible employee",[],"",false,"Choose owner")+
  select("siteId","Customer site / delivery location (optional)",[],"",false,"Select site")+
  select("projectId","Customer project (optional)",[],"",false,"Select project")+
+ '</div></details>'+
  section("2 · Enquiry information")+
  field("title","Opportunity / enquiry title","",true,"text",true)+
  select("kind","Enquiry type",db.kinds.map(x=>[x,x]),"Products / Equipment")+
  select("source","Enquiry source",db.sources.map(x=>[x,x]),"Direct Enquiry")+
  select("priority","Priority",db.priorities.map(x=>[x,x]),"Medium")+
  field("needBy","Customer required-by date (optional)","",false,"date")+
- area("summary","Customer requirement summary *","")+
- area("requirements","Initial requirements — one per line","")+
+ area("summary","Customer requirement summary","",true,true)+
  section("3 · Next action")+
  field("nextFollowUp","Next follow-up date (optional)","",false,"date")+
- field("nextAction","Next action / owner task","",false,"text",true)+
- area("remarks","Internal qualification notes (optional)",""),
- "Enter the customer and select a buyer before choosing contacts or locations. Stage starts as New; prices and BOQ are not collected here.");
+ field("nextAction","Next action / owner task (optional)","",false,"text",true)+
+ '<details class="ma5-optional"><summary><b>More enquiry details</b><small>Optional requirement lines and internal notes</small></summary><div class="ma5-optional-grid">'+
+ area("requirements","Initial requirements — one per line","")+
+ area("remarks","Internal qualification notes (optional)","")+
+ '</div></details>',
+ "Fields marked * are required. The opportunity ID, received date and New stage are automatic. Other details can be added later; BOQ and pricing belong in the quotation module.");
  open("New Enquiry","Create a sample opportunity from an existing customer",f,fd=>{
   const customerId=v(fd,"customerId"),buyerId=v(fd,"buyerId"),companyId=v(fd,"companyId"),branchId=v(fd,"branchId"),ownerId=v(fd,"ownerId");
   const title=v(fd,"title"),summary=v(fd,"summary");
