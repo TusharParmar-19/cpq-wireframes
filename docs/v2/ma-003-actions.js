@@ -52,7 +52,7 @@ function employeeForm(u=null){
   const branchesHtml=e.branches.map(b=>checkbox("scopeBranch",e.id+":"+b.id,b.name,assigned.branches.includes(b.id),b.city)).join("");
   const expanded=assigned.roles.length>0||(!u&&e.id===entities[0].id);
   const status=assigned.roles.length?assigned.roles.length+" role(s) · "+assigned.branches.length+" branch(es)":"No access selected";
-  return '<details class="ma3-scope-card"'+(expanded?' open':'')+'><summary><span>'+esc(e.name)+'</span><small>'+esc(status)+'</small></summary>'+
+  return '<details class="ma3-scope-card" data-company-id="'+esc(e.id)+'"'+(expanded?' open':'')+'><summary><span>'+esc(e.name)+'</span><small data-scope-summary>'+esc(status)+'</small></summary>'+
    '<div class="ma3-scope-help">Choose roles and branches for this company only. Leave both empty to grant no access.</div>'+
    '<div class="ma3-scope-heading">Roles in '+esc(e.name)+'</div><div class="ma3-checkbox-grid">'+rolesHtml+'</div>'+
    '<div class="ma3-scope-heading">Allowed operating branches</div><div class="ma3-checkbox-grid">'+branchesHtml+'</div></details>';
@@ -107,6 +107,13 @@ function employeeForm(u=null){
   close();render();toast("Scoped employee roles updated on this demo page only.");
  });
  $("ma3-editor").addEventListener("submit",e=>{e.preventDefault();saveHandler?.()});
+ $("ma3-editor").addEventListener("change",e=>{
+  if(!e.target.matches('input[type="checkbox"]'))return;
+  const section=e.target.closest(".ma3-scope-card");if(!section)return;
+  const r=section.querySelectorAll('input[name="scopeRole"]:checked').length;
+  const b=section.querySelectorAll('input[name="scopeBranch"]:checked').length;
+  section.querySelector("[data-scope-summary]").textContent=r&&b?r+" role(s) · "+b+" branch(es)":r||b?"Incomplete selection":"No access selected";
+ });
 }
 function showEffectivePermissions(id){
  const u=userBy(id);if(!u)return;
