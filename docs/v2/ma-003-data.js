@@ -83,7 +83,7 @@ window.CPQ_MA003_PAGE_CATALOG=[
  {id:"staff-dashboard",name:"Role Dashboard & My Work",section:"Workspace",code:"Planned",stage:"Planned",actions:[]},
  {id:"organization",name:"Companies & Branches",section:"Organization & People",code:"MA-002",stage:"Available",actions:["organization.manage"]},
  {id:"users",name:"Users, Roles & Permissions",section:"Organization & People",code:"MA-003",stage:"Available",actions:["users.manage","roles.manage","users.invite"]},
- {id:"customers",name:"Customers, Companies & Contacts",section:"Business Records",code:"MA-004",stage:"Planned",actions:["customers.view","customers.create","customers.edit","customers.archive"]},
+ {id:"customers",name:"Customers, Companies & Contacts",section:"Business Records",code:"MA-004",stage:"Available",actions:["customers.view","customers.create","customers.edit","customers.archive"]},
  {id:"opportunities",name:"Opportunities & Enquiries",section:"Business Records",code:"Planned",stage:"Planned",actions:["opportunities.view","opportunities.create","opportunities.edit","opportunities.close"]},
  {id:"quote-register",name:"Quotation Register",section:"Quotations",code:"Planned",stage:"Planned",actions:["quotes.view","quotes.duplicate"]},
  {id:"quote-builder",name:"Quotation Builder & BOQ",section:"Quotations",code:"Planned",stage:"Planned",actions:["quotes.view","quotes.create","quotes.edit","selling.view","cost.view","margin.view"]},
