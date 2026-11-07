@@ -85,7 +85,7 @@ window.CPQ_MA003_PAGE_CATALOG=[
  {id:"customers",name:"Customers, Companies & Contacts",section:"Business Records",code:"MA-004",stage:"Planned",actions:["customers.view","customers.create","customers.edit","customers.archive"]},
  {id:"opportunities",name:"Opportunities & Enquiries",section:"Business Records",code:"Planned",stage:"Planned",actions:["opportunities.view","opportunities.create","opportunities.edit","opportunities.close"]},
  {id:"quote-register",name:"Quotation Register",section:"Quotations",code:"Planned",stage:"Planned",actions:["quotes.view","quotes.duplicate"]},
- {id:"quote-builder",name:"Quotation Builder & BOQ",section:"Quotations",code:"Planned",stage:"Planned",actions:["quotes.view","quotes.create","quotes.edit","selling.view"]},
+ {id:"quote-builder",name:"Quotation Builder & BOQ",section:"Quotations",code:"Planned",stage:"Planned",actions:["quotes.view","quotes.create","quotes.edit","selling.view","cost.view","margin.view"]},
  {id:"quote-revisions",name:"Quotation Versions & History",section:"Quotations",code:"Planned",stage:"Planned",actions:["quotes.view"]},
  {id:"quote-pdf",name:"Quotation PDF & Issue",section:"Quotations",code:"Planned",stage:"Planned",actions:["quotes.view","quotes.pdf","quotes.issue","documents.download"]},
  {id:"quote-dispatch",name:"Quotation Dispatch & Response",section:"Quotations",code:"Planned",stage:"Planned",actions:["quotes.view","quotes.dispatch","quotes.response"]},
@@ -128,7 +128,7 @@ window.CPQ_MA003_ROLE_PAGE_DEFAULTS={
  sales:["dashboard","customers","opportunities","quote-register","quote-builder","quote-revisions","quote-pdf","quote-dispatch","documents"],
  technical:["dashboard","opportunities","quote-register","quote-builder","vendor-rfqs","documents"],
  purchase:["dashboard","quote-register","vendor-rfqs","documents"],
- finance:["dashboard","quote-register","quote-revisions","quote-pdf","orders","approvals","commercial","reports"],
+ finance:["dashboard","quote-register","quote-builder","quote-revisions","quote-pdf","orders","approvals","commercial","reports"],
  read:["dashboard","customers","opportunities","quote-register","quote-revisions","documents","orders"]
 };
 window.CPQ_MA003_ROLE_EXTRA_GRANTS={
