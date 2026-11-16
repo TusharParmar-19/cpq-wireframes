@@ -58,6 +58,7 @@ function renderHub(){
   b.setAttribute("aria-current",active?"page":"false");
  }
  const catalog=state.hub!=="configurations";
+ const masterMenu=$("catalog-manage-menu");if(masterMenu)masterMenu.classList.toggle("active",state.hub==="manufacturers"||state.hub==="parts");
  $("catalog-screen").hidden=!catalog;
  $("configuration-screen").hidden=catalog;
  $("catalog-products-panel").hidden=state.hub!=="products";
@@ -67,7 +68,9 @@ function renderHub(){
 }
 function setHub(hub){
  if(!["products","manufacturers","parts","configurations"].includes(hub))return;
- state.hub=hub;renderHub();
+ state.hub=hub;
+ const menu=$("catalog-manage-menu");if(menu)menu.open=false;
+ renderHub();
  if(hub!=="configurations")renderCatalog();
 }
 function renderStats(){
@@ -188,7 +191,7 @@ function renderDetails(){
    '<div class="ma6-kvs">'+[...schema.essential,...schema.advanced].map(([key,label,unit])=>
     kv(label+(unit?" ("+unit+")":""),val[key]??"Not entered")).join("")+'</div></div>':"";
   $("catalog-family-body").innerHTML=panel("All Product Details","Expand only the information you need for the selected model.")+
-   '<details class="ma6a-view-details" open><summary>Technical specifications & dimensions</summary>'+solarInfo+renderSpecs(f,v)+'</details>'+
+   '<details class="ma6a-view-details"><summary>Technical specifications & dimensions</summary>'+solarInfo+renderSpecs(f,v)+'</details>'+
    '<details class="ma6a-view-details"><summary>Components & accessories</summary>'+renderParts(f,v)+'</details>'+
    '<details class="ma6a-view-details"><summary>Pricing, documents & warranty</summary>'+renderPrices(f,v)+'</details>';
  }else{
@@ -262,7 +265,7 @@ function familyFields(f={}){
  return section("1 · Product Basics","Start with the product name, category and equipment type. The technical fields below will adapt automatically.")+
  group(textField("familyName","Product Family / Name",f.name,"text",false,true)+
  selectField("familyCategory","Category",db.categories.map(x=>[x,x]),f.category||"Solar Equipment","Choose category",true)+
- selectField("solarKind","Equipment Field Template",typeOptions,f.solarKind||"general","Select template")+
+ selectField("solarKind","Equipment Field Template",typeOptions,f.solarKind||state.editor?.solarKind||"general","Select template")+
  selectField("familyType","Product Type",familyTypes,f.type||"standard","Choose type",true))+
  details("More family details",group(textField("familyUnit","Default Unit of Measure",f.unit||"Nos")+
  textField("familyRating","General Rating / Size",f.rating||"")+
@@ -305,6 +308,11 @@ function variantFields(v={},f={}){
  group(selectField("currency","Currency",[["INR","INR"],["USD","USD"],["EUR","EUR"]],p.currency||"INR")+
  textField("priceList","Price List Name",p.list||"Demo Base Price List")+
  numberField("sell","Sample Selling Price / Unit",p.sell??0)+
+ selectField("availability","Availability",[["Unknown","Unknown"],["In Stock","In Stock"],["Order Basis","Order Basis"],["Not Available","Not Available"]],p.availability||"Unknown")+
+ textField("supplierRef","Preferred Supplier / Vendor Reference",p.supplierRef||"")+
+ textField("hsnSac","HSN / SAC (requires review)",p.hsnSac||"")+
+ numberField("leadTimeDays","Expected Lead Time (days)",p.leadTimeDays??"")+
+
  numberField("cost","Internal Cost (restricted in production)",p.cost??0)+
  textField("priceFrom","Effective From",p.from||"","date")+
  textField("priceTo","Effective To",p.to||"","date"))+
@@ -349,7 +357,7 @@ function editorMarkup(){
  return "";
 }
 function openEditor(mode,ids={}){
- state.editor={mode,solarKind:"general",...ids};
+ state.editor={mode,solarKind:mode==="product-new"?"pv-module":"general",...ids};
  const titles={"product-new":"Add New Product & First Variant","family-edit":"Edit Product Family","variant-new":"Add Manufacturer / Size Variant","variant-edit":"Edit Manufacturer Variant","manufacturer-new":"Add Manufacturer","manufacturer-edit":"Edit Manufacturer","part-new":"Add Part / Accessory","part-edit":"Edit Part / Accessory"};
  $("catalog-editor-title").textContent=titles[mode]||"Edit Catalog";
  $("catalog-editor-subtitle").textContent="Fictional master-data fields · Demo save only · Not production authorization";
@@ -404,7 +412,9 @@ function getVariantForm(f,familyType,existing=null,solarKind="general"){
   mounting:trim(f,"mounting"),material:trim(f,"material"),enclosure:trim(f,"enclosure"),
   dimensions:dims,technical:techParse(trim(f,"technical")),solar:solarDataFromForm(f,solarKind,existing?.solar||{}),components,
   price:{currency:trim(f,"currency")||"INR",list:trim(f,"priceList")||"Demo Base Price List",
-   cost:cost===""?0:cost,sell:sell===""?0:sell,from,to},
+   cost:cost===""?0:cost,sell:sell===""?0:sell,from,to,
+   availability:trim(f,"availability")||"Unknown",supplierRef:trim(f,"supplierRef"),
+   hsnSac:trim(f,"hsnSac"),leadTimeDays:positive(f,"leadTimeDays")},
   datasheet:trim(f,"datasheet"),drawing:trim(f,"drawing"),notes:trim(f,"variantNotes")};
 }
 function saveEditor(event){
