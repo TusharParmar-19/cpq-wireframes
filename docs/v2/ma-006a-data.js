@@ -15,7 +15,7 @@ window.CPQ_MA006A_DATA={
      updated:"05 Nov 2026",revision:"C0",items:[
       {id:"I01",productId:"STD-SWG-01",quantity:4,options:{},note:"Standard equipment item"}]},
     {id:"CF-2026-003",name:"65 kWp Rooftop Solar Design (sample)",kind:"Customer configuration",solutionType:"solar",solar:{systemType:"On-grid Rooftop",targetDcKwp:65,targetAcKw:50,roofType:"RCC Roof",usableArea:400,siteLocation:"Facility rooftop (demo)",discom:"Sample Utility",sanctionedLoadKw:120,monthlyKwh:12000,tariffInr:8,orientation:"180",tilt:15,shading:"Site assessment pending",batteriesNeeded:"No",mountingNotes:"RCC rail kits; engineering review required"},
-     customerId:"CU-002",buyerId:"CC-003",opportunityId:"OP-2026-011",companyId:"e2",branchId:"e2a",ownerId:"U008",
+     customerId:"CU-002",buyerId:"CC-003",contactId:"CT-003",siteId:"ST-003",projectId:"PR-003",opportunityId:"OP-2026-011",companyId:"e2",branchId:"e2a",ownerId:"U008",
      quoteId:"QT-2026-011",notes:"Project-level scope package; engineering design, generation estimate and site survey remain separate technical deliverables.",
      updated:"05 Nov 2026",revision:"C0",items:[
       {id:"I01",productId:"VAR-009",variantId:"VAR-009",quantity:118,options:{},note:"550 Wp x 118 = 64.9 kWp DC, sample technical selection"},
