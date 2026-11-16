@@ -218,28 +218,52 @@ function newBuilder(original=null,duplicate=false){
  state.builder=b;state.mode="builder";render();
  $("configuration-builder").scrollIntoView({block:"start",behavior:"auto"});
 }
+function projectField(field,c){
+ const [key,label,unit,type,choices]=field,name="solar-"+key,val=c.solar?.[key]??"";
+ const title=esc(label)+(unit?' ('+esc(unit)+')':'');
+ if(type==="select")return '<div class="ma6-field"><label for="c-'+name+'">'+title+'</label><select id="c-'+name+'" data-solar-field="'+esc(key)+'">'+opts(choices.split(";").map(x=>[x,x]),val)+'</select></div>';
+ return '<div class="ma6-field"><label for="c-'+name+'">'+title+'</label><input id="c-'+name+'" data-solar-field="'+esc(key)+'" type="'+(type==="number"?"number":type==="date"?"date":"text")+'"'+(type==="number"?' step="any"':'')+' value="'+esc(val)+'"></div>';
+}
+function projectFields(group,c){return '<div class="ma6-field-grid">'+window.CPQ_MA006A_SOLAR_FIELDS.project[group].map(x=>projectField(x,c)).join("")+'</div>';}
+function solarOverview(c){
+ const p=c.solar||{},m=solarMetrics(c);
+ return '<div class="ma6a-solar-summary"><div class="ma6a-section-heading"><h3>Solar project & equipment summary</h3></div>'+
+ '<div class="ma6-kvs">'+kv("System type",p.systemType)+kv("Site / Roof",[p.siteLocation,p.roofType].filter(Boolean).join(" · "))+
+ kv("Target DC",p.targetDcKwp?p.targetDcKwp+" kWp":"Not entered")+
+ kv("Selected DC",m.modules?m.dcKwp.toFixed(2)+" kWp":"Not calculated")+
+ kv("Selected AC",m.acKw?m.acKw.toFixed(2)+" kW":"Not selected")+
+ kv("DC / AC Ratio",m.ratio?m.ratio.toFixed(2):"Pending")+
+ kv("PV modules",String(m.modules))+kv("Usable roof area",p.usableArea?p.usableArea+" m²":"Not entered")+'</div>'+
+ '<p class="ma6a-compact-help">Only simple module/inverter totals are shown. Electrical matching, structural fit, shading and expected energy yield need engineering verification.</p></div>';
+}
 function renderContext(c){
- const customerItems=master.customers.filter(x=>x.status!=="Archived").map(x=>[x.id,x.name]);
+ const customers=master.customers.filter(x=>x.status!=="Archived").map(x=>[x.id,x.name]);
  const buyers=master.companies.filter(x=>x.customerId===c.customerId).map(x=>[x.id,x.name]);
  const links=customer(c.customerId)?.links||[];
  const companies=org.filter(x=>!c.customerId||links.some(l=>l.companyId===x.id)).map(x=>[x.id,x.name]);
  const branches=(entity(c.companyId)?.branches||[]).filter(x=>!c.customerId||links.some(l=>l.companyId===c.companyId&&l.branchId===x.id)).map(x=>[x.id,x.name]);
  const users=staff.filter(x=>x.status==="Active"&&(x.assignments||[]).some(a=>a.companyId===c.companyId&&a.branches.includes(c.branchId))).map(x=>[x.id,x.name]);
  const enq=opps.filter(x=>x.customerId===c.customerId&&x.buyerId===c.buyerId).map(x=>[x.id,x.title+" · "+x.id]);
- return panel("1 · Solution context","Configure a product independently or associate it with a known customer and project.")+
- '<div class="ma6-field-grid">'+
- field("name","Configuration / solution name *",c.name,true)+
- select("kind","Configuration purpose",[["Customer configuration","Customer configuration"],["Reusable template","Reusable template"]],c.kind)+
- '<div class="ma6-form-section">Customer context (optional)</div>'+
- select("customerId","Customer account",customerItems,c.customerId,"No customer / reusable template")+
- select("buyerId","Exact buyer company",buyers,c.buyerId,"No buyer yet")+
- select("opportunityId","Linked opportunity",enq,c.opportunityId,"Not linked")+
- '<div class="ma6-form-section">Internal ownership (optional at configuration stage)</div>'+
- select("companyId","Our selling legal entity",companies,c.companyId,"Choose later in quotation")+
- select("branchId","Our internal branch",branches,c.branchId,"Not assigned")+
+ return panel("1 · Project & Configuration Basics","Start with the essentials. Optional site, electricity and engineering details are expandable.")+
+ '<div class="ma6-field-grid">'+field("name","Configuration / Project Name *",c.name,true)+
+ select("solutionType","What are you configuring?",[["solar","Solar System / Project"],["general","Single Product / Other"]],c.solutionType||"general")+
+ select("kind","Purpose",[["Customer configuration","Customer project"],["Reusable template","Reusable template"]],c.kind)+
+ select("customerId","Customer",customers,c.customerId,"Select later if reusable")+'</div>'+
+ (c.solutionType==="solar"?
+ '<div class="ma6a-quick-fields"><h3>Solar project essentials</h3><p>Target capacity, installation and roof information.</p>'+
+ projectFields("essential",c)+'</div>'+
+ '<details class="ma6a-builder-details"><summary>Site & roof survey</summary>'+projectFields("site",c)+'</details>'+
+ '<details class="ma6a-builder-details"><summary>Electricity bill, utility & sanctioned load</summary>'+projectFields("electrical",c)+'</details>'+
+ '<details class="ma6a-builder-details"><summary>Engineering, batteries & compliance</summary>'+projectFields("engineering",c)+'</details>':
+ '<div class="ma6a-quiet-box">No solar-site details are needed when configuring a single standard product.</div>')+
+ '<details class="ma6a-builder-details"><summary>Customer project links & internal ownership</summary><div class="ma6-field-grid">'+
+ select("buyerId","Buyer legal company",buyers,c.buyerId,"Not assigned")+
+ select("opportunityId","Source enquiry",enq,c.opportunityId,"Not linked")+
+ select("companyId","Our legal entity",companies,c.companyId,"Not assigned")+
+ select("branchId","Our branch",branches,c.branchId,"Not assigned")+
  select("ownerId","Responsible employee",users,c.ownerId,"Not assigned")+
- area("notes","Solution description / internal technical notes",c.notes)+'</div>'+
- note('Customer and buyer may remain blank for a reusable product configuration. Before saving a quotation, MA-006 requires an exact buyer and authorized internal company/branch/owner.');
+ area("notes","Internal project notes",c.notes)+'</div></details>'+
+ note('Site inputs are project-specific. The commercial quotation requires an exact buyer and authorized selling entity; technical engineering approval remains separate.');
 }
 function renderProduct(c,b){
  const p=itemProduct(b.productId)||products[0];
