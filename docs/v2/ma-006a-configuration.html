@@ -26,7 +26,7 @@
       <button class="nav-link" type="button" data-planned="Vendor RFQs">⇄ &nbsp; Vendor RFQs</button>
       <button class="nav-link" type="button" data-planned="Orders">☷ &nbsp; Orders</button>
       <div class="nav-title">Controls</div>
-      <button class="nav-link" type="button" data-catalog-link="products">⚙ &nbsp; Product Catalog &amp; Rules</button>
+      <button class="nav-link" type="button" data-planned="Configuration Rules Administration">⚙ &nbsp; Configuration Rules <small>Planned</small></button>
       <button class="nav-link" type="button" data-planned="Approval Policies">✓ &nbsp; Approval Policies</button>
       <button class="nav-link" type="button" data-planned="Commercial Settings">⚙ &nbsp; Commercial Settings</button>
       <button class="nav-link" type="button" data-planned="Reports">▥ &nbsp; Reports</button>
@@ -39,8 +39,8 @@
       <div class="hero">
         <div>
           <div class="overline">MASTER ADMIN / MA-006A</div>
-          <h1>Product Catalog &amp; Configuration</h1>
-          <p class="muted">Maintain product families, manufacturer/model variants, dimensions, parts, accessories and sample prices. Then build reusable technical configurations for quotations.</p>
+          <h1>Products &amp; Solar Configuration</h1>
+          <p class="muted">Find or add equipment models, capture solar-specific details, then build a project configuration for quotation.</p>
         </div>
         <div class="actions">
           <a class="btn" href="ma-006-quotations.html">Go to Quotations</a>
@@ -49,23 +49,33 @@
         </div>
       </div>
       <div class="info"><b>WIREFRAME ONLY · Fictional manufacturers, products and sample prices.</b> Catalog edits and configurations exist in this browser session only. No certified specifications, real costs, price approvals, file storage, permissions or database updates. Do not enter real company, supplier or confidential pricing data.</div>
-<nav class="ma6a-hub-nav" id="catalog-workspace-tabs" aria-label="Product catalog and configuration areas">
-        <button type="button" data-hub="products" class="active" aria-current="page">▦ &nbsp; Products &amp; Variants</button>
-        <button type="button" data-hub="manufacturers">♜ &nbsp; Manufacturers</button>
-        <button type="button" data-hub="parts">⚙ &nbsp; Parts &amp; Accessories</button>
-        <button type="button" data-hub="configurations">◇ &nbsp; Saved Configurations</button>
+<nav class="ma6a-hub-nav ma6a-simple-nav" id="catalog-workspace-tabs" aria-label="Catalog and configuration">
+        <button type="button" data-hub="products" class="active" aria-current="page">▦ &nbsp; Product Catalog</button>
+        <button type="button" data-hub="configurations">◇ &nbsp; Solar Configurations</button>
+        <details class="ma6a-manage-menu" id="catalog-manage-menu">
+          <summary>Manage Masters <span aria-hidden="true">⌄</span></summary>
+          <div class="ma6a-manage-items">
+            <button type="button" data-hub="manufacturers">Manufacturers &amp; Brands</button>
+            <button type="button" data-hub="parts">Parts &amp; Accessories</button>
+          </div>
+        </details>
       </nav>
       <section id="catalog-screen" class="ma6a-hub-view" aria-label="Product catalog workspace">
         <section class="ma6-stats" id="catalog-stats" aria-label="Catalog overview"></section>
         <div id="catalog-products-panel" class="ma6a-catalog-content">
           <div class="card ma6a-catalog-filters">
             <div class="ma6-section-heading"><div><h2>Product Catalog</h2><p class="muted">Select a product family and compare manufacturer, model and dimension variants. These are reusable master records.</p></div><button type="button" class="btn" id="catalog-clear">Reset filters</button></div>
-            <div class="ma6a-catalog-filter-grid">
-              <div><label for="catalog-search">Search product / model / SKU</label><input type="search" id="catalog-search" placeholder="65 kW, panel, model, brand, cable..."></div>
-              <div><label for="catalog-category">Category</label><select id="catalog-category"><option value="all">All categories</option></select></div>
-              <div><label for="catalog-manufacturer">Manufacturer</label><select id="catalog-manufacturer"><option value="all">All manufacturers</option></select></div>
-              <div><label for="catalog-status">Status</label><select id="catalog-status"><option value="all">All statuses</option><option value="Active">Active</option><option value="Draft">Draft</option><option value="In Review">In Review</option><option value="Discontinued">Discontinued</option></select></div>
+            <div class="ma6a-catalog-filter-grid ma6a-simple-filters">
+              <div><label for="catalog-search">Find a product or model</label><input type="search" id="catalog-search" placeholder="Search 550 Wp, inverter, 65 kW, SKU..."></div>
+              <div><label for="catalog-category">Product category</label><select id="catalog-category"><option value="all">All categories</option></select></div>
             </div>
+            <details class="ma6a-more-filters">
+              <summary>More filters</summary>
+              <div class="ma6a-catalog-filter-grid ma6a-extra-filter-grid">
+                <div><label for="catalog-manufacturer">Manufacturer</label><select id="catalog-manufacturer"><option value="all">All manufacturers</option></select></div>
+                <div><label for="catalog-status">Status</label><select id="catalog-status"><option value="all">All statuses</option><option value="Active">Active</option><option value="Draft">Draft</option><option value="In Review">In Review</option><option value="Discontinued">Discontinued</option></select></div>
+              </div>
+            </details>
           </div>
           <div class="ma6-workspace ma6a-catalog-workspace">
             <section class="card ma6-list-panel ma6a-family-list-panel">
@@ -76,11 +86,9 @@
             <section class="ma6-details">
               <div class="card ma6-detail-header" id="catalog-family-header"></div>
               <div class="card ma6-detail-panel">
-                <nav id="catalog-detail-tabs" class="ma6-tabs" role="tablist" aria-label="Product family detail">
-                  <button type="button" data-catalog-tab="variants" class="active" role="tab" aria-selected="true">Manufacturer Variants</button>
-                  <button type="button" data-catalog-tab="specs" role="tab" aria-selected="false">Technical &amp; Dimensions</button>
-                  <button type="button" data-catalog-tab="parts" role="tab" aria-selected="false">Parts &amp; Accessories</button>
-                  <button type="button" data-catalog-tab="prices" role="tab" aria-selected="false">Prices &amp; Documents</button>
+                <nav id="catalog-detail-tabs" class="ma6-tabs" role="tablist" aria-label="Product details">
+                  <button type="button" data-catalog-tab="variants" class="active" role="tab" aria-selected="true">Models &amp; Sizes</button>
+                  <button type="button" data-catalog-tab="more" role="tab" aria-selected="false">More Product Details</button>
                 </nav>
                 <div id="catalog-family-body" class="ma6-tab-body" aria-live="polite"></div>
               </div>
@@ -97,6 +105,7 @@
         </div>
       </section>
       <section id="configuration-screen" class="ma6a-hub-view" hidden>
+      <div class="ma6a-configuration-intro"><b>Solar System Builder</b><span>Project &amp; site → Select equipment → Review technical BOM → Quotation</span></div>
       <section class="ma6a-flow" aria-label="Configuration to quotation workflow">
         <div class="ma6a-flow-step current"><span class="ma6a-flow-num">1</span><div><b>Configure</b><small>Choose product options, items and quantities</small></div></div>
         <div class="ma6a-flow-arrow">→</div>
@@ -105,8 +114,8 @@
         <div class="ma6a-flow-step"><span class="ma6a-flow-num">3</span><div><b>Price in MA-006</b><small>BOQ, authorized rates and commercial terms</small></div></div>
       </section>
       <section class="ma6-stats" id="configuration-stats" aria-label="Configuration summary"></section>
-      <section class="card ma6-scope">
-        <div class="ma6-section-heading"><div><h2>Internal company / branch context</h2><p class="muted">View associated configurations by internal scope. Customer-neutral configurations can be reused when authorized.</p></div><span class="ma6-chip">Scope preview</span></div>
+      <section class="card ma6-scope ma6a-config-scope">
+        <div class="ma6-section-heading"><div><h2>More configuration filters</h2><p class="muted">Optional: limit the saved configurations to a company and branch.</p></div><span class="ma6-chip">Scope preview</span></div>
         <div class="ma6-scope-grid">
           <div><label for="cfg-company-filter">Our legal entity</label><select id="cfg-company-filter"><option value="all">All internal companies / unassigned</option></select></div>
           <div><label for="cfg-branch-filter">Our branch</label><select id="cfg-branch-filter"><option value="all">All branches / unassigned</option></select></div>
@@ -115,7 +124,7 @@
       </section>
       <section class="ma6-workspace" id="configuration-register">
         <section class="card ma6-list-panel" aria-label="Configuration register">
-          <div class="ma6-list-heading"><div><h2>Configuration Register</h2><p class="muted">Select a saved sample solution</p></div><span class="chip" id="configuration-count">0 shown</span></div>
+          <div class="ma6-list-heading"><div><h2>Saved Solar &amp; Product Configurations</h2><p class="muted">Choose a project or reusable solution</p></div><span class="chip" id="configuration-count">0 shown</span></div>
           <div class="ma6-filter-fields">
             <div><label for="cfg-search">Search</label><input id="cfg-search" type="search" placeholder="Configuration, product, customer or ID"></div>
             <div><label for="cfg-status-filter">Configuration state</label><select id="cfg-status-filter"><option value="all">All states</option><option value="passed">Demo check passed</option><option value="invalid">Needs changes</option></select></div>
@@ -183,6 +192,7 @@
 <script src="ma-006-data.js"></script>
 <script src="ma-006a-data.js"></script>
 <script src="ma-006a-catalog-data.js"></script>
+<script src="ma-006a-solar-fields.js"></script>
 <script src="ma-006a-app.js"></script>
 <script src="ma-006a-catalog.js"></script>
 </body></html>
