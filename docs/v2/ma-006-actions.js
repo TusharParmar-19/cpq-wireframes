@@ -223,8 +223,8 @@ function openConfigurationHandoff(raw){
     const dims=v.dimensions||{},spec=[v.sku,m?.brand||m?.name,v.capacity,
       dims.width&&dims.height&&dims.depth?dims.width+" × "+dims.height+" × "+dims.depth+" "+(dims.unit||"mm"):""].filter(Boolean).join(" · ");
     lines.push({id:"L"+String(i+1).padStart(2,"0"),productId:v.id,type:"standard",description:fam.name+" — "+v.model,
-     quantity:qty,unit:fam.unit||"Nos",unitPrice:Math.max(0,Number(v.price?.sell)||0),options:{},catalogSpec:spec,
-     sourceVariantId:v.id,pricingReview:true});
+     quantity:qty,unit:fam.unit||"Nos",unitPrice:Math.max(0,Number(v.price?.sell)||0),options:{},catalogSpec:spec+(value.customSpec?" · Custom project specification requires review: "+String(value.customSpec).slice(0,250):""),
+     sourceVariantId:v.id,pricingReview:true,technicalReview:!!value.customSpec});
     continue;
    }
    const snap=value.model;
@@ -234,7 +234,7 @@ function openConfigurationHandoff(raw){
    lines.push({id:"L"+String(i+1).padStart(2,"0"),productId:variantId,type:"standard",description:name,
     quantity:qty,unit:String(snap.unit||"Nos").slice(0,15),unitPrice:0,options:{},
     catalogSpec:"Unverified new model: "+snap.sku+" · Price and specification approval required",
-    sourceVariantId:variantId,pricingReview:true,unverified:true});
+    sourceVariantId:variantId,pricingReview:true,unverified:true,technicalReview:true});
    continue;
   }
   const p=product(value.productId);if(!p)return false;
@@ -259,6 +259,10 @@ function openConfigurationHandoff(raw){
  const q=state.builder.quote;
  if(validCust&&validBuyer){
   q.customerId=validCust.id;q.buyerId=validBuyer.id;
+  for(const [key,collection] of [["contactId",master.contacts],["siteId",master.sites],["projectId",master.projects]]){
+   const selected=collection.find(x=>x.id===c[key]&&x.customerId===validCust.id&&x.companyId===validBuyer.id);
+   if(selected)q[key]=selected.id;
+  }
   const scope=(validCust.links||[]).find(x=>x.companyId===c.companyId&&x.branchId===c.branchId);
   if(scope){
    q.companyId=c.companyId;q.branchId=c.branchId;
