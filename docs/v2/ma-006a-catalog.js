@@ -223,15 +223,44 @@ const group=(inner,three=false)=>'<div class="ma6-field-grid'+(three?' three':''
 const details=(title,inner,open=false)=>'<details class="ma6a-editor-details"'+(open?' open':'')+'><summary>'+esc(title)+'</summary>'+inner+'</details>';
 const statuses=["Draft","In Review","Active","Discontinued"];
 const familyTypes=[["config","Configurable product"],["standard","Standard catalog product"],["service","Service / EPC"]];
+
+function solarKindSchema(kind){return window.CPQ_MA006A_SOLAR_FIELDS?.templates?.[kind]||window.CPQ_MA006A_SOLAR_FIELDS?.templates?.general;}
+function solarField(field,record={}){
+ const [key,label,unit,type,choices]=field,name="solar_"+key,value=record[key]??"";
+ const title=esc(label)+(unit?' <small>('+esc(unit)+')</small>':'');
+ if(type==="select")return '<div class="ma6-field"><label for="cat-'+name+'">'+title+'</label><select id="cat-'+name+'" name="'+name+'"><option value="">Select if applicable</option>'+selectOptions(choices.split(";").map(v=>[v,v]),value)+'</select></div>';
+ return '<div class="ma6-field"><label for="cat-'+name+'">'+title+'</label><input id="cat-'+name+'" name="'+name+'" type="'+(type==="number"?"number":"text")+'"'+(type==="number"?' step="any"':'')+' value="'+esc(value)+'" placeholder="Optional until verified"></div>';
+}
+function solarFields(kind,values={}){
+ const schema=solarKindSchema(kind);
+ if(!schema||kind==="general")return '<div class="ma6a-editor-section-note">General product: use Additional Technical Attributes below. Solar-specific fields appear when you select a solar equipment template.</div>';
+ return details(schema.label+" — essential specifications",'<div class="ma6a-field-hint">Only enter verified datasheet values. Missing engineering data stays incomplete, not assumed.</div>'+group(schema.essential.map(f=>solarField(f,values)).join("")),true)+
+ details("Advanced solar specifications, warranty & compliance",group(schema.advanced.map(f=>solarField(f,values)).join(""))+
+ '<div class="ma6a-editor-section-note">IEC/BIS/ALMM/DCR applicability depends on the equipment and project. Record evidence rather than assuming approval.</div>');
+}
+function solarDataFromForm(form,kind,old={}){
+ const schema=solarKindSchema(kind),out={...old};
+ if(!schema)return out;
+ for(const [key,label,unit,type] of [...schema.essential,...schema.advanced]){
+  const raw=trim(form,"solar_"+key);
+  if(raw===""){delete out[key];continue;}
+  if(type==="number"){const value=Number(raw);if(!Number.isFinite(value)||Math.abs(value)>1e10)throw Error("Enter a valid value for "+label);out[key]=value;}
+  else out[key]=raw.slice(0,400);
+ }
+ return out;
+}
 function familyFields(f={}){
- return section("Product Family / Main Product","Example: 65 kW Power Panel. The family groups models but does not fix a single manufacturer, size or price.")+
- group(textField("familyName","Family / Product Name",f.name,"text",false,true)+
- selectField("familyCategory","Category",db.categories.map(x=>[x,x]),f.category||db.categories[0],"Choose category",true)+
- selectField("familyType","Product Type",familyTypes,f.type||"config","Choose type",true)+
- textField("familyUnit","Default Unit of Measure",f.unit||"Nos")+textField("familyRating","General Capacity / Rating",f.rating||"")+
- selectField("familyStatus","Family Lifecycle Status",statuses.map(x=>[x,x]),f.status||"Draft"))+
- group(areaField("familyDescription","Product family description",f.description||"")+
- areaField("familyAttributes","Attribute names / configurable properties",f.attributes||""));
+ const typeOptions=window.CPQ_MA006A_SOLAR_FIELDS.types;
+ return section("1 · Product Basics","Start with the product name, category and equipment type. The technical fields below will adapt automatically.")+
+ group(textField("familyName","Product Family / Name",f.name,"text",false,true)+
+ selectField("familyCategory","Category",db.categories.map(x=>[x,x]),f.category||"Solar Equipment","Choose category",true)+
+ selectField("solarKind","Equipment Field Template",typeOptions,f.solarKind||"general","Select template")+
+ selectField("familyType","Product Type",familyTypes,f.type||"standard","Choose type",true))+
+ details("More family details",group(textField("familyUnit","Default Unit of Measure",f.unit||"Nos")+
+ textField("familyRating","General Rating / Size",f.rating||"")+
+ selectField("familyStatus","Lifecycle Status",statuses.map(x=>[x,x]),f.status||"Draft")+
+ areaField("familyDescription","Description",f.description||"")+
+ areaField("familyAttributes","Configurable attribute names",f.attributes||"")));
 }
 function techToText(items){return (items||[]).map(x=>x.name+": "+x.value).join("\n");}
 function partsPicker(v={}){
@@ -243,43 +272,41 @@ function partsPicker(v={}){
  }).join("")+'</div>';
 }
 function variantFields(v={},f={}){
- const d=v.dimensions||{},p=v.price||{};
- return section("Manufacturer Variant / Sellable Model","Each model must have its own SKU. Manufacturer, physical size and selling price may differ, even at the same capacity.")+
+ const d=v.dimensions||{},p=v.price||{},kind=f.solarKind||state.editor?.solarKind||"general";
+ return section("2 · Exact Manufacturer Model","Every model has its own SKU and dimensions. Add a second manufacturer as a separate variant.")+
  group(textField("sku","Unique SKU / Product Code",v.sku,"text",false,true)+
- selectField("manufacturerId","Product Manufacturer / Company",db.manufacturers.map(m=>[m.id,m.name+" · "+m.brand]),v.manufacturerId||"","Choose manufacturer (service optional)")+
- textField("model","Manufacturer Model Number",v.model||"","text",false,true)+
- textField("variantName","Variant / Size Description",v.variant||"")+
- textField("capacity","Exact Capacity / Rating",v.capacity||"")+
- selectField("variantStatus","Variant Lifecycle Status",statuses.map(x=>[x,x]),v.status||"Draft"))+
- details("Technical & Electrical / Mechanical Specifications",
- group(textField("voltage","Voltage / Supply",v.voltage||"")+
- textField("mounting","Mounting / Installation Type",v.mounting||"")+
- textField("material","Material / Construction",v.material||"")+
- textField("enclosure","Ingress Protection / Enclosure",v.enclosure||"")+
- areaField("technical","Additional Technical Attributes (one per line: Label: Value)",techToText(v.technical))),
- true)+
- details("Size, Dimensions & Weight",
+ selectField("manufacturerId","Manufacturer / Brand",db.manufacturers.map(m=>[m.id,m.name+" · "+m.brand]),v.manufacturerId||"","Choose manufacturer (service optional)")+
+ textField("model","Model Number",v.model||"","text",false,true)+
+ textField("variantName","Model / Size Description",v.variant||"")+
+ textField("capacity","Capacity / Main Rating",v.capacity||"")+
+ selectField("variantStatus","Model Status",statuses.map(x=>[x,x]),v.status||"Draft"))+
+ '<div id="catalog-solar-fields">'+solarFields(kind,v.solar||{})+'</div>'+
+ details("Physical dimensions, weight & mounting",
  group(selectField("dimensionUnit","Dimensions Unit",[["mm","mm"],["cm","cm"],["m","m"],["in","in"]],d.unit||"mm")+
  numberField("dimLength","Length",d.length)+numberField("dimWidth","Width",d.width)+
  numberField("dimHeight","Height",d.height)+numberField("dimDepth","Depth",d.depth)+
  numberField("weight","Weight",d.weight)+selectField("weightUnit","Weight Unit",[["kg","kg"],["g","g"],["lb","lb"]],d.weightUnit||"kg"),true)+
- '<div class="ma6a-editor-section-note">Use only dimensions relevant to this product. For example, services have no physical size, and cable is typically measured by length and conductor specification.</div>',true)+
- details("Components, Parts & Accessories",
- '<div class="ma6a-editor-section-note">Select reusable catalog parts and indicate illustrative required/optional quantity. Real compatibility and BOM rules are maintained through authorized technical controls.</div>'+partsPicker(v))+
- details("Product Price List & Validity — fictional values",
+ group(textField("voltage","Supply / Voltage",v.voltage||"")+
+ textField("mounting","Mounting / Installation",v.mounting||"")+
+ textField("material","Material / Construction",v.material||"")+
+ textField("enclosure","Enclosure / IP",v.enclosure||""))+
+ '<div class="ma6a-editor-section-note">For a service, cable or nonphysical item, leave inapplicable dimensions blank.</div>')+
+ details("Parts & accessories",
+ '<div class="ma6a-editor-section-note">Choose master parts, quantities and Required/Optional. Approved compatibility and BOM rules are future technical controls.</div>'+partsPicker(v))+
+ details("Commercial price & availability (demo)",
  group(selectField("currency","Currency",[["INR","INR"],["USD","USD"],["EUR","EUR"]],p.currency||"INR")+
  textField("priceList","Price List Name",p.list||"Demo Base Price List")+
- numberField("cost","Internal Cost — restricted in production",p.cost??0)+
- numberField("sell","Selling Price / Unit",p.sell??0)+
+ numberField("sell","Sample Selling Price / Unit",p.sell??0)+
+ numberField("cost","Internal Cost (restricted in production)",p.cost??0)+
  textField("priceFrom","Effective From",p.from||"","date")+
- textField("priceTo","Effective Until (optional)",p.to||"","date"))+
- '<div class="ma6a-editor-section-note">Cost and margin require separate permission checks. Do not use these examples as real prices or approved tax values.</div>',true)+
- details("Product Documents, Notes & Revision Context",
- group(textField("datasheet","Datasheet Reference / Status",v.datasheet||"")+
+ textField("priceTo","Effective To",p.to||"","date"))+
+ '<div class="ma6a-editor-section-note">Production price/cost access is controlled by MA-003 permissions; quote prices are revision snapshots.</div>')+
+ details("Documents & other technical details",
+ group(textField("datasheet","Datasheet Reference / Version",v.datasheet||"")+
  textField("drawing","Drawing / Diagram Reference",v.drawing||"")+
- areaField("variantNotes","Variant Notes",v.notes||""))+
- '<div class="ma6a-editor-section-note">Actual document upload/storage, revision history and drawing approval will need the Documents module.</div>')+
- '<div class="ma6a-editor-section-note"><b>Project-specific changes:</b> For a special customer/project dimension or component selection, keep a separate configuration/quotation revision. Do not overwrite a shared manufacturer product master simply to satisfy one quote.</div>';
+ areaField("technical","Other technical attributes (Label: Value)",techToText(v.technical))+
+ areaField("variantNotes","Internal Model Notes",v.notes||"")))+
+ '<div class="ma6a-editor-section-note">Customer-specific size or technical changes belong in a project configuration, not a silent change to this shared master product.</div>';
 }
 function manufacturerFields(m={}){
  return section("Manufacturer & Brand","Separate from our internal legal entity (MA-002) and from the eventual purchasing supplier.")+
@@ -305,7 +332,7 @@ function partFields(p={}){
 }
 function editorMarkup(){
  const e=state.editor;if(!e)return "";
- if(e.mode==="product-new")return familyFields()+variantFields();
+ if(e.mode==="product-new")return familyFields()+variantFields({}, {solarKind:state.editor?.solarKind||"general"});
  if(e.mode==="family-edit")return familyFields(family(e.familyId));
  if(e.mode==="variant-new")return '<div class="ma6a-editor-section-note"><b>Family:</b> '+esc(family(e.familyId)?.name||"Unknown")+'</div>'+variantFields({},family(e.familyId));
  if(e.mode==="variant-edit")return '<div class="ma6a-editor-section-note"><b>Family:</b> '+esc(family(e.familyId)?.name||"Unknown")+'</div>'+variantFields(variant(e.variantId),family(e.familyId));
@@ -314,7 +341,7 @@ function editorMarkup(){
  return "";
 }
 function openEditor(mode,ids={}){
- state.editor={mode,...ids};
+ state.editor={mode,solarKind:"general",...ids};
  const titles={"product-new":"Add New Product & First Variant","family-edit":"Edit Product Family","variant-new":"Add Manufacturer / Size Variant","variant-edit":"Edit Manufacturer Variant","manufacturer-new":"Add Manufacturer","manufacturer-edit":"Edit Manufacturer","part-new":"Add Part / Accessory","part-edit":"Edit Part / Accessory"};
  $("catalog-editor-title").textContent=titles[mode]||"Edit Catalog";
  $("catalog-editor-subtitle").textContent="Fictional master-data fields · Demo save only · Not production authorization";
@@ -343,11 +370,11 @@ function techParse(raw){
 function getFamilyForm(f){
  const name=trim(f,"familyName"),category=trim(f,"familyCategory"),type=trim(f,"familyType");
  if(!name||!category||!type)throw Error("Product family name, category and type are required.");
- return {name:name.slice(0,150),category,type,unit:trim(f,"familyUnit")||"Nos",
+ return {name:name.slice(0,150),category,type,solarKind:trim(f,"solarKind")||"general",unit:trim(f,"familyUnit")||"Nos",
   rating:trim(f,"familyRating"),description:trim(f,"familyDescription"),status:trim(f,"familyStatus")||"Draft",
   attributes:trim(f,"familyAttributes")};
 }
-function getVariantForm(f,familyType,existing=null){
+function getVariantForm(f,familyType,existing=null,solarKind="general"){
  const sku=trim(f,"sku"),model=trim(f,"model"),manufacturerId=trim(f,"manufacturerId");
  if(!sku||!model)throw Error("Variant SKU and manufacturer model number are required.");
  if(db.variants.some(v=>v.sku.toLowerCase()===sku.toLowerCase()&&v.id!==existing?.id))throw Error("This SKU already exists. Each model must have a unique product code.");
@@ -379,7 +406,7 @@ function saveEditor(event){
  try{
   if(e.mode==="product-new"){
    const f=getFamilyForm(fd);
-   const v=getVariantForm(fd,f.type);
+   const v=getVariantForm(fd,f.type,null,f.solarKind);
    const fam={id:idNext("FAM-",db.families),...f};db.families.unshift(fam);
    const vari={id:idNext("VAR-",db.variants),familyId:fam.id,...v};db.variants.unshift(vari);
    state.family=fam.id;state.variant=vari.id;state.tab="variants";
@@ -390,7 +417,7 @@ function saveEditor(event){
   }else if(e.mode==="variant-new"||e.mode==="variant-edit"){
    const fam=family(e.familyId);if(!fam)throw Error("Select a valid product family.");
    const orig=e.mode==="variant-edit"?variant(e.variantId):null;
-   const input=getVariantForm(fd,fam.type,orig);
+   const input=getVariantForm(fd,fam.type,orig,fam.solarKind||"general");
    if(orig)Object.assign(orig,input);
    else{
     const v={id:idNext("VAR-",db.variants),familyId:fam.id,...input};db.variants.unshift(v);state.variant=v.id;
@@ -448,6 +475,11 @@ $("catalog-search").addEventListener("input",e=>{state.search=e.target.value;ren
 $("catalog-category").addEventListener("change",e=>{state.category=e.target.value;renderCatalog();});
 $("catalog-manufacturer").addEventListener("change",e=>{state.manufacturer=e.target.value;renderCatalog();});
 $("catalog-status").addEventListener("change",e=>{state.status=e.target.value;renderCatalog();});
+$("catalog-editor-form").addEventListener("change",e=>{
+ if(e.target.name!=="solarKind"||state.editor?.mode!=="product-new")return;
+ state.editor.solarKind=e.target.value;
+ const target=$("catalog-solar-fields");if(target)target.innerHTML=solarFields(e.target.value,{});
+});
 $("catalog-editor-form").addEventListener("submit",saveEditor);
 $("catalog-editor-cancel").addEventListener("click",closeEditor);
 $("catalog-editor-close").addEventListener("click",closeEditor);
