@@ -205,15 +205,39 @@ $("overlay").addEventListener("click",e=>{if(e.target===$("overlay"))closeModal(
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("overlay").classList.contains("open"))closeModal();});
 /* Import only sample configuration choices; never accept user-supplied rates or approval status. */
 function openConfigurationHandoff(raw){
- if(!raw||raw.length>12000)return false;
+ if(!raw||raw.length>28000)return false;
  let c;try{c=JSON.parse(raw);}catch(_){return false;}
  if(c?.v!==1||typeof c.configId!=="string"||!/^CF-20\d{2}-\d{3,5}$/.test(c.configId)||
- typeof c.name!=="string"||!Array.isArray(c.items)||c.items.length<1||c.items.length>20)return false;
- const lines=[];
+ typeof c.name!=="string"||!Array.isArray(c.items)||c.items.length<1||c.items.length>25)return false;
+ const lines=[],catalog=window.CPQ_MA006A_CATALOG;
  for(let i=0;i<c.items.length;i++){
-  const value=c.items[i];if(!value||typeof value.productId!=="string")return false;
-  const p=product(value.productId),qty=Number(value.quantity);
-  if(!p||!Number.isInteger(qty)||qty<1||qty>100000)return false;
+  const value=c.items[i],qty=Number(value?.quantity);
+  if(!value||typeof value.productId!=="string"||!Number.isInteger(qty)||qty<1||qty>100000)return false;
+  const variantId=typeof value.variantId==="string"?value.variantId:"";
+  if(variantId&&/^VAR-\d{3,5}$/.test(variantId)){
+   const v=catalog?.variants.find(x=>x.id===variantId);
+   if(v){
+    if(v.status!=="Active")return false;
+    const fam=catalog.families.find(x=>x.id===v.familyId),m=catalog.manufacturers.find(x=>x.id===v.manufacturerId);
+    if(!fam)return false;
+    const dims=v.dimensions||{},spec=[v.sku,m?.brand||m?.name,v.capacity,
+      dims.width&&dims.height&&dims.depth?dims.width+" × "+dims.height+" × "+dims.depth+" "+(dims.unit||"mm"):""].filter(Boolean).join(" · ");
+    lines.push({id:"L"+String(i+1).padStart(2,"0"),productId:v.id,type:"standard",description:fam.name+" — "+v.model,
+     quantity:qty,unit:fam.unit||"Nos",unitPrice:Math.max(0,Number(v.price?.sell)||0),options:{},catalogSpec:spec,
+     sourceVariantId:v.id,pricingReview:true});
+    continue;
+   }
+   const snap=value.model;
+   if(!snap||typeof snap!=="object"||typeof snap.sku!=="string"||typeof snap.model!=="string"||
+      snap.sku.length>80||snap.model.length>120||String(snap.name||"").length>150)return false;
+   const name=[String(snap.name||"Unverified catalog item"),snap.model].join(" — ");
+   lines.push({id:"L"+String(i+1).padStart(2,"0"),productId:variantId,type:"standard",description:name,
+    quantity:qty,unit:String(snap.unit||"Nos").slice(0,15),unitPrice:0,options:{},
+    catalogSpec:"Unverified new model: "+snap.sku+" · Price and specification approval required",
+    sourceVariantId:variantId,pricingReview:true,unverified:true});
+   continue;
+  }
+  const p=product(value.productId);if(!p)return false;
   const options={};
   if(p.type==="config"){
    if(!value.options||typeof value.options!=="object")return false;
@@ -235,8 +259,7 @@ function openConfigurationHandoff(raw){
  const q=state.builder.quote;
  if(validCust&&validBuyer){
   q.customerId=validCust.id;q.buyerId=validBuyer.id;
-  const linked=validCust.links||[];
-  const scope=linked.find(x=>x.companyId===c.companyId&&x.branchId===c.branchId);
+  const scope=(validCust.links||[]).find(x=>x.companyId===c.companyId&&x.branchId===c.branchId);
   if(scope){
    q.companyId=c.companyId;q.branchId=c.branchId;
    const u=staff.find(x=>x.id===c.ownerId);
@@ -245,9 +268,17 @@ function openConfigurationHandoff(raw){
  }
  q.title="Quotation — "+c.name.slice(0,140);
  q.lines=lines;
- q.notes="Demo configuration source: "+c.configId+". Technical approval, actual pricing, tax and discounts must be verified before issue.";
+ q.projectTechnical=c.solutionType==="solar"&&c.solar&&typeof c.solar==="object"?{
+  systemType:String(c.solar.systemType||"").slice(0,100),
+  targetDcKwp:Number(c.solar.targetDcKwp)||0,
+  targetAcKw:Number(c.solar.targetAcKw)||0,
+  roofType:String(c.solar.roofType||"").slice(0,100),
+  usableArea:Number(c.solar.usableArea)||0,
+  siteLocation:String(c.solar.siteLocation||"").slice(0,150)
+ }:null;
+ q.notes="Source "+c.configId+". Catalog prices are fictional and require approval. Solar electrical/structural checks and project-specific modifications remain unverified.";
  renderBuilder();
- toast("Configuration "+c.configId+" imported into an unissued quotation draft");
+ toast("Technical configuration imported into an unissued quotation draft (demo)");
  return true;
 }
 const params=new URLSearchParams(window.location.search);
