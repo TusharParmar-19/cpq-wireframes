@@ -266,19 +266,42 @@ function renderContext(c){
  note('Site inputs are project-specific. The commercial quotation requires an exact buyer and authorized selling entity; technical engineering approval remains separate.');
 }
 function renderProduct(c,b){
- const p=itemProduct(b.productId)||products[0];
- const errors=lineErrors({productId:p.id,quantity:b.quantity,options:b.options});
- return panel("2 · Select product & configure","Build technical selections before pricing. Standard and service items bypass unnecessary option fields.")+
- '<div class="ma6a-pick-grid"><div><div class="ma6a-catalog">'+products.map(x=>'<button class="ma6-product-card'+(x.id===p.id?' selected':'')+'" type="button" data-product="'+esc(x.id)+'"><div><span class="ma6-tag">'+esc(typeLabel(x.type))+'</span><strong>'+esc(x.name)+'</strong><small>'+esc(x.id)+' · Unit: '+esc(x.unit)+'</small></div><span class="ma6-tag">Select</span></button>').join("")+'</div></div>'+
- '<div class="ma6a-spec-editor"><h3>'+esc(p.name)+'</h3>'+
- (p.type==="config"?'<div class="ma6-field-grid">'+Object.entries(p.options).map(([key,spec])=>select("opt-"+key,spec.label,spec.choices.map(([value])=>[value,value]),b.options[key],"Choose option")).join("")+'</div>':
- '<div class="ma6a-quiet-box">This '+esc(typeLabel(p.type).toLowerCase())+' does not require custom product attributes. Specify quantity and any service scope note.</div>')+
- '<div class="ma6a-editor-qty"><div class="ma6-field"><label for="config-add-qty">Quantity *</label><input type="number" min="1" step="1" id="config-add-qty" data-add-qty value="'+esc(b.quantity)+'"></div><div><small>Unit: '+esc(p.unit)+'</small></div></div>'+
- '<div class="ma6-field"><label for="config-add-note">Item-specific technical notes (optional)</label><textarea id="config-add-note" data-item-note rows="3">'+esc(b.itemNote)+'</textarea></div>'+
- (errors.length?'<div class="ma6-validation">'+errors.map(esc).join("; ")+'</div>':'<div class="ma6-validation ok">Sample option check passed; engineering approval is still required.</div>')+
+ const p=itemProduct(b.productId)||itemProduct("VAR-009")||products[0];
+ const catalogChoices=catalog().variants.filter(v=>v.status!=="Discontinued").map(v=>itemProduct(v.id));
+ const choices=[...catalogChoices,...products];
+ const filtered=choices.filter(x=>b.productGroup==="all"||(b.productGroup==="solar"&&x.variant&&x.solarKind!=="general")||
+ (b.productGroup==="other"&&(!x.variant||x.solarKind==="general"))).filter(x=>
+ !b.catalogSearch||[x.name,x.model,x.sku,x.manufacturer,x.capacity].join(" ").toLowerCase().includes(b.catalogSearch.toLowerCase()));
+ const errors=lineErrors({productId:p.id,quantity:b.quantity,options:b.options}),v=p.variant,d=v?.dimensions||{};
+ return panel("2 · Select Products & Models","Select an existing manufacturer model, specify quantity and add a project-specific note only when necessary.")+
+ '<div class="ma6a-product-picker-toolbar"><div class="ma6-field"><label>Show product type</label><select data-product-group>'+
+ opts([["solar","Solar equipment"],["other","Other / standard products"],["all","All products"]],b.productGroup)+
+ '</select></div><div class="ma6-field"><label for="cfg-product-search">Find a model or SKU</label>'+
+ '<input type="search" id="cfg-product-search" data-product-search value="'+esc(b.catalogSearch)+'" placeholder="Manufacturer, model, rating..."></div></div>'+
+ '<div class="ma6a-pick-grid"><div><div class="ma6a-catalog">'+(filtered.length?filtered.map(x=>
+ '<button class="ma6-product-card'+(x.id===p.id?' selected':'')+'" type="button" data-product="'+esc(x.id)+'">'+
+ '<div><span class="ma6-tag">'+esc(x.variant?catalogFamily(x.variant.familyId)?.name||"Catalog model":typeLabel(x.type))+'</span>'+
+ '<strong>'+esc(x.variant?x.model:x.name)+'</strong><small>'+
+ esc(x.variant?[x.manufacturer,x.capacity,x.sku].filter(Boolean).join(" · "):x.id+" · "+x.unit)+'</small></div>'+
+ '<span class="ma6-tag">Select</span></button>').join(""):
+ '<div class="ma6a-empty-note">No matching product models. Try another search or category.</div>')+'</div></div>'+
+ '<div class="ma6a-spec-editor"><h3>'+esc(v?p.model:p.name)+'</h3>'+
+ (v?'<div class="ma6-kvs">'+kv("Manufacturer",p.manufacturer)+kv("Rating",p.capacity)+kv("SKU",p.sku)+
+ kv("Dimensions",d.width&&d.height&&d.depth?[d.width,d.height,d.depth].join(" × ")+" "+(d.unit||"mm"):"Not applicable")+'</div>'+
+ '<div class="ma6a-quiet-box">Specifications come from the selected catalog model. Custom changes below apply only to this project.</div>':
+ p.type==="config"?'<div class="ma6-field-grid">'+Object.entries(p.options).map(([key,spec])=>
+ select("opt-"+key,spec.label,spec.choices.map(([value])=>[value,value]),b.options[key],"Choose option")).join("")+'</div>':
+ '<div class="ma6a-quiet-box">Standard item or service: enter quantity. No product attributes to configure.</div>')+
+ '<div class="ma6a-field-inline"><div class="ma6-field"><label for="config-add-qty">Quantity *</label>'+
+ '<input id="config-add-qty" type="number" min="1" step="1" data-add-qty value="'+esc(b.quantity)+'"></div><span>'+esc(p.unit||"Nos")+'</span></div>'+
+ '<details class="ma6a-builder-details"><summary>Project-specific changes & technical notes</summary>'+
+ '<div class="ma6-field"><label>Custom dimensions / special specifications for this project</label>'+
+ '<textarea data-custom-spec rows="2" placeholder="Example: customer requires custom height (master unchanged)">'+esc(b.customSpec||"")+'</textarea></div>'+
+ '<div class="ma6-field"><label>Internal item notes</label><textarea data-item-note rows="2">'+esc(b.itemNote||"")+'</textarea></div></details>'+
+ (errors.length?'<div class="ma6-validation">'+errors.map(esc).join("; ")+'</div>':"")+
  '<button class="btn primary" type="button" data-action="add-item">+ Add to Configuration</button></div></div>'+
- '<div class="ma6a-selected-lines"><div class="ma6-section-sub"><h4>Selected solution items ('+c.items.length+')</h4></div>'+itemsCompact(c)+
- '<p class="ma6a-table-foot">No rates, taxes or discounts are entered at this stage.</p></div>';
+ '<div class="ma6a-selected-lines"><div class="ma6-section-sub"><h4>Technical items selected ('+c.items.length+')</h4></div>'+itemsCompact(c)+'</div>'+
+ note('This is a technical selection, not a certified design or priced quotation. Cost, margin, tax and commercial terms are handled in MA-006.');
 }
 function itemsCompact(c,edit=false){
  return c.items.length?c.items.map((l,i)=>{
