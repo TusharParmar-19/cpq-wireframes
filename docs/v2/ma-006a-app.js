@@ -125,7 +125,7 @@ function renderList(items){
  '<div class="ma6-quote-bottom"><span class="ma6-tag">'+esc(customer(c.customerId)?.name||"Reusable / no buyer")+'</span><span class="ma6-quote-sub">'+c.items.length+' items</span></div></button>').join(""):empty("No configurations match this scope and search. Try Reset filters.");
 }
 function payload(c){
- return {v:1,configId:c.id,name:c.name,customerId:c.customerId||"",buyerId:c.buyerId||"",companyId:c.companyId||"",branchId:c.branchId||"",ownerId:c.ownerId||"",opportunityId:c.opportunityId||"",
+ return {v:1,configId:c.id,name:c.name,customerId:c.customerId||"",buyerId:c.buyerId||"",contactId:c.contactId||"",siteId:c.siteId||"",projectId:c.projectId||"",companyId:c.companyId||"",branchId:c.branchId||"",ownerId:c.ownerId||"",opportunityId:c.opportunityId||"",
   solutionType:c.solutionType||"general",solar:c.solutionType==="solar"?c.solar||{}:{},
   items:c.items.map(l=>{
    const v=catalogVariant(l.productId),f=v?catalogFamily(v.familyId):null;
@@ -150,7 +150,7 @@ function overview(c){
  return panel("Configuration overview","Reusable technical selection with optional project/solar site context.")+
  '<div class="ma6-kvs">'+kv("Configuration reference",c.id+" / "+c.revision)+
  kv("Configuration Type",c.solutionType==="solar"?"Solar System":"Product / Other")+
- kv("Customer",customer(c.customerId)?.name||"Reusable template")+
+ kv("Customer",customer(c.customerId)?.name||"Reusable template")+kv("Customer site",master.sites.find(x=>x.id===c.siteId)?.name)+kv("Project",master.projects.find(x=>x.id===c.projectId)?.name)+
  kv("Buyer company",buyer(c.buyerId)?.name)+kv("Source enquiry",c.opportunityId||"Not linked")+
  kv("Internal selling company",entity(c.companyId)?.name)+kv("Branch",branch(c.branchId)?.name)+
  kv("Owner",owner(c.ownerId)?.name)+kv("Selected items",String(c.items.length))+
@@ -206,7 +206,7 @@ const area=(id,label,value="")=>'<div class="ma6-field full"><label for="c-'+esc
 const select=(id,label,values,current,placeholder="Select...")=>
  '<div class="ma6-field"><label for="c-'+esc(id)+'">'+esc(label)+'</label><select id="c-'+esc(id)+'" data-c-field="'+esc(id)+'"><option value="">'+esc(placeholder)+'</option>'+opts(values,current)+'</select></div>';
 const steps=["Solution Context","Select & Configure","Items & Quantities","Validate & Save"];
-const emptyConfig=()=>({id:"",name:"",kind:"Customer configuration",solutionType:"solar",solar:{systemType:"On-grid Rooftop"},customerId:"",buyerId:"",opportunityId:"",companyId:"",branchId:"",ownerId:"",quoteId:"",notes:"",updated:"16 Nov 2026 (demo)",revision:"C0",items:[]});
+const emptyConfig=()=>({id:"",name:"",kind:"Customer configuration",solutionType:"solar",solar:{systemType:"On-grid Rooftop"},customerId:"",buyerId:"",contactId:"",siteId:"",projectId:"",opportunityId:"",companyId:"",branchId:"",ownerId:"",quoteId:"",notes:"",updated:"16 Nov 2026 (demo)",revision:"C0",items:[]});
 function setProduct(b,id){
  const p=itemProduct(id);
  if(!p)return;b.productId=id;b.quantity=1;b.itemNote="";b.options=p.type==="config"?{...p.defaults}:{};
@@ -240,6 +240,9 @@ function solarOverview(c){
 function renderContext(c){
  const customers=master.customers.filter(x=>x.status!=="Archived").map(x=>[x.id,x.name]);
  const buyers=master.companies.filter(x=>x.customerId===c.customerId).map(x=>[x.id,x.name]);
+ const contactOptions=master.contacts.filter(x=>x.customerId===c.customerId&&x.companyId===c.buyerId).map(x=>[x.id,x.name]);
+ const siteOptions=master.sites.filter(x=>x.customerId===c.customerId&&x.companyId===c.buyerId).map(x=>[x.id,x.name]);
+ const projectOptions=master.projects.filter(x=>x.customerId===c.customerId&&x.companyId===c.buyerId).map(x=>[x.id,x.name]);
  const links=customer(c.customerId)?.links||[];
  const companies=org.filter(x=>!c.customerId||links.some(l=>l.companyId===x.id)).map(x=>[x.id,x.name]);
  const branches=(entity(c.companyId)?.branches||[]).filter(x=>!c.customerId||links.some(l=>l.companyId===c.companyId&&l.branchId===x.id)).map(x=>[x.id,x.name]);
@@ -259,6 +262,9 @@ function renderContext(c){
  '<div class="ma6a-quiet-box">No solar-site details are needed when configuring a single standard product.</div>')+
  '<details class="ma6a-builder-details"><summary>Customer project links & internal ownership</summary><div class="ma6-field-grid">'+
  select("buyerId","Buyer legal company",buyers,c.buyerId,"Not assigned")+
+ select("contactId","Customer contact",contactOptions,c.contactId,"Not assigned")+
+ select("siteId","Customer site",siteOptions,c.siteId,"Not assigned")+
+ select("projectId","Customer project",projectOptions,c.projectId,"Not assigned")+
  select("opportunityId","Source enquiry",enq,c.opportunityId,"Not linked")+
  select("companyId","Our legal entity",companies,c.companyId,"Not assigned")+
  select("branchId","Our branch",branches,c.branchId,"Not assigned")+
@@ -408,8 +414,8 @@ function updateContext(field,value){
   b.productGroup=value==="solar"?"solar":"other";setProduct(b,value==="solar"?"VAR-009":products[0].id);
   renderBuilder();return;
  }
- if(field==="customerId"){c.customerId=value;c.buyerId="";c.opportunityId="";c.companyId="";c.branchId="";c.ownerId="";renderBuilder();return;}
- if(field==="buyerId"){c.buyerId=value;c.opportunityId="";renderBuilder();return;}
+ if(field==="customerId"){c.customerId=value;c.buyerId="";c.contactId="";c.siteId="";c.projectId="";c.opportunityId="";c.companyId="";c.branchId="";c.ownerId="";renderBuilder();return;}
+ if(field==="buyerId"){c.buyerId=value;c.contactId="";c.siteId="";c.projectId="";c.opportunityId="";renderBuilder();return;}
  if(field==="companyId"){c.companyId=value;c.branchId="";c.ownerId="";renderBuilder();return;}
  if(field==="branchId"){c.branchId=value;c.ownerId="";renderBuilder();return;}
  if(field.startsWith("opt-")){b.options[field.slice(4)]=value;renderBuilder();return;}
