@@ -1,0 +1,460 @@
+/* MA-006A — Product Catalog & Configuration Management (browser-only wireframe).
+   Product families -> manufacturer/model/SKU variants -> technical specs, physical dimensions,
+   reusable parts/accessories and illustrative prices. Never production authorization. */
+(()=>{
+"use strict";
+const $=id=>document.getElementById(id);
+const esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const clone=x=>JSON.parse(JSON.stringify(x));
+const db=clone(window.CPQ_MA006A_CATALOG);
+const state={hub:"products",family:"FAM-001",variant:"VAR-001",tab:"variants",category:"all",manufacturer:"all",status:"all",search:"",editor:null};
+const family=id=>db.families.find(x=>x.id===id);
+const variant=id=>db.variants.find(x=>x.id===id);
+const maker=id=>db.manufacturers.find(x=>x.id===id);
+const part=id=>db.parts.find(x=>x.id===id);
+const siblings=id=>db.variants.filter(x=>x.familyId===id);
+const amount=n=>"₹"+Number(n||0).toLocaleString("en-IN",{minimumFractionDigits:0,maximumFractionDigits:2});
+const dimension=d=>{
+ if(!d)return "Not supplied";
+ const x=[d.length,d.width,d.height,d.depth].filter(v=>v!==""&&v!==null&&v!==undefined);
+ if(!x.length)return "Not applicable / not supplied";
+ if(d.width&&d.height&&d.depth)return [d.width,d.height,d.depth].join(" × ")+" "+(d.unit||"mm")+" (W × H × D)";
+ if(d.length&&d.width&&d.height)return [d.length,d.width,d.height].join(" × ")+" "+(d.unit||"mm")+" (L × W × H)";
+ return x.join(" × ")+" "+(d.unit||"mm");
+};
+const badge=s=>'<span class="ma6a-flag '+esc(String(s||"").toLowerCase().replace(/ /g,"-"))+'">'+esc(s||"Draft")+'</span>';
+const kv=(key,value)=>'<div class="ma6-kv"><small>'+esc(key)+'</small><strong>'+esc(value===0?value:(value||"Not supplied"))+'</strong></div>';
+const note=html=>'<div class="ma6-note">'+html+'</div>';
+const panel=(title,desc)=>'<div class="ma6-panel-head"><div><h3>'+esc(title)+'</h3><p>'+esc(desc)+'</p></div></div>';
+const selectOptions=(items,selected)=>items.map(([id,label])=>'<option value="'+esc(id)+'"'+(String(id)===String(selected)?' selected':'')+'>'+esc(label)+'</option>').join("");
+function idNext(prefix,collection){
+ const next=Math.max(0,...collection.map(x=>Number(String(x.id).replace(/[^0-9]/g,""))||0))+1;
+ return prefix+String(next).padStart(3,"0");
+}
+function visibleFamilies(){
+ const search=state.search.trim().toLowerCase();
+ return db.families.filter(f=>{
+  if(state.category!=="all"&&f.category!==state.category)return false;
+  if(state.status!=="all"&&f.status!==state.status&&!siblings(f.id).some(v=>v.status===state.status))return false;
+  if(state.manufacturer!=="all"&&!siblings(f.id).some(v=>v.manufacturerId===state.manufacturer))return false;
+  if(!search)return true;
+  const flat=[f.id,f.name,f.category,f.rating,f.description,f.attributes,
+   ...siblings(f.id).flatMap(v=>[v.id,v.sku,v.model,v.variant,v.capacity,maker(v.manufacturerId)?.name,maker(v.manufacturerId)?.brand])]
+   .join(" ").toLowerCase();
+  return flat.includes(search);
+ });
+}
+function familyVariants(f){
+ if(!f)return [];
+ return siblings(f.id).filter(v=>{
+  if(state.manufacturer!=="all"&&v.manufacturerId!==state.manufacturer)return false;
+  if(state.status!=="all"&&v.status!==state.status)return false;
+  return true;
+ });
+}
+function renderHub(){
+ for(const b of $("catalog-workspace-tabs").querySelectorAll("[data-hub]")){
+  const active=b.dataset.hub===state.hub;b.classList.toggle("active",active);
+  b.setAttribute("aria-current",active?"page":"false");
+ }
+ const catalog=state.hub!=="configurations";
+ $("catalog-screen").hidden=!catalog;
+ $("configuration-screen").hidden=catalog;
+ $("catalog-products-panel").hidden=state.hub!=="products";
+ $("catalog-manufacturers-panel").hidden=state.hub!=="manufacturers";
+ $("catalog-parts-panel").hidden=state.hub!=="parts";
+ const add=$("catalog-add-product");if(add)add.hidden=!catalog;
+}
+function setHub(hub){
+ if(!["products","manufacturers","parts","configurations"].includes(hub))return;
+ state.hub=hub;renderHub();
+ if(hub!=="configurations")renderCatalog();
+}
+function renderStats(){
+ const cards=[
+ ["Product Families",db.families.length,"Grouped categories and catalog definitions"],
+ ["Manufacturer Variants",db.variants.length,"Unique model / SKU records"],
+ ["Manufacturers",db.manufacturers.length,"Independent makers and brands"],
+ ["Parts & Accessories",db.parts.length,"Reusable technical components"]
+ ];
+ $("catalog-stats").innerHTML=cards.map(([label,n,desc])=>
+ '<div class="card ma6-stat"><span>'+esc(label)+'</span><strong>'+String(n).padStart(2,"0")+'</strong><small>'+esc(desc)+'</small></div>').join("");
+}
+function renderFilterControls(){
+ $("catalog-category").innerHTML='<option value="all">All categories</option>'+selectOptions(db.categories.map(x=>[x,x]),state.category);
+ $("catalog-manufacturer").innerHTML='<option value="all">All manufacturers</option>'+selectOptions(db.manufacturers.map(x=>[x.id,x.name]),state.manufacturer);
+ $("catalog-category").value=state.category;
+ $("catalog-manufacturer").value=state.manufacturer;
+ $("catalog-status").value=state.status;
+ $("catalog-search").value=state.search;
+}
+function renderFamilyList(rows){
+ $("catalog-count").textContent=rows.length+" shown";
+ $("catalog-families").innerHTML=rows.length?rows.map(f=>
+ '<button type="button" data-family="'+esc(f.id)+'" class="ma6a-family-card'+(f.id===state.family?' active':'')+'" aria-pressed="'+String(f.id===state.family)+'">'+
+ '<div class="ma6a-row"><span class="ma6-tag">'+esc(f.id)+'</span>'+badge(f.status)+'</div>'+
+ '<strong>'+esc(f.name)+'</strong><small>'+esc(f.category)+' · '+esc(f.unit)+'</small>'+
+ '<div class="ma6a-row" style="margin-top:8px"><small>'+siblings(f.id).length+' manufacturer/model variant(s)</small><span class="ma6a-color-quiet">Open</span></div></button>').join(""):
+ '<div class="ma6a-empty-note">No products match. Reset filters or add a new product.</div>';
+}
+function renderFamilyHeader(f){
+ $("catalog-family-header").innerHTML='<div class="ma6-detail-top"><div><small>'+esc(f.id)+' · '+esc(f.category)+'</small><h2>'+esc(f.name)+'</h2>'+
+ '<p>'+esc(f.rating)+' · '+esc(f.type==="config"?"Configurable product":f.type==="service"?"Service":"Standard product")+' · Unit '+esc(f.unit)+'</p></div>'+
+ '<div class="ma6-detail-actions">'+badge(f.status)+
+ '<button type="button" class="btn" data-catalog-action="edit-family">Edit Product Family</button>'+
+ '<button type="button" class="btn primary" data-catalog-action="add-variant">+ Add Manufacturer Variant</button></div></div>'+
+ '<div class="ma6-quote-meta"><span class="ma6-tag">'+siblings(f.id).length+' model(s)</span><span class="ma6-tag">One family / multiple manufacturers</span>'+
+ '<span class="ma6-tag">Master records</span></div>'+
+ '<div class="ma6-banner">'+esc(f.description)+'</div>';
+}
+function variantCard(v){
+ const m=maker(v.manufacturerId);
+ return '<button type="button" data-variant="'+esc(v.id)+'" class="ma6a-variant-card'+(state.variant===v.id?' selected':'')+'" aria-pressed="'+String(state.variant===v.id)+'">'+
+ '<div class="ma6a-row"><span class="ma6-tag">'+esc(v.sku)+'</span>'+badge(v.status)+'</div>'+
+ '<h4>'+esc(m?.brand||m?.name||"No manufacturer (service)")+'</h4>'+
+ '<p><b>'+esc(v.model)+'</b> · '+esc(v.variant)+'</p>'+
+ '<div class="ma6a-big-rating">'+esc(v.capacity||"Rating not supplied")+'</div>'+
+ '<p>Dimensions: '+esc(dimension(v.dimensions))+'</p>'+
+ '<div class="ma6a-card-foot"><span>'+esc(v.enclosure||v.mounting||"Details")+'</span><b>'+amount(v.price?.sell)+'</b></div></button>';
+}
+function selectedVariant(v){
+ if(!v)return '<div class="ma6a-empty-note">Select a manufacturer/model variant above.</div>';
+ const m=maker(v.manufacturerId),d=v.dimensions||{};
+ return '<div class="ma6a-selected-variant"><div class="ma6a-selected-variant-head"><div><h4>'+esc(v.model)+' · '+esc(v.variant)+'</h4>'+
+ '<p>'+esc(v.sku)+' · '+esc(m?.name||"Service — no manufacturer")+'</p></div>'+
+ '<button type="button" class="btn primary" data-catalog-action="edit-variant">Edit Selected Variant</button></div>'+
+ '<div class="ma6-kvs">'+kv("Manufacturer / Brand",m?.name||"Not applicable")+" "+kv("SKU / Model",v.sku+" / "+v.model)+
+ kv("Capacity / Rating",v.capacity)+kv("Voltage",v.voltage)+
+ kv("Size (physical)",dimension(d))+kv("Weight",d.weight?d.weight+" "+(d.weightUnit||"kg"):"Not applicable")+
+ kv("Material",v.material)+kv("Mounting",v.mounting)+kv("Enclosure / Protection",v.enclosure)+kv("Sample selling price",amount(v.price?.sell))+'</div>'+
+ (v.notes?'<p class="ma6a-color-quiet" style="line-height:1.6">'+esc(v.notes)+'</p>':"")+'</div>';
+}
+function renderVariants(f,v){
+ const rows=familyVariants(f);
+ return panel("Manufacturer & Model Variants","Compare products with the same general rating but different brands, dimensions, features and sample selling prices.")+
+ '<div class="ma6a-variant-comparison">'+(rows.length?rows.map(variantCard).join(""):'<div class="ma6a-empty-note">No variants match the manufacturer / status filters.</div>')+'</div>'+
+ (rows.length?selectedVariant(v):"")+
+ note('<b>Important distinction:</b> A product family is not one fixed item. Each manufacturer/model/SKU is a separate sellable variant with its own physical dimensions, technical attributes and price-list entry. These are demo examples, not verified engineering specifications.');
+}
+function renderSpecs(f,v){
+ const rows=familyVariants(f);
+ const items=rows.length?rows:[...siblings(f.id)];
+ const tech=v?.technical||[];
+ return panel("Technical details & physical dimensions","Length, width, height, depth, weight and custom specification fields are maintained per model.")+
+ '<div class="ma6a-family-overview"><p><b>Product family:</b> '+esc(f.name)+'</p><p><b>Configurable attributes to maintain:</b> '+esc(f.attributes||"To be defined")+'</p></div>'+
+ '<div class="ma6a-section-heading"><h3>Compare model dimensions</h3><button type="button" class="btn" data-catalog-action="edit-variant">Edit selected model</button></div>'+
+ '<div class="ma6a-details-table"><table><thead><tr><th>Model / Manufacturer</th><th>Rating</th><th>Length</th><th>Width</th><th>Height</th><th>Depth</th><th>Weight</th></tr></thead><tbody>'+
+ items.map(item=>{const d=item.dimensions||{};return '<tr><td>'+esc(item.model)+'<small>'+esc(maker(item.manufacturerId)?.brand||"Service")+'</small></td><td>'+esc(item.capacity||"—")+'</td>'+
+ [d.length,d.width,d.height,d.depth].map(n=>'<td>'+esc(n===""||n==null?"—":n+" "+(d.unit||"mm"))+'</td>').join("")+
+ '<td>'+esc(d.weight?d.weight+" "+(d.weightUnit||"kg"):"—")+'</td></tr>';}).join("")+
+ '</tbody></table></div>'+
+ '<div class="ma6a-section-heading"><h3>Selected model: '+esc(v?.model||"Not selected")+'</h3></div>'+
+ (tech.length?'<div class="ma6-kvs">'+tech.map(t=>kv(t.name,t.value)).join("")+'</div>':
+ '<div class="ma6a-empty-note">Select a variant to review its technical attributes.</div>')+
+ note('Different product categories require different attributes. Electrical panels, cables, PV modules and services should not all be forced into the same fixed dimensions or technical fields. Actual validation and compatibility rules need authorized catalog administration.');
+}
+function renderParts(f,v){
+ const components=v?.components||[];
+ return panel("Components, parts & accessories","Associate required and optional parts with each manufacturer model.")+
+ '<div class="ma6a-section-heading"><h3>Selected model: '+esc(v?.model||"None")+'</h3><button class="btn" type="button" data-catalog-action="edit-variant">Edit part assignment</button></div>'+
+ (components.length?'<div class="ma6a-details-table"><table><thead><tr><th>Part code</th><th>Part / Accessory</th><th>Qty</th><th>Requirement</th><th>Manufacturer</th></tr></thead><tbody>'+
+ components.map(item=>{const p=part(item.partId);return '<tr><td>'+esc(p?.code||item.partId)+'</td><td>'+esc(p?.name||"Unlisted part")+'</td><td>'+esc(item.qty)+'</td><td>'+esc(item.role)+'</td><td>'+esc(maker(p?.manufacturerId)?.brand||"Not assigned")+'</td></tr>';}).join("")+
+ '</tbody></table></div>':'<div class="ma6a-empty-note">No reusable components assigned to this variant. Service and standard products may require none.</div>')+
+ '<div class="ma6a-section-heading"><h3>Master parts library</h3><button class="btn" type="button" data-hub="parts">Manage Parts &amp; Accessories</button></div>'+
+ '<div class="ma6a-list-inline">'+db.parts.map(p=>'<span class="ma6a-flag">'+esc(p.code)+'</span>').join("")+'</div>'+
+ note('Part quantity and "Required / Optional" are descriptive placeholders. A real configurator also needs approved dependency rules, substitutions, BOM versions, stock/sourcing evidence and technical sign-off. None of these are approved here.');
+}
+function renderPrices(f,v){
+ const rows=familyVariants(f);
+ return panel("Prices, documents & revisions","Price list is associated with the exact SKU/model. Effective dates, document references and approval status must be controlled.")+
+ (rows.length?'<div class="ma6a-details-table"><table><thead><tr><th>SKU / Model</th><th>Manufacturer</th><th>Price List</th><th>Selling Price (demo)</th><th>Internal Cost (demo)</th><th>Effective From</th></tr></thead><tbody>'+
+ rows.map(x=>'<tr><td>'+esc(x.sku)+'<small>'+esc(x.model)+'</small></td><td>'+esc(maker(x.manufacturerId)?.brand||"Not applicable")+'</td><td>'+esc(x.price?.list||"Not assigned")+'</td><td>'+amount(x.price?.sell)+'</td><td>'+amount(x.price?.cost)+'</td><td>'+esc(x.price?.from||"Not supplied")+'</td></tr>').join("")+
+ '</tbody></table></div>':'<div class="ma6a-empty-note">No variants match the filters.</div>')+
+ '<div class="ma6a-section-heading"><h3>Document references — '+esc(v?.model||"No model selected")+'</h3><button class="btn" type="button" data-catalog-action="edit-variant">Edit prices &amp; files</button></div>'+
+ '<div class="ma6-kvs">'+kv("Datasheet",v?.datasheet)+kv("Drawing",v?.drawing)+kv("Price-list validity",v?.price?.from?(v.price.from+" to "+(v.price.to||"open end")):"Not supplied")+
+ kv("Sample currency",v?.price?.currency)+kv("Lifecycle",v?.status)+kv("Model notes",v?.notes)+'</div>'+
+ note('<b>Pricing protection:</b> All costs/prices shown are fictional. Real vendor cost and margin require separate MA-003 grants. Real prices need approval, branch/company price lists, effective dates, currency and tax treatment. The quotation must freeze the price and specifications actually offered; later master edits must not silently rewrite issued quotations.');
+}
+function renderDetails(){
+ const f=family(state.family);
+ if(!f){$("catalog-family-header").innerHTML='<div class="ma6a-empty-note">Select a product family.</div>';$("catalog-family-body").innerHTML="";return;}
+ const rows=familyVariants(f);
+ if(!rows.some(x=>x.id===state.variant))state.variant=rows[0]?.id||"";
+ const v=variant(state.variant);
+ renderFamilyHeader(f);
+ for(const btn of $("catalog-detail-tabs").querySelectorAll("[data-catalog-tab]")){
+  const active=btn.dataset.catalogTab===state.tab;btn.classList.toggle("active",active);btn.setAttribute("aria-selected",String(active));
+ }
+ $("catalog-family-body").innerHTML=({variants:renderVariants,specs:renderSpecs,parts:renderParts,prices:renderPrices}[state.tab]||renderVariants)(f,v);
+}
+function renderManufacturers(){
+ $("catalog-manufacturer-list").innerHTML=db.manufacturers.map(m=>{
+  const matches=db.variants.filter(v=>v.manufacturerId===m.id);
+  return '<div class="ma6a-directory-card"><div class="ma6a-list-inline"><span class="ma6-tag">'+esc(m.id)+'</span>'+badge(m.status)+'</div>'+
+  '<h3>'+esc(m.name)+'</h3><p>Brand: '+esc(m.brand||"Not assigned")+' · Country: '+esc(m.country||"Not supplied")+'</p>'+
+  '<p>'+matches.length+' product variant(s) · '+esc(m.notes||"")+'</p>'+
+  '<div class="ma6a-directory-foot"><small class="ma6a-color-quiet">Manufacturer, not our selling company</small><button class="btn" type="button" data-catalog-action="edit-manufacturer" data-maker-id="'+esc(m.id)+'">Edit Manufacturer</button></div></div>';
+ }).join("");
+}
+function renderPartLibrary(){
+ $("catalog-part-list").innerHTML=db.parts.map(p=>{
+  const count=db.variants.filter(v=>(v.components||[]).some(c=>c.partId===p.id)).length;
+  return '<div class="ma6a-directory-card"><div class="ma6a-list-inline"><span class="ma6-tag">'+esc(p.kind)+'</span>'+badge(p.status)+'</div>'+
+  '<h3>'+esc(p.name)+'</h3><p>'+esc(p.code)+' · '+esc(p.unit)+' · '+esc(maker(p.manufacturerId)?.brand||"No manufacturer")+'</p>'+
+  '<p>'+esc(p.spec)+' · Sample rate '+amount(p.sellPrice)+'</p>'+
+  '<div class="ma6a-directory-foot"><small class="ma6a-color-quiet">Used by '+count+' variant(s)</small><button class="btn" type="button" data-catalog-action="edit-part" data-part-id="'+esc(p.id)+'">Edit Part</button></div></div>';
+ }).join("");
+}
+function renderCatalog(){
+ renderHub();renderStats();
+ if(state.hub==="products"){
+  renderFilterControls();
+  const rows=visibleFamilies();if(!rows.some(x=>x.id===state.family))state.family=rows[0]?.id||"";
+  renderFamilyList(rows);renderDetails();
+ }else if(state.hub==="manufacturers")renderManufacturers();
+ else if(state.hub==="parts")renderPartLibrary();
+}
+const textField=(name,label,value="",type="text",full=false,required=false)=>'<div class="ma6-field'+(full?' full':'')+'"><label for="cat-'+esc(name)+'">'+esc(label)+(required?' *':'')+'</label><input id="cat-'+esc(name)+'" name="'+esc(name)+'" type="'+esc(type)+'" value="'+esc(value)+'"'+(required?' required':'')+'></div>';
+const numberField=(name,label,value="",full=false)=>textField(name,label,value,"number",full);
+const areaField=(name,label,value="",full=true)=>'<div class="ma6-field'+(full?' full':'')+'"><label for="cat-'+esc(name)+'">'+esc(label)+'</label><textarea name="'+esc(name)+'" id="cat-'+esc(name)+'" rows="3">'+esc(value)+'</textarea></div>';
+const selectField=(name,label,values,current="",blank="Choose...",required=false)=>'<div class="ma6-field"><label for="cat-'+esc(name)+'">'+esc(label)+(required?' *':'')+'</label><select name="'+esc(name)+'" id="cat-'+esc(name)+'"><option value="">'+esc(blank)+'</option>'+selectOptions(values,current)+'</select></div>';
+const section=(title,desc)=>'<div class="ma6a-editor-section"><h3>'+esc(title)+'</h3><p>'+esc(desc)+'</p></div>';
+const group=(inner,three=false)=>'<div class="ma6-field-grid'+(three?' three':'')+'">'+inner+'</div>';
+const details=(title,inner,open=false)=>'<details class="ma6a-editor-details"'+(open?' open':'')+'><summary>'+esc(title)+'</summary>'+inner+'</details>';
+const statuses=["Draft","In Review","Active","Discontinued"];
+const familyTypes=[["config","Configurable product"],["standard","Standard catalog product"],["service","Service / EPC"]];
+function familyFields(f={}){
+ return section("Product Family / Main Product","Example: 65 kW Power Panel. The family groups models but does not fix a single manufacturer, size or price.")+
+ group(textField("familyName","Family / Product Name",f.name,"text",false,true)+
+ selectField("familyCategory","Category",db.categories.map(x=>[x,x]),f.category||db.categories[0],"Choose category",true)+
+ selectField("familyType","Product Type",familyTypes,f.type||"config","Choose type",true)+
+ textField("familyUnit","Default Unit of Measure",f.unit||"Nos")+textField("familyRating","General Capacity / Rating",f.rating||"")+
+ selectField("familyStatus","Family Lifecycle Status",statuses.map(x=>[x,x]),f.status||"Draft"))+
+ group(areaField("familyDescription","Product family description",f.description||"")+
+ areaField("familyAttributes","Attribute names / configurable properties",f.attributes||""));
+}
+function techToText(items){return (items||[]).map(x=>x.name+": "+x.value).join("\n");}
+function partsPicker(v={}){
+ return '<div class="ma6a-parts-picker">'+db.parts.map(p=>{
+  const x=(v.components||[]).find(c=>c.partId===p.id);
+  return '<div class="ma6a-part-choice"><label><input type="checkbox" name="linkedPart" value="'+esc(p.id)+'"'+(x?' checked':'')+'> '+esc(p.name)+'</label>'+
+  '<input type="number" name="qty_'+esc(p.id)+'" value="'+esc(x?.qty||1)+'" min="1" step="1" aria-label="Part quantity '+esc(p.name)+'">'+
+  '<select name="role_'+esc(p.id)+'" aria-label="Part requirement '+esc(p.name)+'">'+selectOptions([["Required","Required"],["Optional","Optional"]],x?.role||"Required")+'</select></div>';
+ }).join("")+'</div>';
+}
+function variantFields(v={},f={}){
+ const d=v.dimensions||{},p=v.price||{};
+ return section("Manufacturer Variant / Sellable Model","Each model must have its own SKU. Manufacturer, physical size and selling price may differ, even at the same capacity.")+
+ group(textField("sku","Unique SKU / Product Code",v.sku,"text",false,true)+
+ selectField("manufacturerId","Product Manufacturer / Company",db.manufacturers.map(m=>[m.id,m.name+" · "+m.brand]),v.manufacturerId||"","Choose manufacturer (service optional)")+
+ textField("model","Manufacturer Model Number",v.model||"","text",false,true)+
+ textField("variantName","Variant / Size Description",v.variant||"")+
+ textField("capacity","Exact Capacity / Rating",v.capacity||"")+
+ selectField("variantStatus","Variant Lifecycle Status",statuses.map(x=>[x,x]),v.status||"Draft"))+
+ details("Technical & Electrical / Mechanical Specifications",
+ group(textField("voltage","Voltage / Supply",v.voltage||"")+
+ textField("mounting","Mounting / Installation Type",v.mounting||"")+
+ textField("material","Material / Construction",v.material||"")+
+ textField("enclosure","Ingress Protection / Enclosure",v.enclosure||"")+
+ areaField("technical","Additional Technical Attributes (one per line: Label: Value)",techToText(v.technical))),
+ true)+
+ details("Size, Dimensions & Weight",
+ group(selectField("dimensionUnit","Dimensions Unit",[["mm","mm"],["cm","cm"],["m","m"],["in","in"]],d.unit||"mm")+
+ numberField("dimLength","Length",d.length)+numberField("dimWidth","Width",d.width)+
+ numberField("dimHeight","Height",d.height)+numberField("dimDepth","Depth",d.depth)+
+ numberField("weight","Weight",d.weight)+selectField("weightUnit","Weight Unit",[["kg","kg"],["g","g"],["lb","lb"]],d.weightUnit||"kg"),true)+
+ '<div class="ma6a-editor-section-note">Use only dimensions relevant to this product. For example, services have no physical size, and cable is typically measured by length and conductor specification.</div>',true)+
+ details("Components, Parts & Accessories",
+ '<div class="ma6a-editor-section-note">Select reusable catalog parts and indicate illustrative required/optional quantity. Real compatibility and BOM rules are maintained through authorized technical controls.</div>'+partsPicker(v))+
+ details("Product Price List & Validity — fictional values",
+ group(selectField("currency","Currency",[["INR","INR"],["USD","USD"],["EUR","EUR"]],p.currency||"INR")+
+ textField("priceList","Price List Name",p.list||"Demo Base Price List")+
+ numberField("cost","Internal Cost — restricted in production",p.cost??0)+
+ numberField("sell","Selling Price / Unit",p.sell??0)+
+ textField("priceFrom","Effective From",p.from||"","date")+
+ textField("priceTo","Effective Until (optional)",p.to||"","date"))+
+ '<div class="ma6a-editor-section-note">Cost and margin require separate permission checks. Do not use these examples as real prices or approved tax values.</div>',true)+
+ details("Product Documents, Notes & Revision Context",
+ group(textField("datasheet","Datasheet Reference / Status",v.datasheet||"")+
+ textField("drawing","Drawing / Diagram Reference",v.drawing||"")+
+ areaField("variantNotes","Variant Notes",v.notes||""))+
+ '<div class="ma6a-editor-section-note">Actual document upload/storage, revision history and drawing approval will need the Documents module.</div>')+
+ '<div class="ma6a-editor-section-note"><b>Project-specific changes:</b> For a special customer/project dimension or component selection, keep a separate configuration/quotation revision. Do not overwrite a shared manufacturer product master simply to satisfy one quote.</div>';
+}
+function manufacturerFields(m={}){
+ return section("Manufacturer & Brand","Separate from our internal legal entity (MA-002) and from the eventual purchasing supplier.")+
+ group(textField("name","Manufacturer Company Name",m.name||"","text",false,true)+
+ textField("brand","Brand / Trading Name",m.brand||"")+
+ textField("country","Country",m.country||"India")+
+ selectField("status","Status",statuses.map(x=>[x,x]),m.status||"Active")+
+ textField("website","Website / Reference (optional)",m.website||"")+
+ areaField("notes","Internal manufacturer notes",m.notes||""));
+}
+function partFields(p={}){
+ return section("Part / Accessory Master","Individual components can be reused in many product variants and future configurations.")+
+ group(textField("code","Part Code / SKU",p.code||"","text",false,true)+
+ textField("name","Part / Accessory Name",p.name||"","text",false,true)+
+ selectField("kind","Type",[["Component","Component"],["Accessory","Accessory"]],p.kind||"Component")+
+ selectField("manufacturerId","Manufacturer",db.manufacturers.map(m=>[m.id,m.name]),p.manufacturerId||"","Choose manufacturer")+
+ textField("unit","Unit of Measure",p.unit||"Nos")+
+ selectField("status","Status",statuses.map(x=>[x,x]),p.status||"Active")+
+ numberField("sellPrice","Demo Selling Price / Unit",p.sellPrice??0)+
+ areaField("spec","Part Technical Specification",p.spec||"")+
+ areaField("notes","Internal Notes",p.notes||""))+
+ '<div class="ma6a-editor-section-note">Part prices, SKU compatibility and substitution permissions are separate concerns. This is an editable master-data wireframe, not a purchasing or engineering approval system.</div>';
+}
+function editorMarkup(){
+ const e=state.editor;if(!e)return "";
+ if(e.mode==="product-new")return familyFields()+variantFields();
+ if(e.mode==="family-edit")return familyFields(family(e.familyId));
+ if(e.mode==="variant-new")return '<div class="ma6a-editor-section-note"><b>Family:</b> '+esc(family(e.familyId)?.name||"Unknown")+'</div>'+variantFields({},family(e.familyId));
+ if(e.mode==="variant-edit")return '<div class="ma6a-editor-section-note"><b>Family:</b> '+esc(family(e.familyId)?.name||"Unknown")+'</div>'+variantFields(variant(e.variantId),family(e.familyId));
+ if(e.mode==="manufacturer-new"||e.mode==="manufacturer-edit")return manufacturerFields(e.manufacturerId?maker(e.manufacturerId):{});
+ if(e.mode==="part-new"||e.mode==="part-edit")return partFields(e.partId?part(e.partId):{});
+ return "";
+}
+function openEditor(mode,ids={}){
+ state.editor={mode,...ids};
+ const titles={"product-new":"Add New Product & First Variant","family-edit":"Edit Product Family","variant-new":"Add Manufacturer / Size Variant","variant-edit":"Edit Manufacturer Variant","manufacturer-new":"Add Manufacturer","manufacturer-edit":"Edit Manufacturer","part-new":"Add Part / Accessory","part-edit":"Edit Part / Accessory"};
+ $("catalog-editor-title").textContent=titles[mode]||"Edit Catalog";
+ $("catalog-editor-subtitle").textContent="Fictional master-data fields · Demo save only · Not production authorization";
+ $("catalog-editor-body").innerHTML=editorMarkup();$("catalog-editor-error").hidden=true;
+ $("catalog-editor-overlay").classList.add("open");$("catalog-editor-overlay").setAttribute("aria-hidden","false");
+ $("catalog-editor-close").focus();
+}
+function closeEditor(){
+ $("catalog-editor-overlay").classList.remove("open");$("catalog-editor-overlay").setAttribute("aria-hidden","true");
+ state.editor=null;
+}
+function issue(message){const el=$("catalog-editor-error");el.hidden=false;el.textContent=message;el.scrollIntoView({block:"nearest"});return false;}
+const trim=(f,k)=>String(f.get(k)??"").trim();
+function positive(f,k,required=false){
+ const v=trim(f,k);if(!v)return "";
+ const n=Number(v);if(!Number.isFinite(n)||n<0||n>1000000000)throw Error("Enter a valid non-negative number for "+k+".");
+ return n;
+}
+function techParse(raw){
+ return String(raw||"").split(/\n/).map(s=>s.trim()).filter(Boolean).map(line=>{
+  const i=line.indexOf(":");
+  if(i<1)throw Error("Technical attributes must use 'Label: Value', one per line.");
+  return {name:line.slice(0,i).trim().slice(0,80),value:line.slice(i+1).trim().slice(0,200)};
+ });
+}
+function getFamilyForm(f){
+ const name=trim(f,"familyName"),category=trim(f,"familyCategory"),type=trim(f,"familyType");
+ if(!name||!category||!type)throw Error("Product family name, category and type are required.");
+ return {name:name.slice(0,150),category,type,unit:trim(f,"familyUnit")||"Nos",
+  rating:trim(f,"familyRating"),description:trim(f,"familyDescription"),status:trim(f,"familyStatus")||"Draft",
+  attributes:trim(f,"familyAttributes")};
+}
+function getVariantForm(f,familyType,existing=null){
+ const sku=trim(f,"sku"),model=trim(f,"model"),manufacturerId=trim(f,"manufacturerId");
+ if(!sku||!model)throw Error("Variant SKU and manufacturer model number are required.");
+ if(db.variants.some(v=>v.sku.toLowerCase()===sku.toLowerCase()&&v.id!==existing?.id))throw Error("This SKU already exists. Each model must have a unique product code.");
+ if(manufacturerId&&!maker(manufacturerId))throw Error("Select a manufacturer from the master list.");
+ if(familyType!=="service"&&!manufacturerId)throw Error("Select a manufacturer for this physical product. Add a new manufacturer from the Manufacturers tab if needed.");
+ const dims={unit:trim(f,"dimensionUnit")||"mm",weightUnit:trim(f,"weightUnit")||"kg"};
+ for(const [k,fk] of [["length","dimLength"],["width","dimWidth"],["height","dimHeight"],["depth","dimDepth"],["weight","weight"]])dims[k]=positive(f,fk);
+ const components=f.getAll("linkedPart").map(id=>{
+  if(!part(id))throw Error("A referenced part is not in the master library.");
+  const qty=Number(trim(f,"qty_"+id)||1);
+  if(!Number.isInteger(qty)||qty<1||qty>100000)throw Error("Part quantities must be positive whole numbers.");
+  return {partId:id,qty,role:trim(f,"role_"+id)==="Optional"?"Optional":"Required"};
+ });
+ const cost=positive(f,"cost"),sell=positive(f,"sell");
+ const from=trim(f,"priceFrom"),to=trim(f,"priceTo");
+ if(from&&to&&to<from)throw Error("Price effective-until cannot precede the effective-from date.");
+ return {sku:sku.slice(0,80),manufacturerId,model:model.slice(0,120),variant:trim(f,"variantName")||model,
+  status:trim(f,"variantStatus")||"Draft",capacity:trim(f,"capacity"),voltage:trim(f,"voltage"),
+  mounting:trim(f,"mounting"),material:trim(f,"material"),enclosure:trim(f,"enclosure"),
+  dimensions:dims,technical:techParse(trim(f,"technical")),components,
+  price:{currency:trim(f,"currency")||"INR",list:trim(f,"priceList")||"Demo Base Price List",
+   cost:cost===""?0:cost,sell:sell===""?0:sell,from,to},
+  datasheet:trim(f,"datasheet"),drawing:trim(f,"drawing"),notes:trim(f,"variantNotes")};
+}
+function saveEditor(event){
+ event.preventDefault();
+ const e=state.editor;if(!e)return;
+ const fd=new FormData($("catalog-editor-form"));
+ try{
+  if(e.mode==="product-new"){
+   const f=getFamilyForm(fd);
+   const v=getVariantForm(fd,f.type);
+   const fam={id:idNext("FAM-",db.families),...f};db.families.unshift(fam);
+   const vari={id:idNext("VAR-",db.variants),familyId:fam.id,...v};db.variants.unshift(vari);
+   state.family=fam.id;state.variant=vari.id;state.tab="variants";
+   state.search="";state.category="all";state.manufacturer="all";state.status="all";state.hub="products";
+  }else if(e.mode==="family-edit"){
+   const f=family(e.familyId);if(!f)throw Error("Family not found.");
+   Object.assign(f,getFamilyForm(fd));state.family=f.id;
+  }else if(e.mode==="variant-new"||e.mode==="variant-edit"){
+   const fam=family(e.familyId);if(!fam)throw Error("Select a valid product family.");
+   const orig=e.mode==="variant-edit"?variant(e.variantId):null;
+   const input=getVariantForm(fd,fam.type,orig);
+   if(orig)Object.assign(orig,input);
+   else{
+    const v={id:idNext("VAR-",db.variants),familyId:fam.id,...input};db.variants.unshift(v);state.variant=v.id;
+   }
+   state.family=fam.id;state.tab="variants";
+   state.manufacturer="all";state.status="all";state.search="";
+  }else if(e.mode==="manufacturer-new"||e.mode==="manufacturer-edit"){
+   const name=trim(fd,"name");if(!name)throw Error("Manufacturer name is required.");
+   const input={name:name.slice(0,150),brand:trim(fd,"brand"),country:trim(fd,"country"),
+    website:trim(fd,"website"),status:trim(fd,"status")||"Active",notes:trim(fd,"notes")};
+   if(e.mode==="manufacturer-edit"){const m=maker(e.manufacturerId);if(!m)throw Error("Manufacturer not found.");Object.assign(m,input);}
+   else db.manufacturers.push({id:idNext("MFG-",db.manufacturers),...input});
+   state.hub="manufacturers";
+  }else if(e.mode==="part-new"||e.mode==="part-edit"){
+   const code=trim(fd,"code"),name=trim(fd,"name");if(!code||!name)throw Error("Part code and name are required.");
+   const duplicate=db.parts.find(p=>p.code.toLowerCase()===code.toLowerCase()&&p.id!==e.partId);
+   if(duplicate)throw Error("Part code already exists.");
+   const price=positive(fd,"sellPrice");
+   const input={code:code.slice(0,80),name:name.slice(0,150),kind:trim(fd,"kind")||"Component",
+    manufacturerId:trim(fd,"manufacturerId"),unit:trim(fd,"unit")||"Nos",
+    status:trim(fd,"status")||"Draft",spec:trim(fd,"spec"),notes:trim(fd,"notes"),
+    sellPrice:price===""?0:price};
+   if(e.mode==="part-edit"){const p=part(e.partId);if(!p)throw Error("Part not found.");Object.assign(p,input);}
+   else db.parts.push({id:idNext("PART-",db.parts),...input});
+   state.hub="parts";
+  }
+  closeEditor();renderCatalog();
+ }catch(err){issue(err.message||"Unable to save this demo record.");}
+}
+document.addEventListener("click",event=>{
+ const t=event.target.closest("[data-hub],[data-catalog-link],[data-family],[data-variant],[data-catalog-tab],[data-catalog-action]");
+ if(!t)return;
+ const d=t.dataset;
+ if(d.hub){setHub(d.hub);return;}
+ if(d.catalogLink){setHub("products");$("catalog-screen").scrollIntoView({block:"start"});return;}
+ if(d.family){state.family=d.family;state.variant=siblings(d.family)[0]?.id||"";state.tab="variants";renderCatalog();return;}
+ if(d.variant){state.variant=d.variant;renderDetails();return;}
+ if(d.catalogTab){state.tab=d.catalogTab;renderDetails();return;}
+ const action=d.catalogAction;
+ if(!action)return;
+ if(action==="edit-family")openEditor("family-edit",{familyId:state.family});
+ else if(action==="add-variant")openEditor("variant-new",{familyId:state.family});
+ else if(action==="edit-variant"){
+  if(!state.variant){return;}
+  openEditor("variant-edit",{familyId:state.family,variantId:state.variant});
+ }else if(action==="add-manufacturer")openEditor("manufacturer-new");
+ else if(action==="edit-manufacturer")openEditor("manufacturer-edit",{manufacturerId:d.makerId});
+ else if(action==="add-part")openEditor("part-new");
+ else if(action==="edit-part")openEditor("part-edit",{partId:d.partId});
+});
+$("catalog-add-product").addEventListener("click",()=>{setHub("products");openEditor("product-new");});
+$("new-configuration").addEventListener("click",()=>setHub("configurations"));
+$("catalog-clear").addEventListener("click",()=>{state.search="";state.category="all";state.manufacturer="all";state.status="all";renderCatalog();});
+$("catalog-search").addEventListener("input",e=>{state.search=e.target.value;renderCatalog();});
+$("catalog-category").addEventListener("change",e=>{state.category=e.target.value;renderCatalog();});
+$("catalog-manufacturer").addEventListener("change",e=>{state.manufacturer=e.target.value;renderCatalog();});
+$("catalog-status").addEventListener("change",e=>{state.status=e.target.value;renderCatalog();});
+$("catalog-editor-form").addEventListener("submit",saveEditor);
+$("catalog-editor-cancel").addEventListener("click",closeEditor);
+$("catalog-editor-close").addEventListener("click",closeEditor);
+$("catalog-editor-overlay").addEventListener("click",e=>{if(e.target===$("catalog-editor-overlay"))closeEditor();});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&state.editor)closeEditor();});
+const params=new URLSearchParams(window.location.search);
+if(params.get("configuration")||params.get("opportunity")||params.get("hub")==="configurations")state.hub="configurations";
+renderCatalog();
+window.CPQ_MA006A_CATALOG_UI={db,state,visibleFamilies,familyVariants,renderCatalog,openEditor,saveEditor,dimension,setHub};
+})();
