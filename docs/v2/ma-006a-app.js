@@ -147,16 +147,18 @@ function renderHead(c){
  '<div class="ma6-banner"><b>Configuration before quotation:</b> These records store product choices, options, technical notes and quantity. They do not store approved rates, discounts, taxes or customer-issued offers.</div>';
 }
 function overview(c){
- return panel("Configuration overview","A reusable solution specification that can later be priced and quoted.")+
- '<div class="ma6-kvs">'+kv("Configuration reference",c.id+" / "+c.revision)+kv("Type",c.kind)+
- kv("Customer",customer(c.customerId)?.name||"Unassigned — reusable template")+
+ return panel("Configuration overview","Reusable technical selection with optional project/solar site context.")+
+ '<div class="ma6-kvs">'+kv("Configuration reference",c.id+" / "+c.revision)+
+ kv("Configuration Type",c.solutionType==="solar"?"Solar System":"Product / Other")+
+ kv("Customer",customer(c.customerId)?.name||"Reusable template")+
  kv("Buyer company",buyer(c.buyerId)?.name)+kv("Source enquiry",c.opportunityId||"Not linked")+
- kv("Our company",entity(c.companyId)?.name)+kv("Internal branch",branch(c.branchId)?.name)+
- kv("Owner",owner(c.ownerId)?.name)+kv("Item count",String(c.items.length))+
- kv("Sample rule check",status(c))+kv("Updated",c.updated)+kv("Linked quotation",c.quoteId||"None")+'</div>'+
- '<div class="ma6-section-sub"><h4>Purpose / internal technical notes</h4></div>'+
- '<div class="ma6a-scope-panel">'+esc(c.notes||"No notes captured")+'</div>'+
- note('A configuration can be customer-specific or customer-neutral. It may include multiple configured/standard/service items. Buyer and selling-company validations remain mandatory before a commercial quotation is saved.');
+ kv("Internal selling company",entity(c.companyId)?.name)+kv("Branch",branch(c.branchId)?.name)+
+ kv("Owner",owner(c.ownerId)?.name)+kv("Selected items",String(c.items.length))+
+ kv("Basic sample check",status(c))+kv("Updated",c.updated)+'</div>'+
+ (c.solutionType==="solar"?solarOverview(c):"")+
+ '<details class="ma6a-builder-details"><summary>Project notes and linked quotation</summary><p>'+esc(c.notes||"No notes")+'</p>'+
+ '<p>Quotation: '+esc(c.quoteId||"Not linked")+'</p></details>'+
+ note('A configuration stores technical selections and project requirements. It is not a priced or engineering-approved customer quotation.');
 }
 function items(c){
  return panel("Selected technical items","Product attributes, service scope and quantities; pricing happens only in MA-006.")+
@@ -171,13 +173,12 @@ function items(c){
  note('This is not a generated manufacturer BOM or priced BOQ. Engineering will approve the options and component breakdown; quotations will display the commercial quantities, rates and terms.');
 }
 function checks(c){
- const problems=review(c).errors;
- return panel("Technical checks & readiness","Shows where approved engineering rules will be enforced in development.")+
- '<div class="ma6a-check-row"><span class="ma6a-check-symbol">✓</span><div><strong>Product catalog selection</strong><p>Technical attributes and allowed options are illustrated using the sample product catalog.</p></div></div>'+
- (problems.length?problems.map(x=>'<div class="ma6a-check-row bad"><span class="ma6a-check-symbol">!</span><div><strong>Needs correction</strong><p>'+esc(x)+'</p></div></div>').join(""):
- '<div class="ma6a-check-row"><span class="ma6a-check-symbol">✓</span><div><strong>Sample rule check passed</strong><p>The selected options satisfy this small set of demonstration rules, not a production engineering or safety sign-off.</p></div></div>')+
- '<div class="ma6a-check-row bad"><span class="ma6a-check-symbol">!</span><div><strong>Actual technical approval pending</strong><p>Real compatibility, certified data, accessory dependencies, standard compliance, availability, drawings and BOM generation need an authorized catalog/rules workflow.</p></div></div>'+
- note('A green sample check is not technical approval. Product rules administration remains a separate planned screen, with MA-003 permissions for editing those rules.');
+ const result=review(c);
+ return panel("Technical checks & next steps","We separate basic data checks from real engineering approvals.")+
+ (result.errors.length?result.errors.map(e=>'<div class="ma6a-check-row bad"><span class="ma6a-check-symbol">!</span><div><strong>Needs correction</strong><p>'+esc(e)+'</p></div></div>').join(""):
+ '<div class="ma6a-check-row"><span class="ma6a-check-symbol">✓</span><div><strong>Basic catalog and quantity check passed</strong><p>Model references and quantities are structurally valid in this wireframe.</p></div></div>')+
+ (result.warnings||[]).map(e=>'<div class="ma6a-check-row bad"><span class="ma6a-check-symbol">!</span><div><strong>Engineering follow-up</strong><p>'+esc(e)+'</p></div></div>').join("")+
+ '<div class="ma6a-check-row bad"><span class="ma6a-check-symbol">!</span><div><strong>Formal technical approval pending</strong><p>Real string / MPPT limits, structural review, certifications, drawings and itemized BOM must be verified in production.</p></div></div>';
 }
 function handoff(c){
  const valid=review(c).ok;
@@ -318,18 +319,23 @@ function renderComponents(c){
  note('Component lists are not a generated BOM, purchase requisition or approved engineering drawing. They are the technical inputs that may be mapped into the quotation BOQ.');
 }
 function renderReview(c){
- const result=review(c);
- return panel("4 · Review & save configuration","Check the technical choices and store a sample configuration. Quotations will handle pricing separately.")+
- '<div class="ma6-kvs">'+kv("Solution name",c.name||"Required")+
+ const result=review(c),m=result.solar||solarMetrics(c);
+ return panel("4 · Review Configuration","Review the technical items and save this draft. Pricing follows in Quotations.")+
+ '<div class="ma6-kvs">'+kv("Configuration name",c.name||"Required")+
  kv("Customer",customer(c.customerId)?.name||"Reusable / not selected")+
- kv("Buyer",buyer(c.buyerId)?.name)+kv("Items",String(c.items.length))+
- kv("Internal company",entity(c.companyId)?.name||"Select later")+
- kv("Source opportunity",c.opportunityId||"No source enquiry")+'</div>'+
- '<div class="ma6-section-sub"><h4>Sample readiness</h4>'+badge(c)+'</div>'+
- (result.errors.length?result.errors.map(e=>'<div class="ma6a-check-row bad"><span class="ma6a-check-symbol">!</span><div><strong>Action needed</strong><p>'+esc(e)+'</p></div></div>').join(""):
- '<div class="ma6a-check-row"><span class="ma6a-check-symbol">✓</span><div><strong>Demo selection check passed</strong><p>Technical selections are structurally complete for this sample. This is not an engineering approval or permission to issue a customer quotation.</p></div></div>')+
- '<div class="ma6a-check-row bad"><span class="ma6a-check-symbol">!</span><div><strong>Engineering approval is not yet modeled</strong><p>Product catalog, compatibility, BOM, accessories, availability and standards must be managed by authorized technical users in production.</p></div></div>'+
- note('Saving creates or updates a fictional configuration in this browser page. After saving, select "Use in Quotation" to pass the selected items to MA-006, where the customer, pricing, terms and approval policies are controlled.');
+ kv("Selected product lines",String(c.items.length))+
+ kv("Project type",c.solutionType==="solar"?"Solar system":"Single product / other")+
+ (c.solutionType==="solar"?kv("Target DC",c.solar?.targetDcKwp?c.solar.targetDcKwp+" kWp":"Not entered")+
+ kv("Proposed module DC",m.modules?m.dcKwp.toFixed(2)+" kWp":"Not calculated")+
+ kv("Proposed inverter AC",m.acKw?m.acKw.toFixed(2)+" kW":"Not selected")+
+ kv("DC / AC Ratio",m.ratio?m.ratio.toFixed(2):"Pending"):"")+
+ '</div><div class="ma6-section-sub"><h4>Readiness</h4>'+badge(c)+'</div>'+
+ (result.errors.length?result.errors.map(x=>'<div class="ma6a-check-row bad"><span class="ma6a-check-symbol">!</span><div><strong>Fix before saving</strong><p>'+esc(x)+'</p></div></div>').join(""):
+ '<div class="ma6-validation ok">Basic data check passed. You may save a browser-only draft.</div>')+
+ '<details class="ma6a-builder-details"><summary>Open engineering / solar checks ('+(result.warnings?.length||0)+')</summary>'+
+ (result.warnings||[]).map(w=>'<p>• '+esc(w)+'</p>').join("")+
+ '<p>Formal engineering approval, local regulations and price approval are not completed by this wireframe.</p></details>'+
+ note('Save means demo draft only. The technical BOQ and selected models can be carried into MA-006, where rates and commercial terms are reviewed separately.');
 }
 function renderBuilder(){
  if(state.mode!=="builder"||!state.builder)return;
