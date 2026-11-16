@@ -54,6 +54,7 @@ function totals(q){
  return {subtotal,discount,taxable,tax,total:taxable+tax};
 }
 function lineConfig(line){
+ if(line.catalogSpec)return line.catalogSpec;
  const p=product(line.productId);
  if(line.type!=="config"||!p)return "No option configuration";
  return Object.entries(p.options).map(([k,v])=>v.label+": "+(line.options?.[k]||"—")).join(" · ");
@@ -116,6 +117,9 @@ function summary(q){
  kv("Customer project",project(q.projectId)?.name)+kv("Source enquiry",q.opportunityId||"Direct quotation — no enquiry required")+
  kv("Our selling legal entity",entity(q.companyId)?.name)+kv("Our branch",branch(q.branchId)?.name)+
  kv("Sales owner",employee(q.ownerId)?.name)+kv("Currency",q.currency)+
+ (q.projectTechnical?kv("Solar system type",q.projectTechnical.systemType||"Not specified")+
+ kv("Target DC capacity",q.projectTechnical.targetDcKwp?q.projectTechnical.targetDcKwp+" kWp":"Not specified")+
+ kv("Roof / installation site",[q.projectTechnical.roofType,q.projectTechnical.siteLocation].filter(Boolean).join(" · ")):"")+
  kv("Quotation date",q.date)+kv("Valid until",q.validUntil)+
  kv("Revision",q.rev)+kv("Last updated",q.lastUpdated)+'</div>'+
  (q.opportunityId?'<div class="ma6-section-sub"><h4>Source opportunity</h4><a class="btn" href="ma-005-opportunities.html?opportunity='+encodeURIComponent(q.opportunityId)+'">View MA-005</a></div>':'')+
@@ -125,7 +129,7 @@ function items(q){
  return panel("Configuration & Bill of Quantities","One quote can include configurable products, standard items and services.","edit-builder","Open in Builder")+
  (q.lines.length?table(["Item / type","Selected options & scope","Qty","Unit","Selling rate (demo)","Line total"],
  q.lines.map(l=>'<tr><td><strong>'+esc(l.description)+'</strong><small>'+esc(l.productId)+' · '+esc(l.type)+'</small></td>'+
- '<td>'+text(l.type==="config"?lineConfig(l):"No configuration required")+'</td><td>'+esc(l.quantity)+'</td><td>'+esc(l.unit)+'</td><td class="ma6-money">'+money(l.unitPrice)+'</td><td class="ma6-money">'+money(extended(l))+'</td></tr>')):blank("No BOQ lines have been added."))+
+ '<td>'+text(lineConfig(l))+'</td><td>'+esc(l.quantity)+'</td><td>'+esc(l.unit)+'</td><td class="ma6-money">'+money(l.unitPrice)+'</td><td class="ma6-money">'+money(extended(l))+'</td></tr>')):blank("No BOQ lines have been added."))+
  note('<b>Configuration rule boundary:</b> Options and illustrative dependencies are modeled in the builder. Engineering compatibility, approved product catalog, generated BOM, availability, specifications and vendor evidence will need a separate rules/data service. Internal costs and margins are not displayed in this public demo.');
 }
 function financialRows(q){
@@ -152,6 +156,7 @@ function reviewChecks(q){
  ["Config rules",q.lines.every(l=>l.type!=="config"||configCheck(product(l.productId),l.options).ok),"Sample compatibility check only — engineers must approve rules"],
  ["Terms",Boolean(q.payment&&q.delivery&&q.validUntil),"Customer-facing terms and validity recorded"],
  ["Pricing/discount policy",false,"Real tax, pricing and approvals are not evaluated in this demo"],
+ ["Imported catalog prices",!q.lines.some(l=>l.pricingReview),"Seeded rates are illustration-only. Validate manufacturer/SKU, costs, selling price and exceptions."],
  ["Issuance permission",false,"Requires authorized approval, locked revision and audit in production"]
  ];
 }
@@ -255,7 +260,7 @@ function pricingBuilder(q){
  const totalsHtml=financialRows(q);
  return panel("3 · BOQ & Pricing","Line quantities and illustration-only selling rates. Internal costs and margin controls are excluded from this public demo.")+
  (q.lines.length?table(["BOQ line / configuration","Qty","Unit","Unit selling rate (demo)","Extended",""],
- q.lines.map(l=>'<tr><td><strong>'+esc(l.description)+'</strong><small>'+esc(l.type==="config"?lineConfig(l):"No configurable options")+'</small></td>'+
+ q.lines.map(l=>'<tr><td><strong>'+esc(l.description)+'</strong><small>'+esc(lineConfig(l))+'</small></td>'+
  '<td><input class="ma6-qty" type="number" min="1" step="1" data-line-qty="'+esc(l.id)+'" value="'+esc(l.quantity)+'" aria-label="Quantity '+esc(l.description)+'"></td>'+
  '<td>'+esc(l.unit)+'</td><td class="ma6-money"><input class="ma6-rate" type="number" min="0" step="0.01" data-line-rate="'+esc(l.id)+'" value="'+esc(l.unitPrice)+'" aria-label="Sample selling rate '+esc(l.description)+'"></td>'+
  '<td class="ma6-money">'+money(extended(l))+'</td><td><button type="button" class="btn" data-remove-line="'+esc(l.id)+'" aria-label="Remove '+esc(l.description)+'">Remove</button></td></tr>')):blank("No products selected. Go to Configure to add BOQ lines."))+
