@@ -392,15 +392,22 @@ function save(){
 function addItem(){
  const b=state.builder;if(!b)return;
  const p=itemProduct(b.productId);if(!p)return;
- const l={id:"I"+String(Math.max(0,...b.value.items.map(x=>Number(x.id.replace(/\D/g,""))||0))+1).padStart(2,"0"),
- productId:p.id,quantity:Number(b.quantity),options:p.type==="config"?{...b.options}:{},note:String(b.itemNote||"").trim()};
- const errors=lineErrors(l);
- if(errors.length){dialog("Sample configuration needs correction",errors.map(esc).join("<p>")+"</p>");return;}
- b.value.items.push(l);
- b.itemNote="";b.quantity=1;renderBuilder();toast("Item added to technical configuration");
+ const line={id:"I"+String(Math.max(0,...b.value.items.map(x=>Number(x.id.replace(/\D/g,""))||0))+1).padStart(2,"0"),
+  productId:p.id,variantId:p.variant?.id||"",quantity:Number(b.quantity),
+  options:p.type==="config"?{...b.options}:{},customSpec:String(b.customSpec||"").trim().slice(0,500),
+  note:String(b.itemNote||"").trim().slice(0,500)};
+ const errors=lineErrors(line);
+ if(errors.length){dialog("Product selection needs correction",errors.map(x=>esc(x)).join("<p>")+"</p>");return;}
+ b.value.items.push(line);b.itemNote="";b.customSpec="";b.quantity=1;
+ renderBuilder();toast("Catalog model added to configuration (demo)");
 }
 function updateContext(field,value){
  const b=state.builder;if(!b)return;const c=b.value;
+ if(field==="solutionType"){
+  c.solutionType=value;c.solar||={};
+  b.productGroup=value==="solar"?"solar":"other";setProduct(b,value==="solar"?"VAR-009":products[0].id);
+  renderBuilder();return;
+ }
  if(field==="customerId"){c.customerId=value;c.buyerId="";c.opportunityId="";c.companyId="";c.branchId="";c.ownerId="";renderBuilder();return;}
  if(field==="buyerId"){c.buyerId=value;c.opportunityId="";renderBuilder();return;}
  if(field==="companyId"){c.companyId=value;c.branchId="";c.ownerId="";renderBuilder();return;}
@@ -423,18 +430,39 @@ document.addEventListener("click",e=>{
  if(d.action==="duplicate"){const c=record(state.selected);if(c)newBuilder(c,true);return;}
 });
 $("config-builder-body").addEventListener("change",e=>{
- if(!state.builder)return;const t=e.target;
- if(t.dataset.cField)updateContext(t.dataset.cField,t.value);
- else if(t.dataset.addQty!==undefined)state.builder.quantity=Number(t.value);
- else if(t.dataset.itemNote!==undefined)state.builder.itemNote=t.value;
- else if(t.dataset.lineQty!==undefined){
-  const l=state.builder.value.items.find(x=>x.id===t.dataset.lineQty);if(l){l.quantity=Number(t.value);renderBuilder();}
+ if(!state.builder)return;const t=e.target,b=state.builder;
+ if(t.dataset.cField){updateContext(t.dataset.cField,t.value);return;}
+ if(t.dataset.solarField!==undefined){
+  b.value.solar||={};const value=t.value;
+  b.value.solar[t.dataset.solarField]=t.type==="number"&&value!==""?Number(value):value;return;
+ }
+ if(t.dataset.productGroup!==undefined){
+  b.productGroup=t.value;b.catalogSearch="";
+  setProduct(b,t.value==="other"?products[0].id:"VAR-009");
+  renderBuilder();return;
+ }
+ if(t.dataset.productSearch!==undefined){b.catalogSearch=t.value;renderBuilder();return;}
+ if(t.dataset.addQty!==undefined){b.quantity=Number(t.value);return;}
+ if(t.dataset.customSpec!==undefined){b.customSpec=t.value;return;}
+ if(t.dataset.itemNote!==undefined){b.itemNote=t.value;return;}
+ if(t.dataset.lineQty!==undefined){
+  const l=b.value.items.find(x=>x.id===t.dataset.lineQty);
+  if(l){l.quantity=Number(t.value);renderBuilder();}
  }
 });
 $("config-builder-body").addEventListener("input",e=>{
- if(!state.builder)return;const t=e.target;
- if(t.dataset.cField&&["name","notes"].includes(t.dataset.cField))state.builder.value[t.dataset.cField]=t.value;
- if(t.dataset.itemNote!==undefined)state.builder.itemNote=t.value;
+ if(!state.builder)return;const t=e.target,b=state.builder;
+ if(t.dataset.cField&&["name","notes"].includes(t.dataset.cField))b.value[t.dataset.cField]=t.value;
+ if(t.dataset.solarField!==undefined){
+  b.value.solar||={};b.value.solar[t.dataset.solarField]=t.type==="number"&&t.value!==""?Number(t.value):t.value;
+ }
+ if(t.dataset.itemNote!==undefined)b.itemNote=t.value;
+ if(t.dataset.customSpec!==undefined)b.customSpec=t.value;
+ if(t.dataset.productSearch!==undefined){
+  b.catalogSearch=t.value;
+  const cards=$("config-builder-body").querySelectorAll("[data-product]");
+  cards.forEach(el=>{el.hidden=!el.textContent.toLowerCase().includes(t.value.toLowerCase());});
+ }
 });
 $("new-configuration").addEventListener("click",()=>newBuilder());
 $("config-builder-exit").addEventListener("click",()=>{state.mode="register";state.builder=null;render();$("configuration-register").scrollIntoView({block:"start",behavior:"auto"});});
