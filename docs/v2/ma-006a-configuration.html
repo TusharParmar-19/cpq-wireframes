@@ -2,10 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MA-006A — Product Configuration | CPQ Platform</title>
+<title>MA-006A — Product Catalog & Configuration | CPQ Platform</title>
 <link rel="stylesheet" href="ma-001.css">
 <link rel="stylesheet" href="ma-006.css">
 <link rel="stylesheet" href="ma-006a.css">
+<link rel="stylesheet" href="ma-006a-catalog.css">
 </head>
 <body>
 <div class="layout">
@@ -20,12 +21,12 @@
       <div class="nav-title">Business Records</div>
       <a class="nav-link" href="ma-004-customers.html">◉ &nbsp; Customers <small>MA-004</small></a>
       <a class="nav-link" href="ma-005-opportunities.html">◇ &nbsp; Opportunities <small>MA-005</small></a>
-      <a class="nav-link active" href="ma-006a-configuration.html" aria-current="page">⚙ &nbsp; Configurations <small>MA-006A</small></a>
+      <a class="nav-link active" href="ma-006a-configuration.html" aria-current="page">⚙ &nbsp; Products &amp; Configuration <small>MA-006A</small></a>
       <a class="nav-link" href="ma-006-quotations.html">▣ &nbsp; Quotations <small>MA-006</small></a>
       <button class="nav-link" type="button" data-planned="Vendor RFQs">⇄ &nbsp; Vendor RFQs</button>
       <button class="nav-link" type="button" data-planned="Orders">☷ &nbsp; Orders</button>
       <div class="nav-title">Controls</div>
-      <button class="nav-link" type="button" data-planned="Product Catalog & Configuration Rules">⚙ &nbsp; Product Catalog &amp; Rules</button>
+      <button class="nav-link" type="button" data-catalog-link="products">⚙ &nbsp; Product Catalog &amp; Rules</button>
       <button class="nav-link" type="button" data-planned="Approval Policies">✓ &nbsp; Approval Policies</button>
       <button class="nav-link" type="button" data-planned="Commercial Settings">⚙ &nbsp; Commercial Settings</button>
       <button class="nav-link" type="button" data-planned="Reports">▥ &nbsp; Reports</button>
@@ -33,21 +34,69 @@
     <div class="sidebar-foot"><b>Configuration ≠ Quotation</b><p>Configurations define technical selections. Pricing, approved commercial rates, discounts, tax, issued revisions and dispatch belong to Quotations. Engineering validation needs approved catalog/rule masters.</p></div>
   </aside>
   <div class="app">
-    <header class="top"><div>CPQ Workspace / <b>Product Configuration</b></div><span class="avatar">MA</span></header>
+    <header class="top"><div>CPQ Workspace / <b>Product Catalog &amp; Configuration</b></div><span class="avatar">MA</span></header>
     <main class="page ma6-page ma6a-page">
       <div class="hero">
         <div>
           <div class="overline">MASTER ADMIN / MA-006A</div>
-          <h1>Product Configuration</h1>
-          <p class="muted">Create reusable product or solution configurations, choose specifications and accessories, check sample compatibility and hand over to quotation.</p>
+          <h1>Product Catalog &amp; Configuration</h1>
+          <p class="muted">Maintain product families, manufacturer/model variants, dimensions, parts, accessories and sample prices. Then build reusable technical configurations for quotations.</p>
         </div>
         <div class="actions">
           <a class="btn" href="ma-006-quotations.html">Go to Quotations</a>
-          <a class="btn" href="#configuration-register">Browse Configurations</a>
+          <button type="button" class="btn" id="catalog-add-product">+ Add Product</button>
           <button type="button" class="btn primary" id="new-configuration">+ New Configuration</button>
         </div>
       </div>
-      <div class="info"><b>WIREFRAME ONLY · All configuration records are fictional.</b> Sample compatibility rules are not certified technical checks. Nothing is saved to a database, and this page does not authorize BOMs, prices, quotations or orders. Browser edits reset on refresh.</div>
+      <div class="info"><b>WIREFRAME ONLY · Fictional manufacturers, products and sample prices.</b> Catalog edits and configurations exist in this browser session only. No certified specifications, real costs, price approvals, file storage, permissions or database updates. Do not enter real company, supplier or confidential pricing data.</div>
+<nav class="ma6a-hub-nav" id="catalog-workspace-tabs" aria-label="Product catalog and configuration areas">
+        <button type="button" data-hub="products" class="active" aria-current="page">▦ &nbsp; Products &amp; Variants</button>
+        <button type="button" data-hub="manufacturers">♜ &nbsp; Manufacturers</button>
+        <button type="button" data-hub="parts">⚙ &nbsp; Parts &amp; Accessories</button>
+        <button type="button" data-hub="configurations">◇ &nbsp; Saved Configurations</button>
+      </nav>
+      <section id="catalog-screen" class="ma6a-hub-view" aria-label="Product catalog workspace">
+        <section class="ma6-stats" id="catalog-stats" aria-label="Catalog overview"></section>
+        <div id="catalog-products-panel" class="ma6a-catalog-content">
+          <div class="card ma6a-catalog-filters">
+            <div class="ma6-section-heading"><div><h2>Product Catalog</h2><p class="muted">Select a product family and compare manufacturer, model and dimension variants. These are reusable master records.</p></div><button type="button" class="btn" id="catalog-clear">Reset filters</button></div>
+            <div class="ma6a-catalog-filter-grid">
+              <div><label for="catalog-search">Search product / model / SKU</label><input type="search" id="catalog-search" placeholder="65 kW, panel, model, brand, cable..."></div>
+              <div><label for="catalog-category">Category</label><select id="catalog-category"><option value="all">All categories</option></select></div>
+              <div><label for="catalog-manufacturer">Manufacturer</label><select id="catalog-manufacturer"><option value="all">All manufacturers</option></select></div>
+              <div><label for="catalog-status">Status</label><select id="catalog-status"><option value="all">All statuses</option><option value="Active">Active</option><option value="Draft">Draft</option><option value="In Review">In Review</option><option value="Discontinued">Discontinued</option></select></div>
+            </div>
+          </div>
+          <div class="ma6-workspace ma6a-catalog-workspace">
+            <section class="card ma6-list-panel ma6a-family-list-panel">
+              <div class="ma6-list-heading"><div><h2>Product Families</h2><p class="muted">Select a family to compare models</p></div><span class="chip" id="catalog-count">0 shown</span></div>
+              <div id="catalog-families" class="ma6-quote-list" aria-live="polite"></div>
+              <div class="ma6-list-note">Family = general product type. Variant = exact manufacturer/model/SKU.</div>
+            </section>
+            <section class="ma6-details">
+              <div class="card ma6-detail-header" id="catalog-family-header"></div>
+              <div class="card ma6-detail-panel">
+                <nav id="catalog-detail-tabs" class="ma6-tabs" role="tablist" aria-label="Product family detail">
+                  <button type="button" data-catalog-tab="variants" class="active" role="tab" aria-selected="true">Manufacturer Variants</button>
+                  <button type="button" data-catalog-tab="specs" role="tab" aria-selected="false">Technical &amp; Dimensions</button>
+                  <button type="button" data-catalog-tab="parts" role="tab" aria-selected="false">Parts &amp; Accessories</button>
+                  <button type="button" data-catalog-tab="prices" role="tab" aria-selected="false">Prices &amp; Documents</button>
+                </nav>
+                <div id="catalog-family-body" class="ma6-tab-body" aria-live="polite"></div>
+              </div>
+            </section>
+          </div>
+        </div>
+        <div id="catalog-manufacturers-panel" class="card ma6a-directory-panel" hidden>
+          <div class="ma6a-directory-heading"><div><h2>Manufacturers &amp; Brands</h2><p class="muted">Keep the product manufacturer separate from your selling legal company and vendor/supplier.</p></div><button type="button" class="btn primary" data-catalog-action="add-manufacturer">+ Add Manufacturer</button></div>
+          <div id="catalog-manufacturer-list" class="ma6a-directory-list"></div>
+        </div>
+        <div id="catalog-parts-panel" class="card ma6a-directory-panel" hidden>
+          <div class="ma6a-directory-heading"><div><h2>Components, Parts &amp; Accessories</h2><p class="muted">Maintain reusable parts for product assemblies. Exact compatibility and BOM rules require technical approval.</p></div><button type="button" class="btn primary" data-catalog-action="add-part">+ Add Part / Accessory</button></div>
+          <div id="catalog-part-list" class="ma6a-directory-list"></div>
+        </div>
+      </section>
+      <section id="configuration-screen" class="ma6a-hub-view" hidden>
       <section class="ma6a-flow" aria-label="Configuration to quotation workflow">
         <div class="ma6a-flow-step current"><span class="ma6a-flow-num">1</span><div><b>Configure</b><small>Choose product options, items and quantities</small></div></div>
         <div class="ma6a-flow-arrow">→</div>
@@ -103,9 +152,20 @@
           </div>
         </div>
       </section>
-      <section class="ma6-design-note"><b>Scope boundary:</b> This page stores product attributes, selected items, quantities and optional customer/owner context. The Product Catalog &amp; Rules administration will define technical attributes, approved choices, compatibility and BOM generation. MA-006 Quotations will apply pricing and commercial policies, allow direct quotes for standard items and retain the final revision snapshot.</section>
-      <footer class="footer">CPQ · MA-006A Product Configuration · Wireframe only · No production backend</footer>
+      </section>
+      <section class="ma6-design-note"><b>Scope boundary:</b> Product families, manufacturer/model/SKU variants, dimensions, component references and pricing previews are maintained here. Saved Configurations remain a separate tab for technical selections. Project-specific overrides should be captured in a configuration/quotation revision, not silently overwrite the shared product master. Actual rules, supplier evidence, tax, margin permissions and price approvals are production requirements.</section>
+      <footer class="footer">CPQ · MA-006A Product Catalog &amp; Configuration · Wireframe only · No production backend</footer>
     </main>
+  </div>
+</div>
+<div class="overlay" id="catalog-editor-overlay" aria-hidden="true">
+  <div class="dialog ma6-dialog ma6a-editor-dialog" role="dialog" aria-modal="true" aria-labelledby="catalog-editor-title">
+    <div class="ma6-dialog-head"><div><h2 id="catalog-editor-title">Product details</h2><p class="muted" id="catalog-editor-subtitle">Demo master record</p></div><button type="button" class="btn" id="catalog-editor-close" aria-label="Close">×</button></div>
+    <form id="catalog-editor-form" class="ma6a-editor-form" novalidate>
+      <div id="catalog-editor-body" class="ma6a-editor-fields"></div>
+      <div id="catalog-editor-error" class="ma6a-editor-error" role="alert" hidden></div>
+      <div class="ma6-dialog-foot"><button type="button" class="btn" id="catalog-editor-cancel">Cancel</button><button type="submit" class="btn primary" id="catalog-editor-save">Save Demo</button></div>
+    </form>
   </div>
 </div>
 <div class="overlay" id="config-overlay" aria-hidden="true">
@@ -122,5 +182,7 @@
 <script src="ma-005-data.js"></script>
 <script src="ma-006-data.js"></script>
 <script src="ma-006a-data.js"></script>
+<script src="ma-006a-catalog-data.js"></script>
 <script src="ma-006a-app.js"></script>
+<script src="ma-006a-catalog.js"></script>
 </body></html>
