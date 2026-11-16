@@ -8,7 +8,17 @@ const clone=x=>JSON.parse(JSON.stringify(x));
 const records=clone(window.CPQ_MA006A_DATA.configurations);
 const products=window.CPQ_MA006_DATA.products,org=window.CPQ_MA002_DATA,staff=window.CPQ_MA003_USERS,master=window.CPQ_MA004_DATA,opps=window.CPQ_MA005_DATA.opportunities;
 const state={selected:"CF-2026-001",tab:"overview",mode:"register",company:"all",branch:"all",search:"",status:"all",builder:null};
-const itemProduct=id=>products.find(p=>p.id===id);
+const catalog=()=>window.CPQ_MA006A_CATALOG_UI?.db||window.CPQ_MA006A_CATALOG;
+const catalogVariant=id=>catalog().variants.find(x=>x.id===id);
+const catalogFamily=id=>catalog().families.find(x=>x.id===id);
+const catalogMaker=id=>catalog().manufacturers.find(x=>x.id===id);
+function itemProduct(id){
+ const old=products.find(p=>p.id===id);if(old)return old;
+ const v=catalogVariant(id);if(!v)return null;
+ const f=catalogFamily(v.familyId),m=catalogMaker(v.manufacturerId);
+ return {id:v.id,name:(f?.name||"Catalog item")+" — "+v.model,type:"standard",unit:f?.unit||"Nos",
+ model:v.model,sku:v.sku,manufacturer:m?.brand||m?.name||"Service",capacity:v.capacity,solarKind:f?.solarKind||"general",variant:v};
+}
 const record=id=>records.find(c=>c.id===id);
 const customer=id=>master.customers.find(c=>c.id===id);
 const buyer=id=>master.companies.find(c=>c.id===id);
@@ -23,21 +33,50 @@ const note=message=>'<div class="ma6-note">'+message+'</div>';
 const empty=message=>'<div class="ma6-empty">'+esc(message)+'</div>';
 const typeLabel=type=>({config:"Configurable product",standard:"Standard product",service:"Service / Project"})[type]||type;
 function optionText(line){
- const p=itemProduct(line.productId);if(!p)return "Product not found in sample catalog";
- if(p.type!=="config")return "No technical attribute selection required";
- return Object.entries(p.options).map(([key,opt])=>opt.label+": "+(line.options?.[key]||"Not selected")).join(" · ");
+ const p=itemProduct(line.productId);if(!p)return "Product unavailable";
+ if(p.variant){
+  const d=p.variant.dimensions||{},size=d.width&&d.height&&d.depth?[d.width,d.height,d.depth].join(" × ")+" "+(d.unit||"mm"):"";
+  return [p.manufacturer,p.model,p.capacity,size,line.customSpec].filter(Boolean).join(" · ");
+ }
+ if(p.type!=="config")return "No option-level configuration required";
+ return Object.entries(p.options).map(([k,v])=>v.label+": "+(line.options?.[k]||"Not selected")).join(" · ");
 }
 function lineErrors(item){
  const p=itemProduct(item.productId),errors=[];
- if(!p){errors.push("Product no longer exists in the sample catalog");return errors;}
- if(!Number.isInteger(Number(item.quantity))||Number(item.quantity)<=0||Number(item.quantity)>100000){errors.push("Enter a whole-number quantity between 1 and 100,000");}
+ if(!p){errors.push("Product not found in catalog");return errors;}
+ if(!Number.isInteger(Number(item.quantity))||Number(item.quantity)<=0||Number(item.quantity)>100000)errors.push("Quantity must be an integer from 1 to 100,000");
+ if(p.variant){
+  if(p.variant.status!=="Active")errors.push("This model is not active in the product catalog.");
+  return errors;
+ }
  if(p.type==="config"){
-  for(const [k,opt] of Object.entries(p.options)){
-   if(!opt.choices.some(([key])=>key===item.options?.[k]))errors.push("Select "+opt.label);
-  }
-  if(item.options?.rating==="630A"&&item.options?.mounting!=="Floor")errors.push("Sample rule: 630A requires Floor mounting");
+  for(const [key,opt] of Object.entries(p.options))if(!opt.choices.some(([v])=>v===item.options?.[key]))errors.push("Select "+opt.label);
+  if(item.options?.rating==="630A"&&item.options?.mounting!=="Floor")errors.push("Demo compatibility rule: 630A requires Floor mounting");
  }
  return errors;
+}
+function solarMetrics(c){
+ const out={dcKwp:0,acKw:0,batteryKwh:0,modules:0,ratio:null};
+ for(const l of c.items){
+  const v=catalogVariant(l.productId);if(!v)continue;
+  const f=catalogFamily(v.familyId),qty=Number(l.quantity)||0;
+  if(f?.solarKind==="pv-module"){out.dcKwp+=(Number(v.solar?.pmaxWp)||0)*qty/1000;out.modules+=qty;}
+  if(f?.solarKind==="inverter")out.acKw+=(Number(v.solar?.ratedAcKw)||0)*qty;
+  if(f?.solarKind==="battery")out.batteryKwh+=(Number(v.solar?.usableKwh)||0)*qty;
+ }
+ out.ratio=out.acKw>0?out.dcKwp/out.acKw:null;return out;
+}
+function solarWarnings(c){
+ if(c.solutionType!=="solar")return [];
+ const m=solarMetrics(c),p=c.solar||{},a=[];
+ if(!Number(p.targetDcKwp))a.push("Target DC capacity is not supplied.");
+ if(!Number(p.usableArea))a.push("Usable area / roof survey is not supplied.");
+ if(!m.modules)a.push("Select a PV module and quantity from the product catalog.");
+ if(!m.acKw)a.push("Select an inverter model and quantity from the catalog.");
+ if(Number(p.targetDcKwp)>0&&m.dcKwp>0&&Math.abs(m.dcKwp-Number(p.targetDcKwp))/Number(p.targetDcKwp)>0.1)
+  a.push("Selected module DC capacity differs by over 10% from target.");
+ a.push("Electrical string/MPPT pairing, structural load, shading and performance require engineering verification.");
+ return a;
 }
 function review(c){
  const errors=[];
@@ -50,7 +89,7 @@ function review(c){
  if(c.branchId&&(!c.companyId||!entity(c.companyId)?.branches.some(x=>x.id===c.branchId)))errors.push("Internal branch must belong to the selected selling company");
  if(c.customerId&&c.companyId&&c.branchId&&!validCustomer?.links.some(l=>l.companyId===c.companyId&&l.branchId===c.branchId))errors.push("Selected internal company/branch is not linked to this customer");
  if(c.ownerId&&!staff.some(u=>u.id===c.ownerId&&u.status==="Active"&&(u.assignments||[]).some(a=>a.companyId===c.companyId&&a.branches.includes(c.branchId))))errors.push("Owner must be an active employee assigned to that internal branch");
- return {ok:errors.length===0,errors};
+ return {ok:errors.length===0,errors,warnings:solarWarnings(c),solar:solarMetrics(c)};
 }
 const status=c=>review(c).ok?"Demo check passed":"Needs changes";
 const badge=c=>review(c).ok?'<span class="ma6a-chip-ok">Demo check passed</span>':'<span class="ma6a-chip-bad">Needs changes</span>';
@@ -87,7 +126,12 @@ function renderList(items){
 }
 function payload(c){
  return {v:1,configId:c.id,name:c.name,customerId:c.customerId||"",buyerId:c.buyerId||"",companyId:c.companyId||"",branchId:c.branchId||"",ownerId:c.ownerId||"",opportunityId:c.opportunityId||"",
- items:c.items.map(l=>({productId:l.productId,quantity:l.quantity,options:l.options,note:l.note||""}))};
+  solutionType:c.solutionType||"general",solar:c.solutionType==="solar"?c.solar||{}:{},
+  items:c.items.map(l=>{
+   const v=catalogVariant(l.productId),f=v?catalogFamily(v.familyId):null;
+   return {productId:l.productId,variantId:v?.id||"",quantity:l.quantity,options:l.options||{},note:l.note||"",customSpec:l.customSpec||"",
+   model:v?{sku:v.sku,model:v.model,manufacturer:catalogMaker(v.manufacturerId)?.brand||"",unit:f?.unit||"Nos",name:f?.name||"",solarKind:f?.solarKind||"general"}:null};
+  })};
 }
 function quotationLink(c){
  return 'ma-006-quotations.html?configData='+encodeURIComponent(JSON.stringify(payload(c)));
@@ -161,7 +205,7 @@ const area=(id,label,value="")=>'<div class="ma6-field full"><label for="c-'+esc
 const select=(id,label,values,current,placeholder="Select...")=>
  '<div class="ma6-field"><label for="c-'+esc(id)+'">'+esc(label)+'</label><select id="c-'+esc(id)+'" data-c-field="'+esc(id)+'"><option value="">'+esc(placeholder)+'</option>'+opts(values,current)+'</select></div>';
 const steps=["Solution Context","Select & Configure","Items & Quantities","Validate & Save"];
-const emptyConfig=()=>({id:"",name:"",kind:"Customer configuration",customerId:"",buyerId:"",opportunityId:"",companyId:"",branchId:"",ownerId:"",quoteId:"",notes:"",updated:"07 Nov 2026 (demo)",revision:"C0",items:[]});
+const emptyConfig=()=>({id:"",name:"",kind:"Customer configuration",solutionType:"solar",solar:{systemType:"On-grid Rooftop"},customerId:"",buyerId:"",opportunityId:"",companyId:"",branchId:"",ownerId:"",quoteId:"",notes:"",updated:"16 Nov 2026 (demo)",revision:"C0",items:[]});
 function setProduct(b,id){
  const p=itemProduct(id);
  if(!p)return;b.productId=id;b.quantity=1;b.itemNote="";b.options=p.type==="config"?{...p.defaults}:{};
@@ -169,8 +213,8 @@ function setProduct(b,id){
 function newBuilder(original=null,duplicate=false){
  const c=original?clone(original):emptyConfig();
  if(duplicate){c.id="";c.quoteId="";c.revision="C0";c.updated="07 Nov 2026 (demo)";c.name=c.name+" — Copy";}
- const b={value:c,isNew:!original||duplicate,step:0,productId:"",quantity:1,options:{},itemNote:""};
- setProduct(b,products[0].id);
+ const b={value:c,isNew:!original||duplicate,step:0,productId:"",quantity:1,options:{},itemNote:"",customSpec:"",productGroup:c.solutionType==="solar"?"solar":"other",catalogSearch:""};
+ setProduct(b,c.solutionType==="solar"?"VAR-009":products[0].id);
  state.builder=b;state.mode="builder";render();
  $("configuration-builder").scrollIntoView({block:"start",behavior:"auto"});
 }
