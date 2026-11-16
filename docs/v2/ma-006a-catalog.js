@@ -7,7 +7,7 @@ const $=id=>document.getElementById(id);
 const esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const clone=x=>JSON.parse(JSON.stringify(x));
 const db=clone(window.CPQ_MA006A_CATALOG);
-const state={hub:"products",family:"FAM-001",variant:"VAR-001",tab:"variants",category:"all",manufacturer:"all",status:"all",search:"",editor:null};
+const state={hub:"products",family:"FAM-005",variant:"VAR-009",tab:"variants",category:"all",manufacturer:"all",status:"all",search:"",editor:null};
 const family=id=>db.families.find(x=>x.id===id);
 const variant=id=>db.variants.find(x=>x.id===id);
 const maker=id=>db.manufacturers.find(x=>x.id===id);
@@ -71,14 +71,9 @@ function setHub(hub){
  if(hub!=="configurations")renderCatalog();
 }
 function renderStats(){
- const cards=[
- ["Product Families",db.families.length,"Grouped categories and catalog definitions"],
- ["Manufacturer Variants",db.variants.length,"Unique model / SKU records"],
- ["Manufacturers",db.manufacturers.length,"Independent makers and brands"],
- ["Parts & Accessories",db.parts.length,"Reusable technical components"]
- ];
- $("catalog-stats").innerHTML=cards.map(([label,n,desc])=>
- '<div class="card ma6-stat"><span>'+esc(label)+'</span><strong>'+String(n).padStart(2,"0")+'</strong><small>'+esc(desc)+'</small></div>').join("");
+ const text=[["Product Families",db.families.length],["Models",db.variants.length],["Manufacturers",db.manufacturers.length],["Parts",db.parts.length]];
+ $("catalog-stats").innerHTML='<div class="ma6a-compact-stats">'+text.map(([name,n])=>
+ '<span><b>'+n+'</b> '+esc(name)+'</span>').join("")+'</div>';
 }
 function renderFilterControls(){
  $("catalog-category").innerHTML='<option value="all">All categories</option>'+selectOptions(db.categories.map(x=>[x,x]),state.category);
@@ -122,12 +117,12 @@ function selectedVariant(v){
  const m=maker(v.manufacturerId),d=v.dimensions||{};
  return '<div class="ma6a-selected-variant"><div class="ma6a-selected-variant-head"><div><h4>'+esc(v.model)+' · '+esc(v.variant)+'</h4>'+
  '<p>'+esc(v.sku)+' · '+esc(m?.name||"Service — no manufacturer")+'</p></div>'+
- '<button type="button" class="btn primary" data-catalog-action="edit-variant">Edit Selected Variant</button></div>'+
- '<div class="ma6-kvs">'+kv("Manufacturer / Brand",m?.name||"Not applicable")+" "+kv("SKU / Model",v.sku+" / "+v.model)+
- kv("Capacity / Rating",v.capacity)+kv("Voltage",v.voltage)+
- kv("Size (physical)",dimension(d))+kv("Weight",d.weight?d.weight+" "+(d.weightUnit||"kg"):"Not applicable")+
- kv("Material",v.material)+kv("Mounting",v.mounting)+kv("Enclosure / Protection",v.enclosure)+kv("Sample selling price",amount(v.price?.sell))+'</div>'+
- (v.notes?'<p class="ma6a-color-quiet" style="line-height:1.6">'+esc(v.notes)+'</p>':"")+'</div>';
+ '<div class="ma6-detail-actions"><button type="button" class="btn" data-catalog-tab="more">View Full Details</button>'+
+ '<button type="button" class="btn primary" data-catalog-action="edit-variant">Edit Model</button></div></div>'+
+ '<div class="ma6-kvs">'+kv("Manufacturer",m?.brand||m?.name||"Not applicable")+
+ kv("Capacity / Rating",v.capacity)+kv("Dimensions",dimension(d))+
+ kv("Sample Unit Selling Price",amount(v.price?.sell))+'</div>'+
+ '<p class="ma6a-compact-help">Electrical specs, compliance, detailed dimensions, parts and prices are available under <b>More Product Details</b>.</p></div>';
 }
 function renderVariants(f,v){
  const rows=familyVariants(f);
@@ -185,7 +180,20 @@ function renderDetails(){
  for(const btn of $("catalog-detail-tabs").querySelectorAll("[data-catalog-tab]")){
   const active=btn.dataset.catalogTab===state.tab;btn.classList.toggle("active",active);btn.setAttribute("aria-selected",String(active));
  }
- $("catalog-family-body").innerHTML=({variants:renderVariants,specs:renderSpecs,parts:renderParts,prices:renderPrices}[state.tab]||renderVariants)(f,v);
+ if(state.tab==="more"){
+  const schema=solarKindSchema(f.solarKind||"general");
+  const val=v?.solar||{};
+  const solarInfo=schema&&f.solarKind!=="general"?
+   '<div class="ma6a-selected-variant"><h4>Solar-specific product specifications · '+esc(schema.label)+'</h4>'+
+   '<div class="ma6-kvs">'+[...schema.essential,...schema.advanced].map(([key,label,unit])=>
+    kv(label+(unit?" ("+unit+")":""),val[key]??"Not entered")).join("")+'</div></div>':"";
+  $("catalog-family-body").innerHTML=panel("All Product Details","Expand only the information you need for the selected model.")+
+   '<details class="ma6a-view-details" open><summary>Technical specifications & dimensions</summary>'+solarInfo+renderSpecs(f,v)+'</details>'+
+   '<details class="ma6a-view-details"><summary>Components & accessories</summary>'+renderParts(f,v)+'</details>'+
+   '<details class="ma6a-view-details"><summary>Pricing, documents & warranty</summary>'+renderPrices(f,v)+'</details>';
+ }else{
+  $("catalog-family-body").innerHTML=renderVariants(f,v);
+ }
 }
 function renderManufacturers(){
  $("catalog-manufacturer-list").innerHTML=db.manufacturers.map(m=>{
@@ -394,7 +402,7 @@ function getVariantForm(f,familyType,existing=null,solarKind="general"){
  return {sku:sku.slice(0,80),manufacturerId,model:model.slice(0,120),variant:trim(f,"variantName")||model,
   status:trim(f,"variantStatus")||"Draft",capacity:trim(f,"capacity"),voltage:trim(f,"voltage"),
   mounting:trim(f,"mounting"),material:trim(f,"material"),enclosure:trim(f,"enclosure"),
-  dimensions:dims,technical:techParse(trim(f,"technical")),components,
+  dimensions:dims,technical:techParse(trim(f,"technical")),solar:solarDataFromForm(f,solarKind,existing?.solar||{}),components,
   price:{currency:trim(f,"currency")||"INR",list:trim(f,"priceList")||"Demo Base Price List",
    cost:cost===""?0:cost,sell:sell===""?0:sell,from,to},
   datasheet:trim(f,"datasheet"),drawing:trim(f,"drawing"),notes:trim(f,"variantNotes")};
