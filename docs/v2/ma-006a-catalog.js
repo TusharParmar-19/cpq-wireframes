@@ -362,12 +362,16 @@ function openEditor(mode,ids={}){
  $("catalog-editor-title").textContent=titles[mode]||"Edit Catalog";
  $("catalog-editor-subtitle").textContent="Fictional master-data fields · Demo save only · Not production authorization";
  $("catalog-editor-body").innerHTML=editorMarkup();$("catalog-editor-error").hidden=true;
+ const simple=window.CPQ_MA006A_SIMPLE_WIZARD;
+ if(simple&&["product-new","variant-new","variant-edit"].includes(mode))simple.mount(state.editor,db);
+ else{if(simple)simple.reset();$("catalog-editor-back").hidden=true;$("catalog-editor-next").hidden=true;$("catalog-editor-save").hidden=false;$("catalog-editor-save").textContent="Save Demo";}
  $("catalog-editor-overlay").classList.add("open");$("catalog-editor-overlay").setAttribute("aria-hidden","false");
  $("catalog-editor-close").focus();
 }
 function closeEditor(){
  $("catalog-editor-overlay").classList.remove("open");$("catalog-editor-overlay").setAttribute("aria-hidden","true");
  state.editor=null;
+ if(window.CPQ_MA006A_SIMPLE_WIZARD)window.CPQ_MA006A_SIMPLE_WIZARD.reset();
 }
 function issue(message){const el=$("catalog-editor-error");el.hidden=false;el.textContent=message;el.scrollIntoView({block:"nearest"});return false;}
 const trim=(f,k)=>String(f.get(k)??"").trim();
