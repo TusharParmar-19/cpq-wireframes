@@ -432,8 +432,8 @@ function saveEditor(event){
  const fd=new FormData($("catalog-editor-form"));
  try{
   if(e.mode==="product-new"){
-   const f=getFamilyForm(fd);
-   const v=getVariantForm(fd,f.type,null,f.solarKind);
+   const f=getFamilyForm(fd);f.status="Draft";
+   const v=getVariantForm(fd,f.type,null,f.solarKind);v.status="Draft";
    const fam={id:idNext("FAM-",db.families),...f};db.families.unshift(fam);
    const vari={id:idNext("VAR-",db.variants),familyId:fam.id,...v};db.variants.unshift(vari);
    state.family=fam.id;state.variant=vari.id;state.tab="variants";
@@ -445,6 +445,7 @@ function saveEditor(event){
    const fam=family(e.familyId);if(!fam)throw Error("Select a valid product family.");
    const orig=e.mode==="variant-edit"?variant(e.variantId):null;
    const input=getVariantForm(fd,fam.type,orig,fam.solarKind||"general");
+   if(!orig)input.status="Draft";
    if(orig)Object.assign(orig,input);
    else{
     const v={id:idNext("VAR-",db.variants),familyId:fam.id,...input};db.variants.unshift(v);state.variant=v.id;
