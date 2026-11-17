@@ -336,7 +336,7 @@ function renderReview(c){
  kv("Proposed inverter AC",m.acKw?m.acKw.toFixed(2)+" kW":"Not selected")+
  kv("DC / AC Ratio",m.ratio?m.ratio.toFixed(2):"Pending"):"")+
  '</div><div class="ma6-section-sub"><h4>Readiness</h4>'+badge(c)+'</div>'+
- (result.errors.length?result.errors.map(x=>'<div class="ma6a-check-row bad"><span class="ma6a-check-symbol">!</span><div><strong>Fix before saving</strong><p>'+esc(x)+'</p></div></div>').join(""):
+ (result.errors.length?result.errors.map(x=>'<div class="ma6a-check-row bad"><span class="ma6a-check-symbol">!</span><div><strong>Complete before quotation handoff</strong><p>'+esc(x)+'</p></div></div>').join(""):
  '<div class="ma6-validation ok">Basic data check passed. You may save a browser-only draft.</div>')+
  '<details class="ma6a-builder-details"><summary>Open engineering / solar checks ('+(result.warnings?.length||0)+')</summary>'+
  (result.warnings||[]).map(w=>'<p>• '+esc(w)+'</p>').join("")+
@@ -378,7 +378,8 @@ function closeDialog(){
 }
 function save(){
  const b=state.builder;if(!b)return;const c=b.value,r=review(c);
- if(!r.ok){dialog("Correct the configuration first",r.errors.map(esc).join("<p>")+"</p>");return;}
+ const blockers=r.errors.filter(x=>x!=="Add at least one product or service");
+ if(blockers.length){dialog("Correct these details before saving",blockers.map(esc).join("<p>")+"</p>");return;}
  if(b.isNew){
   const next=Math.max(6,...records.map(x=>Number(x.id.split("-").at(-1))||0))+1;
   c.id="CF-2026-"+String(next).padStart(3,"0");
