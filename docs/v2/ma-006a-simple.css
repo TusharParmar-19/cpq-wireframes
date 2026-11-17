@@ -1,0 +1,52 @@
+/* MA-006A guided employee-first product UI */
+.ma6a-wizard-panel[hidden],.ma6a-wizard-status-hidden,.ma6a-wizard-progress [hidden],.ma6a-wizard-footer [hidden]{display:none!important}
+.ma6a-wizard-progress{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:0 0 19px;padding:0}
+.ma6a-wizard-progress button{appearance:none;background:#f7fafd;border:1px solid #dce7f0;border-radius:10px;color:#58758c;display:flex;align-items:center;justify-content:center;gap:10px;min-height:62px;text-align:left;padding:9px 11px;cursor:pointer;font:inherit}
+.ma6a-wizard-progress button:hover{border-color:#a3c6dc;background:#f4faff}
+.ma6a-wizard-progress button.active{background:#eaf5fd;border-color:#82b7d9;color:#215c82;box-shadow:inset 0 -2px #368bbd}
+.ma6a-wizard-progress .ma6a-progress-number{width:27px;height:27px;min-width:27px;border-radius:7px;background:#e1ecf4;color:#367293;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900}
+.ma6a-wizard-progress button.active .ma6a-progress-number{background:#2c729d;color:#fff}
+.ma6a-wizard-progress button b{display:block;font-weight:850;font-size:12px;line-height:1.35}
+.ma6a-wizard-progress button small{display:block;font-size:10px;margin-top:3px;font-weight:500;line-height:1.4;color:#7390a3}
+.ma6a-wizard-title{margin:7px 0 16px}
+.ma6a-wizard-title h3{font-size:16px;color:#214d6b;margin:0 0 7px;font-weight:850}
+.ma6a-wizard-title p{font-size:12px;color:#6d879b;line-height:1.6;margin:0}
+.ma6a-wizard-panel{min-height:260px}
+.ma6a-wizard-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin:4px 0 13px}
+.ma6a-wizard-grid .ma6-field{min-width:0}
+.ma6a-wizard-grid .ma6-field label{font-size:11px;font-weight:850;line-height:1.5}
+.ma6a-wizard-autofill{padding:10px 13px;background:#edf7fc;border:1px solid #d7eaf4;border-radius:8px;color:#416c86;font-size:11px;line-height:1.65;margin:5px 0 13px}
+.ma6a-wizard-autofill b{font-weight:850}
+.ma6a-wizard-tip{margin:14px 0;border:1px solid #dfeaf3;background:#f8fbfd;border-radius:8px;padding:12px 14px;font-size:11px;line-height:1.7;color:#627d90}
+.ma6a-wizard-maker{display:grid;gap:8px;margin:7px 0 12px}
+.ma6a-wizard-maker>button{justify-self:start}
+.ma6a-wizard-maker #catalog-wizard-quick-maker{background:#f7fbfe;border:1px solid #d7e9f3;padding:14px;border-radius:9px}
+.ma6a-wizard-maker #catalog-wizard-quick-maker[hidden]{display:none!important}
+.ma6a-wizard-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.ma6a-wizard-advanced{margin:12px 0!important}
+.ma6a-wizard-extra{margin:12px 0!important}
+.ma6a-wizard-panel>.ma6a-editor-details{margin:11px 0}
+.ma6a-wizard-review{border:1px solid #d0e3ef;background:#f0f8fd;border-radius:9px;padding:12px 15px;font-size:12px;color:#315c78;margin-top:15px}
+.ma6a-wizard-review>b{display:block;margin-bottom:6px;color:#215374}
+.ma6a-wizard-review p{margin:5px 0;line-height:1.55}
+.ma6a-wizard-footer{position:sticky;bottom:0;background:#fff;border-top:1px solid #e1eaf2;z-index:5}
+.ma6a-wizard-spacer{flex:1}
+.ma6a-wizard-footer #catalog-editor-save{min-width:130px}
+.ma6a-editor-fields>.ma6a-wizard-panel{display:block}
+.ma6a-editor-fields>.ma6a-wizard-panel[hidden]{display:none!important}
+.ma6a-editor-dialog{width:min(860px,96vw);max-height:92vh}
+.ma6a-editor-fields{padding:15px 23px 17px;overflow-y:auto;max-height:calc(92vh - 185px)}
+.ma6a-editor-fields select,.ma6a-editor-fields input{min-width:0}
+.ma6a-editor-fields .ma6a-editor-details:not([open]){background:#f8fbfd}
+.ma6a-editor-fields .ma6a-editor-details summary{padding:5px 1px}
+.ma6a-editor-fields .ma6a-editor-details>p{font-size:11px;line-height:1.7;color:#718a9d}
+@media(max-width:750px){
+ .ma6a-wizard-progress{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+ .ma6a-wizard-progress button{display:grid;justify-items:center;gap:4px;text-align:center;padding:8px 4px;min-height:75px}
+ .ma6a-wizard-progress button small{display:none}
+ .ma6a-wizard-progress button b{font-size:10px}
+ .ma6a-wizard-grid{grid-template-columns:1fr}
+ .ma6a-wizard-footer{flex-wrap:wrap;gap:6px}
+ .ma6a-wizard-footer .ma6a-wizard-spacer{display:none}
+ .ma6a-editor-fields{max-height:calc(96vh - 195px);padding:13px}
+}
