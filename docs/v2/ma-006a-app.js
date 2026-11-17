@@ -205,7 +205,7 @@ const field=(id,label,value="",full=false)=>
 const area=(id,label,value="")=>'<div class="ma6-field full"><label for="c-'+esc(id)+'">'+esc(label)+'</label><textarea id="c-'+esc(id)+'" data-c-field="'+esc(id)+'">'+esc(value)+'</textarea></div>';
 const select=(id,label,values,current,placeholder="Select...")=>
  '<div class="ma6-field"><label for="c-'+esc(id)+'">'+esc(label)+'</label><select id="c-'+esc(id)+'" data-c-field="'+esc(id)+'"><option value="">'+esc(placeholder)+'</option>'+opts(values,current)+'</select></div>';
-const steps=["Solution Context","Select & Configure","Items & Quantities","Validate & Save"];
+const steps=["Project Details","Choose Equipment","Review & Save"];
 const emptyConfig=()=>({id:"",name:"",kind:"Customer configuration",solutionType:"solar",solar:{systemType:"On-grid Rooftop"},customerId:"",buyerId:"",contactId:"",siteId:"",projectId:"",opportunityId:"",companyId:"",branchId:"",ownerId:"",quoteId:"",notes:"",updated:"16 Nov 2026 (demo)",revision:"C0",items:[]});
 function setProduct(b,id){
  const p=itemProduct(id);
@@ -307,7 +307,7 @@ function renderProduct(c,b){
  '<div class="ma6-field"><label>Internal item notes</label><textarea data-item-note rows="2">'+esc(b.itemNote||"")+'</textarea></div></details>'+
  (errors.length?'<div class="ma6-validation">'+errors.map(esc).join("; ")+'</div>':"")+
  '<button class="btn primary" type="button" data-action="add-item">+ Add to Configuration</button></div></div>'+
- '<div class="ma6a-selected-lines"><div class="ma6-section-sub"><h4>Technical items selected ('+c.items.length+')</h4></div>'+itemsCompact(c)+'</div>'+
+ '<div class="ma6a-selected-lines"><div class="ma6-section-sub"><h4>Technical items selected ('+c.items.length+')</h4></div>'+itemsCompact(c,true)+'</div>'+
  note('This is a technical selection, not a certified design or priced quotation. Cost, margin, tax and commercial terms are handled in MA-006.');
 }
 function itemsCompact(c,edit=false){
@@ -326,7 +326,7 @@ function renderComponents(c){
 }
 function renderReview(c){
  const result=review(c),m=result.solar||solarMetrics(c);
- return panel("4 · Review Configuration","Review the technical items and save this draft. Pricing follows in Quotations.")+
+ return panel("3 · Review & Save","Check the product list and save this draft. Pricing follows in Quotations.")+
  '<div class="ma6-kvs">'+kv("Configuration name",c.name||"Required")+
  kv("Customer",customer(c.customerId)?.name||"Reusable / not selected")+
  kv("Selected product lines",String(c.items.length))+
@@ -350,9 +350,9 @@ function renderBuilder(){
  $("config-builder-title").textContent=(b.isNew?"New Configuration":"Edit "+c.id)+" · "+steps[b.step];
  $("config-builder-subtitle").textContent="No selling prices · "+(b.isNew?"New solution":"Editing sample "+c.revision);
  $("config-builder-steps").innerHTML=steps.map((title,i)=>'<button type="button" data-step="'+i+'" class="'+(i===b.step?'active':'')+'" aria-current="'+(i===b.step?'step':'false')+'"><span class="ma6-step-num">'+(i+1)+'</span><span class="ma6-step-label">'+esc(title)+'</span></button>').join("");
- $("config-builder-body").innerHTML=[renderContext,()=>renderProduct(c,b),renderComponents,renderReview][b.step](c);
- $("config-builder-prev").disabled=b.step===0;$("config-builder-next").hidden=b.step===3;$("config-builder-save").hidden=b.step!==3;
- $("config-builder-hint").textContent=b.step===1?"Sample rules only · No rates":b.step===3?"Engineering approval remains separate":"All changes are browser-only";
+ $("config-builder-body").innerHTML=[renderContext,()=>renderProduct(c,b),renderReview][b.step](c);
+ $("config-builder-prev").disabled=b.step===0;$("config-builder-next").hidden=b.step===2;$("config-builder-save").hidden=b.step!==2;
+ $("config-builder-hint").textContent=b.step===1?"Choose exact catalog models · No rates":b.step===2?"Save draft · Engineering approval remains separate":"All changes are browser-only";
 }
 function render(){
  if(state.mode==="builder"){renderBuilder();return;}
@@ -427,7 +427,7 @@ document.addEventListener("click",e=>{
  if(!t)return;const d=t.dataset;
  if(d.selectConfig){state.selected=d.selectConfig;state.tab="overview";render();return;}
  if(d.tab){state.tab=d.tab;render();return;}
- if(d.step!==undefined){const step=Number(d.step);if(state.builder&&step>=0&&step<=3){state.builder.step=step;renderBuilder();}return;}
+ if(d.step!==undefined){const step=Number(d.step);if(state.builder&&step>=0&&step<=2){state.builder.step=step;renderBuilder();}return;}
  if(d.product){if(state.builder){setProduct(state.builder,d.product);renderBuilder();}return;}
  if(d.remove){if(state.builder){state.builder.value.items=state.builder.value.items.filter(x=>x.id!==d.remove);renderBuilder();}return;}
  if(d.planned){dialog(esc(d.planned)+" (planned)","Separate administration will manage master product catalogs, technical rules and authorizations. No production changes occur on this page.");return;}
@@ -473,7 +473,7 @@ $("config-builder-body").addEventListener("input",e=>{
 $("new-configuration").addEventListener("click",()=>newBuilder());
 $("config-builder-exit").addEventListener("click",()=>{state.mode="register";state.builder=null;render();$("configuration-register").scrollIntoView({block:"start",behavior:"auto"});});
 $("config-builder-prev").addEventListener("click",()=>{if(state.builder){state.builder.step=Math.max(0,state.builder.step-1);renderBuilder();}});
-$("config-builder-next").addEventListener("click",()=>{if(state.builder){state.builder.step=Math.min(3,state.builder.step+1);renderBuilder();}});
+$("config-builder-next").addEventListener("click",()=>{if(state.builder){state.builder.step=Math.min(2,state.builder.step+1);renderBuilder();}});
 $("config-builder-save").addEventListener("click",save);
 $("cfg-company-filter").addEventListener("change",e=>{state.company=e.target.value;state.branch="all";render();});
 $("cfg-branch-filter").addEventListener("change",e=>{state.branch=e.target.value;render();});
