@@ -185,14 +185,19 @@ function renderDetails(){
  }
  if(state.tab==="more"){
   const schema=solarKindSchema(f.solarKind||"general");
-  const val=v?.solar||{};
-  const solarInfo=schema&&f.solarKind!=="general"?
-   '<div class="ma6a-selected-variant"><h4>Solar-specific product specifications · '+esc(schema.label)+'</h4>'+
-   '<div class="ma6-kvs">'+[...schema.essential,...schema.advanced].map(([key,label,unit])=>
-    kv(label+(unit?" ("+unit+")":""),val[key]??"Not entered")).join("")+'</div></div>':"";
-  $("catalog-family-body").innerHTML=panel("All Product Details","Expand only the information you need for the selected model.")+
-   '<details class="ma6a-view-details"><summary>Technical specifications & dimensions</summary>'+solarInfo+renderSpecs(f,v)+'</details>'+
-   '<details class="ma6a-view-details"><summary>Components & accessories</summary>'+renderParts(f,v)+'</details>'+
+  const val=v?.solar||{},all=(schema&&f.solarKind!=="general")?[...schema.essential,...schema.advanced]:[];
+  const entered=all.filter(([key])=>val[key]!==undefined&&val[key]!==null&&String(val[key]).trim()!=="");
+  const missing=all.filter(([key])=>val[key]===undefined||val[key]===null||String(val[key]).trim()==="");
+  const present=entered.length?'<div class="ma6-kvs">'+entered.map(([key,label,unit])=>kv(label+(unit?" ("+unit+")":""),val[key])).join("")+'</div>':
+   '<div class="ma6a-empty-note">No solar-specific technical values added yet. Edit Model to enter them.</div>';
+  const solarInfo=all.length?
+    '<div class="ma6a-selected-variant"><h4>'+esc(schema.label)+' · '+entered.length+' technical values entered</h4>'+present+
+    (missing.length?'<details class="ma6a-editor-details"><summary>Missing values for technical review ('+missing.length+')</summary>'+
+    '<div class="ma6a-list-inline">'+missing.map(([,label])=>'<span class="ma6a-flag">'+esc(label)+'</span>').join("")+'</div></details>':"")+'</div>':"";
+  $("catalog-family-body").innerHTML=panel("Product Details","Only information needed for this product is shown. Other technical and commercial sections stay available.")+
+   (all.length?'<details class="ma6a-view-details"><summary>Technical specifications · '+entered.length+' values entered</summary>'+solarInfo+'</details>':"")+
+   '<details class="ma6a-view-details"><summary>Dimensions & model comparison</summary>'+renderSpecs(f,v)+'</details>'+
+   '<details class="ma6a-view-details"><summary>Parts & accessories</summary>'+renderParts(f,v)+'</details>'+
    '<details class="ma6a-view-details"><summary>Pricing, documents & warranty</summary>'+renderPrices(f,v)+'</details>';
  }else{
   $("catalog-family-body").innerHTML=renderVariants(f,v);
