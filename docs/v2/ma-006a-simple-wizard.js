@@ -1,0 +1,213 @@
+/* MA-006A guided form UI: keeps all original named inputs in the form.
+ * Three visible steps; internal classification and advanced specs are never deleted. */
+(()=>{
+"use strict";
+const $=id=>document.getElementById(id);
+const E=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const modeIsWizard=m=>["product-new","variant-new","variant-edit"].includes(m);
+let current=null,step=0,db=null;
+const node=(tag,css="",html="")=>{const el=document.createElement(tag);if(css)el.className=css;if(html)el.innerHTML=html;return el;};
+function formField(form,name){
+ const input=form.querySelector('[name="'+name+'"]');return input?.closest(".ma6-field")||null;
+}
+function sectionHeading(title,desc){
+ return node("div","ma6a-wizard-title",'<h3>'+E(title)+'</h3><p>'+E(desc)+'</p>');
+}
+function group(){return node("div","ma6-field-grid ma6a-wizard-grid");}
+function move(form,names,dest){
+ for(const name of names){const el=formField(form,name);if(el)dest.appendChild(el);}
+}
+function status(text){
+ const el=$("catalog-editor-error");if(el){el.hidden=false;el.textContent=text;el.scrollIntoView({block:"nearest"});}
+ return false;
+}
+function closeStatus(){$("catalog-editor-error").hidden=true;}
+function updateCategory(form,kind){
+ const cat=form.querySelector('[name="familyCategory"]'),
+ typ=form.querySelector('[name="familyType"]'),
+ unit=form.querySelector('[name="familyUnit"]');
+ if(cat)cat.value=kind==="service"?"Services & EPC":kind==="general"?"Other":kind==="cable"?"Cables & Conductors":"Solar Equipment";
+ if(typ)typ.value=kind==="service"?"service":"standard";
+ if(unit)unit.value=kind==="service"?"Job":kind==="cable"?"m":kind==="mounting"?"Set":"Nos";
+ const typeLabel=window.CPQ_MA006A_SOLAR_FIELDS?.templates?.[kind]?.label||"General Product";
+ const hint=$("catalog-wizard-autofill");
+ if(hint)hint.innerHTML='The catalog will use <b>'+E(typeLabel)+'</b> specifications and set the internal classification automatically.';
+}
+function checkBasics(){
+ if(!current)return false;
+ const form=$("catalog-editor-form");
+ const fields=[["familyName","Product / Family Name"],["model","Manufacturer Model Number"],["sku","Unique SKU"]];
+ for(const [name,label] of fields){
+  const input=form.querySelector('[name="'+name+'"]');
+  if(input&&!String(input.value||"").trim()){status("Enter "+label+" before continuing.");input.focus();return false;}
+ }
+ const sku=String(form.querySelector('[name="sku"]')?.value||"").trim();
+ if(db?.variants.some(v=>v.sku.toLowerCase()===sku.toLowerCase()&&v.id!==current.variantId))
+  return status("This SKU already exists. Enter a unique stock code.");
+ const type=form.querySelector('[name="familyType"]')?.value||current.productType;
+ if(type!=="service"&&!form.querySelector('[name="manufacturerId"]')?.value)
+  return status("Select a manufacturer, or add a new one below.");
+ return true;
+}
+function updateReview(){
+ const form=$("catalog-editor-form"),target=$("catalog-wizard-review");if(!target)return;
+ const kind=form.querySelector('[name="solarKind"]')?.value||current?.solarKind||"general";
+ const schema=window.CPQ_MA006A_SOLAR_FIELDS?.templates?.[kind];
+ const fields=schema?.essential||[];
+ const entered=fields.filter(([key])=>String(form.querySelector('[name="solar_'+key+'"]')?.value??"").trim()!=="").length;
+ target.innerHTML='<b>Draft summary</b>'+
+  '<p><strong>'+E(form.querySelector('[name="model"]')?.value||"Model not provided")+'</strong> · '+E(form.querySelector('[name="sku"]')?.value||"SKU missing")+
+  '</p><p>'+ (fields.length?'Technical values entered: '+entered+' of '+fields.length+'. ':'')+
+  'Missing specifications or documents can be completed during review.</p>';
+}
+function showStep(next){
+ if(!current||next<0||next>2)return false;
+ if(next>step&&step===0&&!checkBasics())return false;
+ closeStatus();step=next;
+ for(const el of $("catalog-editor-body").querySelectorAll("[data-product-wizard-panel]"))el.hidden=Number(el.dataset.productWizardPanel)!==step;
+ for(const el of $("catalog-editor-body").querySelectorAll("[data-product-wizard-step]")){
+  const active=Number(el.dataset.productWizardStep)===step;
+  el.classList.toggle("active",active);el.setAttribute("aria-current",active?"step":"false");
+ }
+ $("catalog-editor-back").hidden=step===0;
+ $("catalog-editor-next").hidden=step===2;
+ $("catalog-editor-save").hidden=step!==2;
+ $("catalog-editor-save").textContent=current.mode==="variant-edit"?"Save Changes":"Save as Draft";
+ $("catalog-editor-subtitle").textContent="Step "+(step+1)+" of 3 · Demo draft only";
+ if(step===2)updateReview();
+ $("catalog-editor-body").scrollTop=0;return true;
+}
+function makeManufacturer(form){
+ const name=String(form.querySelector('[name="quickMakerName"]')?.value||"").trim();
+ const brand=String(form.querySelector('[name="quickMakerBrand"]')?.value||"").trim();
+ if(!name)return status("Enter the manufacturer company name.");
+ const match=db.manufacturers.find(m=>m.name.toLowerCase()===name.toLowerCase());
+ if(match)return status("This manufacturer already exists. Select it from the list.");
+ const next=Math.max(0,...db.manufacturers.map(m=>Number(String(m.id).replace(/\D/g,""))||0))+1;
+ const id="MFG-"+String(next).padStart(3,"0");
+ db.manufacturers.push({id,name:name.slice(0,150),brand:brand.slice(0,100),country:"India",status:"Draft",website:"",notes:"Added while preparing product draft; review pending"});
+ const selected=form.querySelector('[name="manufacturerId"]');
+ if(selected){selected.insertAdjacentHTML("beforeend",'<option value="'+E(id)+'">'+E(name)+'</option>');selected.value=id;}
+ $("catalog-wizard-quick-maker").hidden=true;closeStatus();
+}
+function mount(editor,database){
+ current=editor;db=database;step=0;
+ const form=$("catalog-editor-form"),body=$("catalog-editor-body");if(!form||!body)return;
+ const original=Array.from(body.children),basic=node("section","ma6a-wizard-panel"),spec=node("section","ma6a-wizard-panel"),
+  price=node("section","ma6a-wizard-panel");
+ basic.dataset.productWizardPanel="0";spec.dataset.productWizardPanel="1";price.dataset.productWizardPanel="2";
+ basic.appendChild(sectionHeading("1. Basic Details","What is the product, and which manufacturer/model are you adding?"));
+ const basicGrid=group();
+ if(editor.mode==="product-new"){
+  const kind=formField(form,"solarKind");if(kind){
+   const label=kind.querySelector("label");if(label)label.textContent="What are you adding? *";
+   basicGrid.appendChild(kind);
+   const hint=node("div","ma6a-wizard-autofill");hint.id="catalog-wizard-autofill";basic.appendChild(hint);
+  }
+ }
+ move(form,["familyName","model","sku","capacity","variantName","manufacturerId"],basicGrid);
+ basic.appendChild(basicGrid);
+ if(editor.mode!=="product-new")basic.appendChild(node("div","ma6a-wizard-tip",
+  'Adding or updating a manufacturer model inside <b>'+E(db.families.find(f=>f.id===editor.familyId)?.name||"the selected family")+'</b>.'));
+ const maker=node("div","ma6a-wizard-maker",
+  '<button type="button" class="btn" data-wizard-maker="open">+ Manufacturer not listed?</button>'+
+  '<div id="catalog-wizard-quick-maker" hidden><div class="ma6-field-grid">'+
+  '<div class="ma6-field"><label>Manufacturer company name *</label><input name="quickMakerName" type="text" placeholder="Company name"></div>'+
+  '<div class="ma6-field"><label>Brand (optional)</label><input name="quickMakerBrand" type="text" placeholder="Brand name"></div></div>'+
+  '<div class="ma6a-wizard-actions"><button type="button" class="btn primary" data-wizard-maker="save">Add Manufacturer</button>'+
+  '<button type="button" class="btn" data-wizard-maker="cancel">Cancel</button></div></div>');
+ basic.appendChild(maker);
+ if(editor.mode==="product-new"){
+  const adv=node("details","ma6a-editor-details ma6a-wizard-advanced",
+   '<summary>Advanced catalog classification (optional)</summary><p>Category and behavior are set automatically. Authorized staff can adjust them here.</p>');
+  const advancedGrid=group();move(form,["familyCategory","familyType"],advancedGrid);adv.appendChild(advancedGrid);
+  for(const el of original){
+   if(el.tagName==="DETAILS"&&el.querySelector('[name="familyUnit"]'))adv.appendChild(el);
+  }
+  basic.appendChild(adv);
+  updateCategory(form,form.querySelector('[name="solarKind"]')?.value||"pv-module");
+ }
+ if(editor.mode==="variant-edit"){
+  const st=formField(form,"variantStatus");if(st){
+   const adv=node("details","ma6a-editor-details",'<summary>Current model approval status (advanced)</summary>');
+   adv.appendChild(st);basic.appendChild(adv);
+  }
+ }else{
+  const statusField=formField(form,"variantStatus");
+  if(statusField){const sel=statusField.querySelector("select");if(sel)sel.value="Draft";
+   const box=node("div","ma6a-wizard-tip","New products are saved as <b>Draft</b> until verified.");
+   basic.appendChild(box);
+   const input=statusField.querySelector('[name="variantStatus"]');
+   if(input){input.value="Draft";input.type==="select-one"&&(input.disabled=true);}
+   basic.appendChild(statusField);
+   statusField.classList.add("ma6a-wizard-status-hidden");
+  }
+ }
+ spec.appendChild(sectionHeading("2. Technical Specifications","Fill values from the manufacturer datasheet. You can finish unknown details later."));
+ const solar=$("catalog-solar-fields");if(solar)spec.appendChild(solar);
+ const dims=original.find(el=>el.tagName==="DETAILS"&&String(el.querySelector("summary")?.textContent||"").includes("Physical dimensions"));
+ if(dims){dims.open=false;spec.appendChild(dims);}
+ const otherTech=original.find(el=>el.tagName==="DETAILS"&&String(el.querySelector("summary")?.textContent||"").includes("Documents & other technical"));
+ if(otherTech){otherTech.querySelector("summary").textContent="Additional technical specifications, drawings & notes";spec.appendChild(otherTech);}
+ spec.appendChild(node("div","ma6a-wizard-tip",
+ 'A draft can be saved with missing details. Technical review is required before the model is approved for commercial use.'));
+ price.appendChild(sectionHeading("3. Price & Save","Optional commercial information may be completed later by an authorized employee."));
+ const commercial=original.find(el=>el.tagName==="DETAILS"&&String(el.querySelector("summary")?.textContent||"").includes("Commercial price"));
+ if(commercial){
+  const grid=commercial.querySelector(".ma6-field-grid"),quick=group();
+  if(grid){move(form,["sell","availability","datasheet"],quick);}
+  price.appendChild(quick);
+  commercial.querySelector("summary").textContent="More price and sourcing fields (commercial team)";
+  price.appendChild(commercial);
+ }
+ const parts=original.find(el=>el.tagName==="DETAILS"&&String(el.querySelector("summary")?.textContent||"").includes("Parts & accessories"));
+ if(parts)price.appendChild(parts);
+ const review=node("div","ma6a-wizard-review");review.id="catalog-wizard-review";price.appendChild(review);
+ price.appendChild(node("div","ma6a-wizard-tip",
+  'Choose <b>Save as Draft</b>. Datasheets, compliance and commercial approvals can be completed later.'));
+ // Keep all unmoved fields and existing values for the original save/validation function.
+ const moved=new Set([basicGrid,solar,dims,otherTech,commercial,parts]);
+ const leftovers=node("details","ma6a-editor-details ma6a-wizard-extra",'<summary>Other advanced information</summary>');
+ for(const el of original){
+  if(el.parentElement===body&&el.querySelector("input,select,textarea"))leftovers.appendChild(el);
+ }
+ if(leftovers.children.length>1)price.appendChild(leftovers);
+ const nav=node("nav","ma6a-wizard-progress",
+  [["Basic Details","Product and model"],["Specifications","Technical information"],["Price & Save","Draft review"]]
+  .map(([t,sub],i)=>'<button type="button" data-product-wizard-step="'+i+'">'+
+   '<span class="ma6a-progress-number">'+(i+1)+'</span><span><b>'+t+'</b><small>'+sub+'</small></span></button>').join(""));
+ body.replaceChildren(nav,basic,spec,price);
+ const manufacturer=form.querySelector('[name="manufacturerId"]');
+ if(manufacturer&&manufacturer.closest(".ma6-field")){
+  const label=manufacturer.closest(".ma6-field").querySelector("label");
+  if(label)label.textContent="Manufacturer / Brand *";
+ }
+ const statusField=form.querySelector('[name="familyStatus"]');
+ if(statusField&&editor.mode==="product-new")statusField.value="Draft";
+ // Existing form logic consumes all fields across all (including hidden) wizard panels.
+ showStep(0);
+ if(editor.mode==="product-new")updateCategory(form,form.querySelector('[name="solarKind"]')?.value||"pv-module");
+}
+function init(){
+ $("catalog-editor-back").addEventListener("click",()=>showStep(step-1));
+ $("catalog-editor-next").addEventListener("click",()=>showStep(step+1));
+ $("catalog-editor-form").addEventListener("click",e=>{
+  const action=e.target.closest("[data-product-wizard-step],[data-wizard-maker]");if(!current||!action)return;
+  e.preventDefault();
+  if(action.dataset.productWizardStep!==undefined){showStep(Number(action.dataset.productWizardStep));return;}
+  const box=$("catalog-wizard-quick-maker");
+  if(action.dataset.wizardMaker==="open")box.hidden=false;
+  if(action.dataset.wizardMaker==="cancel")box.hidden=true;
+  if(action.dataset.wizardMaker==="save")makeManufacturer($("catalog-editor-form"));
+ });
+ $("catalog-editor-form").addEventListener("change",e=>{
+  if(current?.mode!=="product-new"||e.target.name!=="solarKind")return;
+  updateCategory($("catalog-editor-form"),e.target.value);
+ });
+ $("catalog-editor-form").addEventListener("submit",e=>{
+  if(!current||step===2)return;
+  e.preventDefault();e.stopImmediatePropagation();showStep(step+1);
+ },true);
+}
+window.CPQ_MA006A_SIMPLE_WIZARD={mount,init,reset:()=>{current=null;step=0;},step:()=>step};
+})();
