@@ -92,6 +92,7 @@ function makeManufacturer(form){
 }
 function mount(editor,database){
  current=editor;db=database;step=0;
+ current.productType=db.families.find(x=>x.id===editor.familyId)?.type||"standard";
  const form=$("catalog-editor-form"),body=$("catalog-editor-body");if(!form||!body)return;
  const original=Array.from(body.children),basic=node("section","ma6a-wizard-panel"),spec=node("section","ma6a-wizard-panel"),
   price=node("section","ma6a-wizard-panel");
