@@ -50,7 +50,6 @@ function newBuilder(sourceId=""){
   q.opportunityId=src.id;q.title="Quotation — "+src.title;q.notes="Source enquiry: "+src.summary;
  }
  const b={quote:q,isNew:true,step:0,productId:"",options:{},quantity:1,addPickerOpen:true,catalogSearch:""};
- setProduct(b,"CFG-PNL-01");
  state.mode="builder";state.builder=b;renderBuilder();
  $("quote-builder").scrollIntoView({block:"start",behavior:"auto"});
 }
@@ -65,7 +64,7 @@ function existingBuilder(mode="edit"){
  }
  const b={quote:q,isNew:mode==="duplicate",step:0,productId:"",options:{},quantity:1,addPickerOpen:!q.lines.length,catalogSearch:""};
  const existingConfig=q.lines.find(l=>l.type==="config"&&product(l.productId));
- setProduct(b,existingConfig?.productId||"CFG-PNL-01");
+ if(existingConfig)setProduct(b,existingConfig.productId);
  if(existingConfig)b.options={...existingConfig.options};
  state.builder=b;state.mode="builder";renderBuilder();$("quote-builder").scrollIntoView({block:"start",behavior:"auto"});
 }
@@ -212,8 +211,23 @@ $("builder-body").addEventListener("change",e=>changedInput(e,true));
 $("builder-body").addEventListener("input",e=>{
  const t=e.target;
  if(t.dataset.catalogSearch!==undefined){
-    const b=state.builder;if(b)b.catalogSearch=t.value;
-    $("builder-body").querySelectorAll("[data-product]").forEach(el=>{el.hidden=!el.textContent.toLowerCase().includes(t.value.toLowerCase());});
+    const b=state.builder;
+    if(!b)return;
+    b.catalogSearch=t.value;
+    const needle=t.value.trim().toLowerCase(),selected=product(b.productId);
+    if(selected&&needle&&![selected.name,selected.id,selected.sku,selected.model,selected.manufacturer,selected.rating,selected.catalogSpec]
+      .filter(Boolean).join(" ").toLowerCase().includes(needle)){
+      b.productId="";b.options={};b.quantity=1;
+    }
+    // Recalculate matches against the full active catalog on every search,
+    // not just buttons left visible after the previous search. Preserve typing focus.
+    const caret=typeof t.selectionStart==="number"?t.selectionStart:t.value.length;
+    renderBuilder();
+    const input=$("quote-add-search");
+    if(input){
+      input.focus({preventScroll:true});
+      if(input.setSelectionRange)input.setSelectionRange(caret,caret);
+    }
     return;
   }
   if(t.dataset.field&&["title","validUntil","currency","payment","delivery","warranty","exclusions","notes"].includes(t.dataset.field))
@@ -325,7 +339,7 @@ function openConfigurationHandoff(raw){
   q.sourceConfigRevision=typeof c.revision==="string"?c.revision.slice(0,16):"C0";
  q.lines=lines;
   state.builder.addPickerOpen=false;
-  setProduct(state.builder,"VAR-009");
+  state.builder.productId="";
  q.projectTechnical=c.solutionType==="solar"&&c.solar&&typeof c.solar==="object"?{
   systemType:String(c.solar.systemType||"").slice(0,100),
   targetDcKwp:Number(c.solar.targetDcKwp)||0,
