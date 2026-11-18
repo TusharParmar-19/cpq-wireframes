@@ -116,7 +116,7 @@
 .ma6-builder-head h2{font-size:21px;color:#1a4362;margin:5px 0 5px}
 .ma6-eyebrow{font-size:10px;letter-spacing:.12em;font-weight:850;color:#3c7aa7}
 .ma6-builder-head p{margin:0}
-.ma6-stepper{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;border-bottom:1px solid #e5eef4;background:#f8fbfd}
+.ma6-stepper{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border-bottom:1px solid #e5eef4;background:#f8fbfd}
 .ma6-stepper button{background:transparent;border:0;border-bottom:3px solid transparent;padding:14px 8px;display:flex;justify-content:center;align-items:center;gap:8px;min-width:0;text-align:left}
 .ma6-stepper button:hover{background:#eef7fc}
 .ma6-stepper button.active{border-bottom-color:#2b82b6;background:#eaf6fe}
@@ -235,3 +235,28 @@
  .ma6-list-tools{width:100%;justify-content:space-between}
  .ma6-expanded-table{margin:0 10px 12px;max-width:calc(100% - 20px)}
 }
+
+
+/* Quotation detail tabs: simple primary information, explicit pending review tasks. */
+.ma6a-draft-alert{display:flex;justify-content:space-between;align-items:center;gap:14px;background:#fff9ef;border:1px solid #f1debb;border-radius:9px;padding:12px 14px;margin-top:13px;color:#8d632f}
+.ma6a-draft-alert strong{font-size:12px;color:#805823}
+.ma6a-draft-alert p{font-size:11px;margin:4px 0 0;line-height:1.65;color:#9a764d}
+.ma6a-draft-alert .btn{background:#fff;flex:0 0 auto}
+.ma6a-quote-source,.ma6a-version-helper{padding:12px 14px;margin:14px 0;border:1px solid #dceaf4;background:#f5faff;border-radius:8px;font-size:11px;line-height:1.65;color:#557b95}
+.ma6a-quote-source b,.ma6a-version-helper b{color:#315c78}
+.ma6a-boq-total{margin-top:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 15px;background:#f3f9fe;border:1px solid #dfeef7;border-radius:8px;font-size:12px;color:#52718a}
+.ma6a-boq-total strong{font-size:14px;color:#204f70;font-variant-numeric:tabular-nums}
+.ma6a-commercial-top{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,365px);align-items:start;gap:20px;margin:12px 0 18px}
+.ma6a-commercial-aside{border:1px solid #e3edf4;background:#fbfdff;border-radius:9px;padding:15px}
+.ma6a-commercial-aside h4{font-size:13px;margin:0 0 6px;color:#2f5f7e}
+.ma6a-commercial-aside p{font-size:12px;color:#69869b;line-height:1.65;margin:6px 0 12px}
+.ma6a-commercial-aside .btn{margin-top:15px}
+.ma6a-commercial-badges{display:flex;gap:8px;flex-wrap:wrap}
+.ma6a-commercial-top .ma6-pricing-summary{margin:0;max-width:none;width:100%}
+.ma6a-note-text{font-size:12px;line-height:1.7;margin:7px 0 8px;color:#476983;white-space:pre-wrap}
+.ma6a-approval-intro{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:13px 15px;border-radius:9px;background:#f3f9fe;border:1px solid #dbeaf5;margin:13px 0}
+.ma6a-approval-intro strong{font-size:13px;color:#285979}
+.ma6a-approval-intro p{margin:5px 0 0;font-size:11px;color:#6c899e;line-height:1.6}
+.ma6a-preview-state{font-size:12px;line-height:1.7;padding:12px 14px;margin:13px 0;border-radius:9px;border:1px solid #f1debb;background:#fff9ef;color:#946c38}
+@media(max-width:900px){.ma6a-commercial-top{grid-template-columns:1fr}}
+@media(max-width:620px){.ma6a-draft-alert,.ma6a-approval-intro,.ma6a-boq-total{flex-direction:column;align-items:flex-start}.ma6a-draft-alert .btn{width:100%}}
