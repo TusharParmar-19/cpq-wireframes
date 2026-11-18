@@ -42,7 +42,7 @@
         </div>
         <div class="actions">
           <a class="btn" href="ma-006a-configuration.html">Product Catalog &amp; Configuration</a>
-          <a class="btn" href="#quote-register">Quotation Register</a>
+          <button class="btn" type="button" id="quote-view-toggle" aria-pressed="false" aria-controls="quote-register">View Full List</button>
           <button class="btn primary" type="button" id="new-quote">+ New Quotation</button>
         </div>
       </div>
@@ -63,7 +63,7 @@
       </section>
       <section class="ma6-workspace" id="quote-register">
         <section class="card ma6-list-panel" aria-label="Quotation register">
-          <div class="ma6-list-heading"><div><h2>Quotation Register</h2><p class="muted">Select a quotation to inspect</p></div><span class="chip" id="quote-count">7 shown</span></div>
+          <div class="ma6-list-heading"><div><h2 id="quote-list-title">Quotation Register</h2><p class="muted" id="quote-list-subtitle">Select a quotation to inspect</p></div><div class="ma6-list-tools"><span class="chip" id="quote-count">7 shown</span><button type="button" class="btn" id="quote-expand-toggle" aria-controls="quote-expanded-table" aria-pressed="false">Expand List</button></div></div>
           <div class="ma6-filter-fields">
             <div><label for="quote-search">Search</label><input type="search" id="quote-search" placeholder="Quote ID, buyer, customer or title"></div>
             <div class="ma6-two-cols">
@@ -72,9 +72,10 @@
             </div>
           </div>
           <div id="quote-list" class="ma6-quote-list" aria-live="polite"></div>
+          <div id="quote-expanded-table" class="ma6-table-wrap ma6-expanded-table" aria-live="polite" hidden></div>
           <div class="ma6-list-note">Buyer identity, quote revision, internal scope and status remain independent. Sample records align with MA-001.</div>
         </section>
-        <section class="ma6-details" aria-label="Quotation details">
+        <section class="ma6-details" id="quote-details" aria-label="Quotation details">
           <div class="card ma6-detail-header" id="quote-header"></div>
           <div class="card ma6-detail-panel">
             <div id="quote-tabs" class="ma6-tabs" role="tablist" aria-label="Quotation sections">
