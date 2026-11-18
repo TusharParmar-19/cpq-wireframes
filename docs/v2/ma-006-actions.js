@@ -72,27 +72,34 @@ function existingBuilder(mode="edit"){
 function saveBuilder(){
  const b=state.builder;if(!b)return;
  const q=b.quote;
- const isGoodBuyer=master.companies.some(x=>x.customerId===q.customerId&&x.id===q.buyerId);
- const scope=customer(q.customerId)?.links||[];
+ const validCust=customer(q.customerId);
+ const isGoodBuyer=!!master.companies.find(x=>x.customerId===q.customerId&&x.id===q.buyerId);
+ const scope=validCust?.links||[];
  const validScope=scope.some(x=>x.companyId===q.companyId&&x.branchId===q.branchId);
  const validOwner=staff.some(u=>u.id===q.ownerId&&u.status==="Active"&&(u.assignments||[]).some(x=>x.companyId===q.companyId&&x.branches.includes(q.branchId)));
  const sameBuyer=(id,arr)=>!id||arr.some(x=>x.id===id&&x.customerId===q.customerId&&x.companyId===q.buyerId);
  const contactOK=sameBuyer(q.contactId,master.contacts),siteOK=sameBuyer(q.siteId,master.sites),projectOK=sameBuyer(q.projectId,master.projects);
  const sourceOK=!q.opportunityId||enquiries.some(x=>x.id===q.opportunityId&&x.customerId===q.customerId&&x.buyerId===q.buyerId);
- const linesOK=q.lines.length>0&&q.lines.every(l=>Number(l.quantity)>0&&Number.isFinite(+l.unitPrice)&&Number(l.unitPrice)>=0&&(l.type!=="config"||configCheck(product(l.productId),l.options).ok));
+ const linesOK=q.lines.every(l=>Number.isInteger(Number(l.quantity))&&Number(l.quantity)>0&&Number(l.quantity)<=100000&&
+  Number.isFinite(Number(l.unitPrice))&&Number(l.unitPrice)>=0&&
+  (l.type!=="config"||configCheck(product(l.productId),l.options).ok));
  const percentOK=Number.isFinite(+q.discount)&&Number.isFinite(+q.taxRate)&&+q.discount>=0&&+q.discount<=100&&+q.taxRate>=0&&+q.taxRate<=100;
+ // Saving is not submitting for approval. Drafts may be missing buyer, BOQ or terms;
+ // supplied links, quantities and numeric fields must remain internally consistent.
  let error="";
- if(!customer(q.customerId))error="Select a customer in step 1.";
- else if(!isGoodBuyer)error="Select a buyer belonging to that customer.";
- else if(!validScope)error="Choose an internal company and branch already linked to this customer.";
- else if(!validOwner)error="Choose an active employee assigned to the selected internal branch.";
+ if(!String(q.title||"").trim())error="Give this quotation draft a title in step 1.";
+ else if(q.customerId&&!validCust)error="This customer is no longer available.";
+ else if(q.buyerId&&!isGoodBuyer)error="The buyer must belong to the selected customer.";
+ else if(q.companyId&&!entity(q.companyId))error="The selling legal entity is not available.";
+ else if(q.branchId&&(!q.companyId||branch(q.branchId)?.companyId!==q.companyId))error="The branch must belong to the selected selling entity.";
+ else if(q.customerId&&q.companyId&&q.branchId&&!validScope)error="The selected selling company and branch must be linked to this customer.";
+ else if(q.ownerId&&!validOwner)error="The responsible employee must be active and assigned to this company and branch.";
  else if(!contactOK||!siteOK||!projectOK)error="Contact, delivery site and project must belong to the selected buyer.";
- else if(!sourceOK)error="The selected opportunity must match the customer and buyer.";
- else if(!q.title.trim())error="Enter a quotation title in step 1.";
- else if(!linesOK)error="Add at least one valid item in Configuration; check quantities and sample rules.";
- else if(!percentOK)error="Enter discount and illustrative tax percentages between 0 and 100.";
- else if(!toISO(q.validUntil))error="Choose a valid quotation expiry date in Price & Terms.";
- if(error){explain("Draft needs more information",esc(error)+"<p>You can move between the four steps without losing your current draft fields.</p>");return;}
+ else if(!sourceOK)error="The selected enquiry must belong to the customer and buyer.";
+ else if(!linesOK)error="Check BOQ item quantities, rates and configured options; quantities must be whole numbers from 1 to 100,000.";
+ else if(!percentOK)error="Sample discount and tax percentages must be between 0 and 100.";
+ else if(q.validUntil&&!toISO(q.validUntil))error="Choose a valid calendar date or leave validity blank until review.";
+ if(error){explain("Please correct the saved data",esc(error)+"<p>Incomplete quotation details and unconfirmed terms are allowed in Draft. Invalid relationships or numbers are not.</p>");return;}
  if(b.isNew){
   const max=Math.max(20,...db.quotations.map(x=>Number(x.id.split("-").at(-1))||0));
   q.id="QT-2026-"+String(max+1).padStart(3,"0");q.rev="R0";db.quotations.unshift(copy(q));
