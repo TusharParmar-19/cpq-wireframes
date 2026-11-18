@@ -45,7 +45,7 @@ The wireframe currently demonstrates:
 
 ## 5. Separate review gates and status transitions
 
-- **Draft**: editable within permitted scope; structurally incomplete drafts can exist. Saving does not send a PDF or obtain permission.
+- **Draft**: editable within permitted scope; structurally incomplete drafts can exist. Only a nonempty title is necessary for an initial demo draft save; supplied buyer/scope references, BOQ numbers and percentages must still be internally valid. Validity date, payment/delivery terms and even unselected BOQ lines are allowed to remain unfinished. Saving does not send a PDF or obtain permission.
 - **Ready for Review**: customer/buyer/seller and BOQ structurally valid, required documents and relevant checks assembled.
 - **Pending Approval / Returned / Approved**: governed by technical, discount, margin, tax, customer and company/branch policies; approver eligibility, delegation, comments and escalation are recorded.
 - **Issued/Sent**: only approved immutable revision may generate/issue a signed/controlled PDF and be dispatched to correct recipient with channel, timestamp and proof.
@@ -77,7 +77,7 @@ No secrets or real buyer, supplier pricing, tax identifiers or customer attachme
 4. Draft/inactive catalog variant cannot be added to issued quotation or bypass approval.
 5. Quantity, unit rate and discount change recalculates all totals deterministically; invalid quantities, missing lines, percentage outside approved bounds and currency discrepancies are rejected.
 6. Price & Terms uses a real date picker, optional payment term templates and editable terms. "To be agreed" does not pass issue-readiness.
-7. Save Draft preserves data and creates new draft record; no PDF issued, email sent, approval granted or order created.
+7. Save Draft preserves data and creates a new draft record with a title even when validity/payment/delivery terms or BOQ are incomplete; it rejects invalid linked records and malformed numbers. No PDF issued, email sent, approval granted or order created.
 8. Restricted prices, costs and margins stay protected for non-privileged roles; server scope cannot be bypassed by client UI.
 9. Approval actions enforce role+scope+approval matrix, record approver and decision, and stop self-approval where policy requires segregation.
 10. Issued revision cannot be edited; new revision starts with preserved previous document, pricing, tax, buyer identity, approvals and correspondence.
