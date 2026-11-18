@@ -308,30 +308,36 @@ function contextBuilder(q){
  note('Selecting a group customer requires an exact buyer company. Contact, site and project choices must refer to that buyer; a customer’s “primary buyer” is only a default, not an authorized substitution. The selling entity and branch must be linked to this customer.');
 }
 function catalogPicker(q,b){
- const choice=product(b.productId)||db.products[0];
- const options=choice.type==="config"?Object.entries(choice.options).map(([key,spec])=>
-  formSelect("config-"+key,spec.label,spec.choices.map(([val])=>[val,val]),b.options?.[key]||choice.defaults[key],"Choose option",true)).join(""):"";
  const source=window.CPQ_MA006A_CATALOG;
- const solar=(source?.variants||[]).filter(v=>v.status==="Active").map(v=>product(v.id)).filter(Boolean);
- const old=db.products.filter(p=>!q.projectTechnical||p.type==="service");
- const all=[...solar,...old];
- const matches=all.filter(p=>!b.catalogSearch||[p.name,p.sku,p.model,p.manufacturer,p.rating].join(" ").toLowerCase().includes(b.catalogSearch.toLowerCase()));
- const validation=configCheck(choice,b.options||{});
- return '<div class="ma6a-product-picker-toolbar"><div class="ma6-field">'+
- '<label for="quote-add-search">Find a model or service</label><input type="search" id="quote-add-search" data-catalog-search value="'+esc(b.catalogSearch||"")+'" placeholder="Module, inverter, manufacturer, SKU..."></div></div>'+
- '<div class="ma6-config-grid"><div><div class="ma6-product-cards">'+
- (matches.length?matches.map(p=>'<button type="button" data-product="'+esc(p.id)+'" class="ma6-product-card'+(p.id===choice.id?' selected':'')+'">'+
- '<div>'+typeBadge(p.type)+'<strong>'+esc(p.name)+'</strong>'+
- '<small>'+esc(p.catalogSpec||p.id+" · "+p.unit)+'</small></div><span class="ma6-tag">Select</span></button>').join(""):
- blank("No matching Active catalog models. Try another search."))+
- '</div></div><div class="ma6-config-form"><h3>'+esc(choice.name)+'</h3>'+
+ const catalog=(source?.variants||[]).filter(v=>v.status==="Active").map(v=>product(v.id)).filter(Boolean);
+ const builtins=db.products.filter(p=>!q.projectTechnical||p.type==="service");
+ const all=[...catalog,...builtins];
+ const search=String(b.catalogSearch||"").trim().toLowerCase();
+ const searchText=p=>[p.name,p.id,p.sku,p.model,p.manufacturer,p.rating,p.catalogSpec].filter(Boolean).join(" ").toLowerCase();
+ const matches=all.filter(p=>!search||searchText(p).includes(search));
+ const selected=product(b.productId);
+ const choice=selected&&matches.some(p=>p.id===selected.id)?selected:null;
+ const options=choice?.type==="config"?Object.entries(choice.options).map(([key,spec])=>
+  formSelect("config-"+key,spec.label,spec.choices.map(([val])=>[val,val]),b.options?.[key]||choice.defaults[key],"Choose option",true)).join(""):"";
+ const validation=choice?configCheck(choice,b.options||{}):null;
+ const selection=choice?'<h3>'+esc(choice.name)+'</h3>'+
  (options?'<div class="ma6-field-grid">'+options+'</div>':
- '<p class="muted">Exact catalog model or service. Its technical master is maintained in MA-006A.</p>')+
+ '<p class="muted">This model uses the specifications maintained in MA-006A.</p>')+
  '<div class="ma6-field"><label for="b-config-qty">Quantity ('+esc(choice.unit||"Nos")+')</label>'+
  '<input id="b-config-qty" type="number" min="1" step="1" data-config-qty value="'+esc(b.quantity)+'"></div>'+
  (choice.status&&choice.status!=="Active"?'<div class="ma6-validation">This catalog model is a Draft and cannot be selected for a quotation.</div>':
  '<div class="ma6-validation'+(validation.ok?' ok':'')+'">'+esc(validation.message)+'</div>')+
- '<button class="btn primary" type="button" data-action="add-config-item">+ Add to BOQ</button></div></div>';
+ '<button class="btn primary" type="button" data-action="add-config-item">+ Add to BOQ</button>':
+ '<h3>Select a product</h3><p class="ma6a-quote-select-help">Search by name, model or SKU, then click <b>Select</b> on the correct product before entering its quantity.</p>';
+ return '<div class="ma6a-product-picker-toolbar"><div class="ma6-field">'+
+ '<label for="quote-add-search">Find a model or service</label><input type="search" id="quote-add-search" data-catalog-search value="'+esc(b.catalogSearch||"")+'" placeholder="Search ST-PV-550, inverter, manufacturer, SKU..." autocomplete="off">'+
+ '<p class="ma6a-picker-results-count" id="quote-add-result-count" role="status" aria-live="polite">'+matches.length+' matching product(s)</p></div></div>'+
+ '<div class="ma6-config-grid"><div><div class="ma6-product-cards" id="quote-add-results">'+
+ matches.map(p=>'<button type="button" data-product="'+esc(p.id)+'" data-search="'+esc(searchText(p))+'" class="ma6-product-card'+(p.id===choice?.id?' selected':'')+'">'+
+ '<div>'+typeBadge(p.type)+'<strong>'+esc(p.name)+'</strong>'+
+ '<small>'+esc(p.catalogSpec||p.id+" · "+p.unit)+'</small></div><span class="ma6-tag">Select</span></button>').join("")+
+ '<div class="ma6-empty" id="quote-add-no-matches"'+(matches.length?' hidden':'')+'>No matching active catalog products. Check the model/SKU or try a broader search.</div>'+
+ '</div></div><div class="ma6-config-form" id="quote-add-selection">'+selection+'</div></div>';
 }
 function boqBuilder(q,b){
  const source=q.sourceConfigId?
@@ -347,7 +353,7 @@ function boqBuilder(q,b){
  '<td>'+esc(l.unit)+'</td><td class="ma6-money"><input class="ma6-rate" type="number" min="0" step="0.01" data-line-rate="'+esc(l.id)+'" value="'+esc(l.unitPrice)+'" aria-label="Sample selling rate '+esc(l.description)+'"></td>'+
  '<td class="ma6-money">'+money(extended(l))+'</td><td><button type="button" class="btn" data-remove-line="'+esc(l.id)+'" aria-label="Remove '+esc(l.description)+'">Remove</button></td></tr>')):
  blank("No BOQ items yet. Add a product or import a configuration.");
- return panel("2 · Products & BOQ","The selected configuration is already here. Check models, quantities and sample rates.")+
+ return panel("2 · Products & BOQ",q.sourceConfigId?"Review imported configuration items and add any additional products.":"Select products directly from the catalog, then confirm quantities and sample rates.")+
  source+lineTable+
  '<div class="ma6-section-sub ma6a-quote-add"><h4>'+q.lines.length+' BOQ item(s) · Subtotal '+money(totals(q).subtotal)+'</h4>'+
  '<button type="button" class="btn'+(b.addPickerOpen?'':' primary')+'" data-action="toggle-add-product">'+
