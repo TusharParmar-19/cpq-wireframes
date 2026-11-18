@@ -224,7 +224,7 @@ function openQuotationTable(){
   const b=state.builder;
   const dirty=!!b&&(JSON.stringify(b.quote)!==b.initialQuoteSnapshot||
    (b.isNew&&(String(b.quote.title||"").trim()||b.quote.lines.length)));
-  if(dirty&&!window.confirm("Open the full quotation table?\\n\\nUnsaved changes in this quotation editor will be discarded. Select Cancel to stay here and save your draft first."))return;
+  if(dirty&&!window.confirm("Open the full quotation table?\n\nUnsaved changes in this quotation editor will be discarded. Select Cancel to stay here and save your draft first."))return;
   state.builder=null;state.mode="register";
  }
  state.listExpanded=true;
