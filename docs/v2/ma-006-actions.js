@@ -7,6 +7,10 @@ let toastTimer=null,priorFocus=null;
 const copy=x=>JSON.parse(JSON.stringify(x));
 const demoDate=()=>new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"});
 const statusDraft="Draft";
+const toISO=v=>{
+ if(/^\d{4}-\d{2}-\d{2}$/.test(String(v||"")))return v;
+ const d=new Date(v);return Number.isFinite(d.valueOf())?d.toISOString().slice(0,10):"";
+};
 function toast(message){
  const node=$("toast");node.textContent=message;node.hidden=false;
  if(toastTimer)clearTimeout(toastTimer);
@@ -43,7 +47,7 @@ function newBuilder(sourceId=""){
   q.projectId=src.projectId;q.companyId=src.companyId;q.branchId=src.branchId;q.ownerId=src.ownerId;
   q.opportunityId=src.id;q.title="Quotation — "+src.title;q.notes="Source enquiry: "+src.summary;
  }
- const b={quote:q,isNew:true,step:0,productId:"",options:{},quantity:1};
+ const b={quote:q,isNew:true,step:0,productId:"",options:{},quantity:1,addPickerOpen:true,catalogSearch:""};
  setProduct(b,"CFG-PNL-01");
  state.mode="builder";state.builder=b;renderBuilder();
  $("quote-builder").scrollIntoView({block:"start",behavior:"auto"});
@@ -53,11 +57,11 @@ function existingBuilder(mode="edit"){
  if(mode==="edit"&&original.status!==statusDraft){
   explain("Editing not available","Only permitted, unissued draft revisions may be edited. Sent, accepted and awaiting-approval quotations require a controlled new revision / duplication flow.");return;
  }
- const q=copy(original);if(mode==="duplicate"){
+ const q=copy(original);q.validUntil=toISO(q.validUntil);if(mode==="duplicate"){
   q.id="";q.rev="R0";q.status=statusDraft;q.date=demoDate();q.review="Not submitted";q.response="Not issued";q.responseNote="";
   q.versionNotes="New draft based on an existing sample";q.lastUpdated=demoDate()+" (demo)";
  }
- const b={quote:q,isNew:mode==="duplicate",step:0,productId:"",options:{},quantity:1};
+ const b={quote:q,isNew:mode==="duplicate",step:0,productId:"",options:{},quantity:1,addPickerOpen:!q.lines.length,catalogSearch:""};
  const existingConfig=q.lines.find(l=>l.type==="config"&&product(l.productId));
  setProduct(b,existingConfig?.productId||"CFG-PNL-01");
  if(existingConfig)b.options={...existingConfig.options};
@@ -85,8 +89,8 @@ function saveBuilder(){
  else if(!q.title.trim())error="Enter a quotation title in step 1.";
  else if(!linesOK)error="Add at least one valid item in Configuration; check quantities and sample rules.";
  else if(!percentOK)error="Enter discount and illustrative tax percentages between 0 and 100.";
- else if(!q.validUntil.trim())error="Enter a quotation validity date in Commercial Terms.";
- if(error){explain("Draft needs more information",esc(error)+"<p>You can move between all five steps without losing your current browser-only selections.</p>");return;}
+ else if(!toISO(q.validUntil))error="Choose a valid quotation expiry date in Price & Terms.";
+ if(error){explain("Draft needs more information",esc(error)+"<p>You can move between the four steps without losing your current draft fields.</p>");return;}
  if(b.isNew){
   const max=Math.max(20,...db.quotations.map(x=>Number(x.id.split("-").at(-1))||0));
   q.id="QT-2026-"+String(max+1).padStart(3,"0");q.rev="R0";db.quotations.unshift(copy(q));
@@ -103,12 +107,15 @@ function saveBuilder(){
 function addSelectedProduct(){
  const b=state.builder;if(!b)return;const q=b.quote,p=product(b.productId);
  if(!p)return;
+ if(p.status&&p.status!=="Active"){explain("Model not active","Draft models cannot be selected until approved.");return;}
  const check=configCheck(p,b.options);
  if(!check.ok){explain("Resolve configuration selection",esc(check.message)+"<p>Option compatibility is illustrative. Production must use approved engineering rules.</p>");return;}
  const qty=Number(b.quantity);
- if(!Number.isFinite(qty)||qty<=0){explain("Quantity required","Select a positive quantity before adding a BOQ line.");return;}
+ if(!Number.isInteger(qty)||qty<=0||qty>100000){explain("Quantity required","Enter a whole number between 1 and 100,000.");return;}
  const index=Math.max(0,...q.lines.map(x=>Number(x.id.replace(/[^0-9]/g,""))||0))+1;
- const line={id:"L"+String(index).padStart(2,"0"),productId:p.id,type:p.type,description:p.name,quantity:qty,unit:p.unit,unitPrice:configUnit(p,b.options),options:p.type==="config"?{...b.options}:{}};
+ const line={id:"L"+String(index).padStart(2,"0"),productId:p.id,type:p.type,description:p.name,
+  quantity:qty,unit:p.unit,unitPrice:configUnit(p,b.options),options:p.type==="config"?{...b.options}:{},
+  catalogSpec:p.catalogSpec||"",sourceVariantId:p.sourceVariantId||"",pricingReview:!!p.sourceVariantId};
  q.lines.push(line);
  renderBuilder();toast("Sample product added to BOQ");
 }
@@ -148,6 +155,8 @@ function handleAction(action){
  if(action==="edit-builder"){existingBuilder("edit");return;}
  if(action==="duplicate"){existingBuilder("duplicate");return;}
  if(action==="add-config-item"){addSelectedProduct();return;}
+ if(action==="toggle-add-product"){if(state.builder){state.builder.addPickerOpen=!state.builder.addPickerOpen;state.builder.catalogSearch="";renderBuilder();}return;}
+ if(action==="preview-builder"){if(state.builder)modal("Quotation layout preview","Unissued draft · No PDF generated",paper(state.builder.quote));return;}
  if(action==="preview-pdf"){
   const q=quote(state.selected);if(q)modal("Customer-facing quotation preview",q.id+" / "+q.rev+" · Not an issued PDF",paper(q));return;
  }
@@ -163,7 +172,7 @@ document.addEventListener("click",e=>{
  if(!t)return;const d=t.dataset;
  if(d.quote){state.selected=d.quote;state.tab="summary";render();return;}
  if(d.tab){state.tab=d.tab;render();return;}
- if(d.step!==undefined){const i=Number(d.step);if(state.builder&&Number.isInteger(i)&&i>=0&&i<5){state.builder.step=i;renderBuilder();}return;}
+ if(d.step!==undefined){const i=Number(d.step);if(state.builder&&Number.isInteger(i)&&i>=0&&i<4){state.builder.step=i;renderBuilder();}return;}
  if(d.product){if(state.builder){setProduct(state.builder,d.product);renderBuilder();}return;}
  if(d.removeLine){if(state.builder){state.builder.quote.lines=state.builder.quote.lines.filter(l=>l.id!==d.removeLine);renderBuilder();}return;}
  if(d.action){handleAction(d.action);return;}
@@ -175,23 +184,30 @@ function changedInput(e,commit=true){
  const b=state.builder,q=b.quote;
  if(t.dataset.field){updateBuilderField(t.dataset.field,t.value);return;}
  if(t.dataset.configQty!==undefined){b.quantity=Math.max(1,Number(t.value)||1);return;}
+  if(t.dataset.paymentPreset!==undefined){if(t.value){q.payment=t.value;renderBuilder();}return;}
  if(t.dataset.lineQty!==undefined){
   const l=q.lines.find(x=>x.id===t.dataset.lineQty);if(l){l.quantity=Math.max(1,Number(t.value)||1);if(commit)renderBuilder();}return;
  }
- if(t.dataset.lineRate!==undefined){
+ if(t.dataset.catalogSearch!==undefined){b.catalogSearch=t.value;return;}
+  if(t.dataset.lineRate!==undefined){
   const l=q.lines.find(x=>x.id===t.dataset.lineRate);if(l){l.unitPrice=Math.max(0,Number(t.value)||0);if(commit)renderBuilder();}return;
  }
 }
 $("builder-body").addEventListener("change",e=>changedInput(e,true));
 $("builder-body").addEventListener("input",e=>{
  const t=e.target;
- if(t.dataset.field&&["title","validUntil","currency","payment","delivery","warranty","exclusions","notes"].includes(t.dataset.field))
+ if(t.dataset.catalogSearch!==undefined){
+    const b=state.builder;if(b)b.catalogSearch=t.value;
+    $("builder-body").querySelectorAll("[data-product]").forEach(el=>{el.hidden=!el.textContent.toLowerCase().includes(t.value.toLowerCase());});
+    return;
+  }
+  if(t.dataset.field&&["title","validUntil","currency","payment","delivery","warranty","exclusions","notes"].includes(t.dataset.field))
   updateBuilderField(t.dataset.field,t.value);
 });
 $("new-quote").addEventListener("click",()=>newBuilder());
 $("builder-close").addEventListener("click",()=>{state.mode="register";state.builder=null;render();$("quote-register").scrollIntoView({block:"start",behavior:"auto"});});
 $("builder-prev").addEventListener("click",()=>{if(state.builder){state.builder.step=Math.max(0,state.builder.step-1);renderBuilder();}});
-$("builder-next").addEventListener("click",()=>{if(state.builder){state.builder.step=Math.min(4,state.builder.step+1);renderBuilder();}});
+$("builder-next").addEventListener("click",()=>{if(state.builder){state.builder.step=Math.min(3,state.builder.step+1);renderBuilder();}});
 $("builder-save").addEventListener("click",saveBuilder);
 $("company-filter").addEventListener("change",e=>{state.company=e.target.value;state.branch="all";state.owner="all";render();});
 $("branch-filter").addEventListener("change",e=>{state.branch=e.target.value;state.owner="all";render();});
@@ -271,7 +287,11 @@ function openConfigurationHandoff(raw){
   }
  }
  q.title="Quotation — "+c.name.slice(0,140);
+  q.sourceConfigId=c.configId;q.sourceConfigName=c.name.slice(0,160);
+  q.sourceConfigRevision=typeof c.revision==="string"?c.revision.slice(0,16):"C0";
  q.lines=lines;
+  state.builder.addPickerOpen=false;
+  setProduct(state.builder,"VAR-009");
  q.projectTechnical=c.solutionType==="solar"&&c.solar&&typeof c.solar==="object"?{
   systemType:String(c.solar.systemType||"").slice(0,100),
   targetDcKwp:Number(c.solar.targetDcKwp)||0,
