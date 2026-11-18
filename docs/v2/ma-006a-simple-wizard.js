@@ -179,7 +179,11 @@ function mount(editor,database){
   }
  }
  spec.appendChild(sectionHeading("2. Technical Specifications","Fill values from the manufacturer datasheet. You can finish unknown details later."));
- const solar=$("catalog-solar-fields");if(solar)spec.appendChild(solar);
+ const solar=$("catalog-solar-fields");
+ if(solar){
+  solar.querySelectorAll("details").forEach(el=>{if(String(el.querySelector("summary")?.textContent||"").toLowerCase().includes("advanced"))el.open=false;});
+  spec.appendChild(solar);
+ }
  const dims=original.find(el=>el.tagName==="DETAILS"&&String(el.querySelector("summary")?.textContent||"").includes("Physical dimensions"));
  if(dims){dims.open=false;spec.appendChild(dims);}
  const otherTech=original.find(el=>el.tagName==="DETAILS"&&String(el.querySelector("summary")?.textContent||"").includes("Documents & other technical"));
