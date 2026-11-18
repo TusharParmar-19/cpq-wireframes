@@ -180,6 +180,10 @@ function overview(c){
  (c.solutionType==="solar"?solarOverview(c):"")+
  '<details class="ma6a-builder-details"><summary>Project notes and linked quotation</summary><p>'+esc(c.notes||"No notes")+'</p>'+
  '<p>Quotation: '+esc(c.quoteId||"Not linked")+'</p></details>'+
+ '<details class="ma6a-builder-details"><summary>Previous versions ('+(c.history?.length||0)+')</summary>'+
+ (c.history?.length?c.history.slice().reverse().map(v=>'<div class="ma6a-compact-history"><strong>'+
+ esc(v.revision)+' · '+esc(v.updated)+'</strong><p>'+esc(v.name)+' · '+v.items.length+
+ ' lines (previous draft retained)</p></div>').join(""):'<p>No earlier saved revisions.</p>')+'</details>'+
  note('A configuration stores technical selections and project requirements. It is not a priced or engineering-approved customer quotation.');
 }
 function items(c){
@@ -228,14 +232,14 @@ const area=(id,label,value="")=>'<div class="ma6-field full"><label for="c-'+esc
 const select=(id,label,values,current,placeholder="Select...")=>
  '<div class="ma6-field"><label for="c-'+esc(id)+'">'+esc(label)+'</label><select id="c-'+esc(id)+'" data-c-field="'+esc(id)+'"><option value="">'+esc(placeholder)+'</option>'+opts(values,current)+'</select></div>';
 const steps=["Project Details","Choose Equipment","Review & Save"];
-const emptyConfig=()=>({id:"",name:"",kind:"Customer configuration",solutionType:"solar",solar:{systemType:"On-grid Rooftop"},customerId:"",buyerId:"",contactId:"",siteId:"",projectId:"",opportunityId:"",companyId:"",branchId:"",ownerId:"",quoteId:"",notes:"",updated:"16 Nov 2026 (demo)",revision:"C0",items:[]});
+const emptyConfig=()=>({id:"",name:"",kind:"Customer configuration",solutionType:"solar",solar:{systemType:"On-grid Rooftop"},customerId:"",buyerId:"",contactId:"",siteId:"",projectId:"",opportunityId:"",companyId:"",branchId:"",ownerId:"",quoteId:"",notes:"",updated:"Not saved",revision:"C0",items:[]});
 function setProduct(b,id){
  const p=itemProduct(id);
  if(!p)return;b.productId=id;b.quantity=1;b.itemNote="";b.options=p.type==="config"?{...p.defaults}:{};
 }
 function newBuilder(original=null,duplicate=false){
  const c=original?clone(original):emptyConfig();
- if(duplicate){c.id="";c.quoteId="";c.revision="C0";c.updated="07 Nov 2026 (demo)";c.name=c.name+" — Copy";}
+ if(duplicate){c.id="";c.quoteId="";delete c.history;c.revision="C0";c.updated="New copy (demo)";c.name=c.name+" — Copy";}
  const b={value:c,isNew:!original||duplicate,step:0,productId:"",quantity:1,options:{},itemNote:"",customSpec:"",productGroup:c.solutionType==="solar"?"solar":"other",catalogSearch:""};
  setProduct(b,c.solutionType==="solar"?"VAR-009":products[0].id);
  state.builder=b;state.mode="builder";render();
