@@ -129,36 +129,59 @@ function renderFullList(qs){
   '<table class="ma6-table ma6-full-table"><caption>Quotations matching your current filters · Newest quotation number first</caption>'+header+'<tbody>'+rows+'</tbody></table>':
   blank("No quotations match the current filters. Change the search, status or scope to see more.");
 }
+function draftMissing(q){
+ const pending=[];
+ if(!customer(q.customerId))pending.push("Customer");
+ if(!buyer(q.buyerId))pending.push("Exact buyer");
+ if(!entity(q.companyId)||!branch(q.branchId))pending.push("Selling company / branch");
+ if(!q.lines?.length)pending.push("BOQ items");
+ if(!q.validUntil)pending.push("Validity date");
+ const finalTerm=x=>!!String(x||"").trim()&&!/^(to be agreed|to be confirmed|tbd)$/i.test(String(x).trim());
+ if(!finalTerm(q.payment))pending.push("Payment terms");
+ if(!finalTerm(q.delivery))pending.push("Delivery terms");
+ return pending;
+}
 function renderHeader(q){
+ const issues=q.status==="Draft"?draftMissing(q):[];
  $("quote-header").innerHTML='<div class="ma6-detail-top"><div><small>'+esc(q.id)+' / '+esc(q.rev)+' · '+text(customer(q.customerId)?.name)+'</small><h2>'+esc(q.title)+'</h2><p>Buyer: '+text(buyer(q.buyerId)?.name)+' · '+text(entity(q.companyId)?.name)+' / '+text(branch(q.branchId)?.name)+'</p></div>'+
  '<div class="ma6-detail-actions">'+statusBadge(q.status)+
- (q.status==="Draft"?'<button type="button" class="btn primary" data-action="edit-builder">Open Builder</button>':'<button type="button" class="btn" data-action="preview-pdf">Preview Offer</button>')+
+ (q.status==="Draft"?'<button type="button" class="btn primary" data-action="edit-builder">Continue Editing</button>':'<button type="button" class="btn" data-action="preview-pdf">Preview Offer</button>')+
  '<button type="button" class="btn" data-action="duplicate">Duplicate as Draft</button></div></div>'+
  '<div class="ma6-quote-meta"><span class="ma6-tag">Revision '+esc(q.rev)+'</span><span class="ma6-tag">Owner: '+text(employee(q.ownerId)?.name)+'</span><span class="ma6-tag">Updated '+esc(q.lastUpdated)+'</span><span class="ma6-tag">Total (demo): '+money(totals(q).total)+'</span></div>'+
- '<div class="ma6-banner"><b>Configuration → Pricing → Quotation:</b> Configuration defines the approved product/option selection; pricing applies commercial rates and controls; a quotation is a reviewed, versioned customer offer. No customer-facing document is issued by this demo.</div>';
+ (issues.length?'<div class="ma6a-draft-alert"><div><strong>Draft saved · '+issues.length+' detail'+(issues.length===1?'':'s')+' to complete</strong><p>'+esc(issues.join(" · "))+'</p></div><button type="button" class="btn" data-action="edit-builder">Complete Draft</button></div>':'')+
+ '<div class="ma6-banner"><b>Configuration → BOQ → Quotation:</b> Technical selections and commercial terms are recorded separately. This public demo does not issue an approved customer offer.</div>';
 }
 function summary(q){
- return panel("Quotation overview","Customer/legal buyer, selling company, source and commercial intent")+
+ const solar=q.projectTechnical;
+ return panel("Quotation overview","Essential customer, buyer and selling scope; additional details are available on demand")+
  '<div class="ma6-kvs">'+kv("Quotation ID / Revision",q.id+" / "+q.rev)+kv("Status",q.status)+
  kv("Customer account",customer(q.customerId)?.name)+kv("Buyer / bill-to",buyer(q.buyerId)?.name)+
+ kv("Our selling legal entity",entity(q.companyId)?.name)+kv("Our branch",branch(q.branchId)?.name)+
+ kv("Quotation date",q.date)+kv("Valid until",q.validUntil)+'</div>'+
+ '<details class="ma6a-quote-more"><summary>More customer, project & record details</summary><div class="ma6-kvs">'+
  kv("Customer contact",contact(q.contactId)?.name)+kv("Customer site",site(q.siteId)?.name)+
  kv("Customer project",project(q.projectId)?.name)+kv("Source enquiry",q.opportunityId||"Direct quotation — no enquiry required")+
- kv("Our selling legal entity",entity(q.companyId)?.name)+kv("Our branch",branch(q.branchId)?.name)+
  kv("Sales owner",employee(q.ownerId)?.name)+kv("Currency",q.currency)+
- (q.projectTechnical?kv("Solar system type",q.projectTechnical.systemType||"Not specified")+
- kv("Target DC capacity",q.projectTechnical.targetDcKwp?q.projectTechnical.targetDcKwp+" kWp":"Not specified")+
- kv("Roof / installation site",[q.projectTechnical.roofType,q.projectTechnical.siteLocation].filter(Boolean).join(" · ")):"")+
- kv("Quotation date",q.date)+kv("Valid until",q.validUntil)+
- kv("Revision",q.rev)+kv("Last updated",q.lastUpdated)+'</div>'+
+ (solar?kv("Solar system type",solar.systemType||"Not specified")+
+ kv("Target DC capacity",solar.targetDcKwp?solar.targetDcKwp+" kWp":"Not specified")+
+ kv("Roof / installation site",[solar.roofType,solar.siteLocation].filter(Boolean).join(" · ")):"")+
+ kv("Revision",q.rev)+kv("Last updated",q.lastUpdated)+'</div></details>'+
+ (q.sourceConfigId?'<div class="ma6a-quote-source"><b>Source technical configuration:</b> '+esc(q.sourceConfigId)+' / '+esc(q.sourceConfigRevision||"C0")+
+ ' · '+esc(q.sourceConfigName||"Saved configuration")+' (snapshot reference)</div>':'')+
  (q.opportunityId?'<div class="ma6-section-sub"><h4>Source opportunity</h4><a class="btn" href="ma-005-opportunities.html?opportunity='+encodeURIComponent(q.opportunityId)+'">View MA-005</a></div>':'')+
- note('Group customers can have multiple buyer companies. Each issued quotation must preserve the selected buyer’s legal identity, address, tax details and issued revision as a fixed snapshot. A source opportunity is optional.');
+ note('Customer and buyer are separate records. An issued revision must preserve exact buyer identity, legal selling scope, product details and pricing. Issuing is disabled in this demo.');
 }
 function items(q){
- return panel("Configuration & Bill of Quantities","One quote can include configurable products, standard items and services.","edit-builder","Open in Builder")+
- (q.lines.length?table(["Item / type","Selected options & scope","Qty","Unit","Selling rate (demo)","Line total"],
+ return panel("Configuration & Bill of Quantities","Technical items selected from MA-006A or added directly to this quotation.",
+  q.status==="Draft"?"edit-builder":"","Continue Editing")+
+ (q.sourceConfigId?'<div class="ma6a-quote-source"><b>Imported from:</b> '+esc(q.sourceConfigName||q.sourceConfigId)+
+ ' · '+esc(q.sourceConfigId)+' / '+esc(q.sourceConfigRevision||"C0")+'</div>':'')+
+ (q.lines.length?table(["Product / Model","Technical specification / scope","Qty","Unit","Selling rate (demo)","Line total"],
  q.lines.map(l=>'<tr><td><strong>'+esc(l.description)+'</strong><small>'+esc(l.productId)+' · '+esc(l.type)+'</small></td>'+
- '<td>'+text(lineConfig(l))+'</td><td>'+esc(l.quantity)+'</td><td>'+esc(l.unit)+'</td><td class="ma6-money">'+money(l.unitPrice)+'</td><td class="ma6-money">'+money(extended(l))+'</td></tr>')):blank("No BOQ lines have been added."))+
- note('<b>Configuration rule boundary:</b> Options and illustrative dependencies are modeled in the builder. Engineering compatibility, approved product catalog, generated BOM, availability, specifications and vendor evidence will need a separate rules/data service. Internal costs and margins are not displayed in this public demo.');
+ '<td>'+text(lineConfig(l))+(l.technicalReview?'<small>Project technical changes need review</small>':'')+'</td><td>'+esc(l.quantity)+'</td>'+
+ '<td>'+esc(l.unit)+'</td><td class="ma6-money">'+money(l.unitPrice)+'</td><td class="ma6-money">'+money(extended(l))+'</td></tr>')):blank("No BOQ lines yet. Continue Editing to add catalog equipment or services."))+
+ '<div class="ma6a-boq-total"><span>'+q.lines.length+' BOQ item'+(q.lines.length===1?'':'s')+' · Sample subtotal</span><strong>'+money(totals(q).subtotal)+'</strong></div>'+
+ note('The BOQ stores selected models, quantities and their offered technical scope. Engineering compatibility, manufacturer data, actual rates and generated BOM require separate approved services.');
 }
 function financialRows(q){
  const t=totals(q);
@@ -170,12 +193,19 @@ function financialRows(q){
  '<div class="ma6-price-row final"><span>Illustrative quote total</span><strong>'+money(t.total)+'</strong></div></div>';
 }
 function commercial(q){
- return panel("Commercial summary","Illustrative selling-side calculations and customer-facing conditions")+
- financialRows(q)+
- '<div class="ma6-kvs" style="margin-top:15px">'+kv("Payment terms",q.payment)+kv("Delivery / execution",q.delivery)+
- kv("Warranty / support",q.warranty)+kv("Validity",q.validUntil)+
- kv("Exclusions",q.exclusions)+kv("Commercial notes",q.notes)+'</div>'+
- note('<b>Pricing safeguard:</b> These INR amounts, discounts and tax percentages are synthetic. Production needs approved price lists, item-level taxes, HSN/SAC, jurisdiction, rounding, freight handling and discount policies. Cost/margin disclosure requires separate MA-003 grants.',true);
+ const p=draftMissing(q).filter(x=>["Validity date","Payment terms","Delivery terms"].includes(x));
+ return panel("Commercial summary","Sample calculations and the conditions intended for the customer")+
+ '<div class="ma6a-commercial-top"><div class="ma6a-commercial-aside"><h4>Pricing review</h4><p>Figures are illustrative. Confirm SKU rates, tax treatment, discounts and any price exceptions before submitting for approval.</p>'+
+ '<div class="ma6a-commercial-badges"><span class="ma6-tag">Discount: '+esc(q.discount)+'%</span><span class="ma6-tag">Tax assumption: '+esc(q.taxRate)+'%</span></div>'+
+ (q.status==="Draft"?'<button type="button" class="btn" data-action="edit-builder">Edit Price & Terms</button>':'')+
+ '</div>'+financialRows(q)+'</div>'+
+ (q.status==="Draft"&&p.length?'<div class="ma6a-draft-alert"><div><strong>Customer-facing terms are incomplete</strong><p>'+esc(p.join(" · "))+'</p></div>'+
+ '<button type="button" class="btn" data-action="edit-builder">Complete Terms</button></div>':'')+
+ '<div class="ma6-section-sub"><h4>Customer-facing conditions</h4></div>'+
+ '<div class="ma6-kvs">'+kv("Payment terms",q.payment)+kv("Delivery / execution",q.delivery)+
+ kv("Warranty / support",q.warranty)+kv("Validity",q.validUntil)+kv("Exclusions",q.exclusions)+'</div>'+
+ '<details class="ma6a-quote-more"><summary>Internal commercial notes · Not printed on customer preview</summary><p class="ma6a-note-text">'+text(q.notes)+'</p></details>'+
+ note('<b>Pricing safeguard:</b> Demo amounts, discounts and tax rates are not approved. Production needs price lists, HSN/SAC, item-level taxes, jurisdiction, rounding, freight and finance policy enforcement.',true);
 }
 function reviewChecks(q){
  const hasFinal=(x)=>!!String(x||"").trim()&&!/^(to be agreed|to be confirmed|tbd)$/i.test(String(x).trim());
@@ -191,26 +221,34 @@ function reviewChecks(q){
  ];
 }
 function approvals(q){
- return panel("Review & Approval","Technical, commercial and authorization requirements before issuing any quotation","preview-approval","Approval workflow (planned)")+
- '<div class="ma6-checklist">'+reviewChecks(q).map(([title,done,desc])=>
+ const checks=reviewChecks(q),passed=checks.filter(x=>x[1]).length;
+ return panel("Review & Approvals","A draft can be saved before terms or technical approvals are complete.","preview-approval","How approvals work")+
+ '<div class="ma6a-approval-intro"><div><strong>'+passed+' of '+checks.length+' sample checks present</strong>'+
+ '<p>Blue ticks show basic record checks only, not authorization. An approval decision has not been completed by this wireframe.</p></div>'+
+ statusBadge(q.status)+'</div>'+
+ '<div class="ma6-checklist">'+checks.map(([title,done,desc])=>
  '<div class="ma6-check-item"><span class="ma6-check-icon">'+(done?'✓':'!')+'</span><div><b>'+esc(title)+'</b><small>'+esc(desc)+'</small></div></div>').join("")+'</div>'+
- '<div class="ma6-kvs">'+kv("Sample quote status",q.status)+kv("Review state",q.review)+kv("Discount",q.discount+"% (illustrative)")+
- kv("Approved-by", "Not verified in this public wireframe")+'</div>'+
- note('<b>Required for development:</b> MA-003 action grants + company/branch record scope + approval matrix (discount/margin/exception) + supplier evidence + technical validation. Approver must not be assumed from a user’s role label alone. Issue only an approved and immutable revision.',true);
+ '<div class="ma6-kvs">'+kv("Quotation status",q.status)+kv("Review state",q.review)+
+ kv("Discount",q.discount+"% (illustrative)")+kv("Approver / decision","No verified decision in this demo")+'</div>'+
+ (q.status==="Draft"?'<div class="ma6-section-sub"><h4>What to do next</h4><button type="button" class="btn" data-action="edit-builder">Continue Editing</button></div>':'')+
+ note('Actual submission, approver routing, commercial exceptions, technical sign-off, decisions and audit history depend on MA-003 permissions and approval policy. No approval is granted here.',true);
 }
 function revisions(q){
  const sample=db.revisions.filter(x=>x.quoteId===q.id);
  const generated=[...sample,...state.history.filter(h=>h.quoteId===q.id&&h.kind==="revision").map(h=>h.revision)];
  const rows=generated.length?generated:[
  {quoteId:q.id,revision:q.rev,date:q.date,by:employee(q.ownerId)?.name||"Sample",note:q.versionNotes||"Initial sample revision",locked:q.status!=="Draft"}];
- return panel("Quotation versions & snapshots","A revision is distinct from an opportunity status or a copy of an editable draft")+
- rows.map(r=>'<div class="ma6-revision-row"><div><strong>'+esc(r.revision)+' · '+(r.locked?'Historical snapshot':'Current draft')+'</strong><p>'+esc(r.note)+'</p><small>'+esc(r.date)+' · '+esc(r.by)+'</small></div><span class="ma6-tag">'+(r.locked?'Locked (sample)':'Editable draft (sample)')+'</span></div>').join("")+
- note('Production must retain immutable issued revision snapshots with buyer identity, BOQ, configured selections, pricing, tax, terms, approvals, evidence and dispatch records. Historical sample revisions here are illustrative metadata, not a document store.');
+ return panel("Quotation versions & snapshots","Each revision belongs to the same quotation. Copying creates a separate quotation.","duplicate","Copy as New Draft")+
+ '<div class="ma6a-version-helper"><b>Current record:</b> '+esc(q.id)+' / '+esc(q.rev)+
+ ' · '+esc(q.status)+'. A new draft copy is not an R1 revision of this quote.</div>'+
+ rows.map(r=>'<div class="ma6-revision-row"><div><strong>'+esc(r.revision)+' · '+(r.locked?'Historical snapshot':'Current draft')+'</strong><p>'+esc(r.note)+'</p>'+
+ '<small>'+esc(r.date)+' · '+esc(r.by)+'</small></div><span class="ma6-tag">'+(r.locked?'Historical (sample)':'Draft (sample)')+'</span></div>').join("")+
+ note('Revision creation and comparison, locked issued snapshots, reasons for changes, previous PDFs and dispatch evidence require controlled backend storage. Example history is illustrative metadata, not a document store.');
 }
 function paper(q){
  const t=totals(q);
  return '<div class="ma6-paper"><div class="ma6-paper-head"><div><strong>'+text(entity(q.companyId)?.name)+'</strong><p>Customer quotation preview · fictional information</p></div><span>'+esc(q.id)+' / '+esc(q.rev)+'</span></div>'+
- '<p><b>To:</b> '+text(buyer(q.buyerId)?.name)+'<br><b>Reference:</b> '+esc(q.title)+'<br><b>Valid until:</b> '+esc(q.validUntil)+'</p>'+
+ '<p><b>To:</b> '+text(buyer(q.buyerId)?.name)+'<br><b>Reference:</b> '+esc(q.title)+'<br><b>Valid until:</b> '+text(q.validUntil)+'</p>'+
  '<table><thead><tr><th>Particulars</th><th>Qty</th><th>Unit</th><th>Amount</th></tr></thead><tbody>'+
  q.lines.map(l=>'<tr><td>'+esc(l.description)+'</td><td>'+esc(l.quantity)+'</td><td>'+esc(l.unit)+'</td><td class="ma6-money">'+money(extended(l))+'</td></tr>').join("")+
  '</tbody></table><p><b>Illustrative total:</b> '+money(t.total)+' (including sample discount / tax inputs)</p>'+
@@ -218,11 +256,13 @@ function paper(q){
  '<p><b>Exclusions:</b> '+text(q.exclusions)+'</p><p style="border-top:1px solid #e8edf2;padding-top:12px"><b>NOT AN ISSUED QUOTATION.</b> No company signature, approval, verified tax data or legally usable PDF is provided.</p></div>';
 }
 function documents(q){
- return panel("PDF Preview, Dispatch & Customer Response","Separated from quotation editing, approval and order registration","preview-pdf","Expand preview")+
+ return panel("PDF Preview & Customer Response","Draft preview, dispatch history and customer responses are separate operations.","preview-pdf","Expand preview")+
+ (q.status==="Draft"?'<div class="ma6a-preview-state"><b>Draft preview only.</b> This is not an approved PDF and cannot be issued or sent. Finalize terms and obtain the required authorization first.</div>':'')+
  paper(q)+
- '<div class="ma6-section-sub"><h4>Customer response / dispatch record</h4><button type="button" class="btn" data-action="preview-dispatch">Dispatch controls (planned)</button></div>'+
- '<div class="ma6-response-card"><h4>'+esc(q.response)+'</h4><p>'+text(q.responseNote,"Customer response evidence has not been recorded in this demo.")+'</p><p><b>Issue status:</b> '+esc(q.status)+' · Actual issue/dispatch needs a controlled production process.</p></div>'+
- note('Customer-facing PDF may show approved commercial items, specifications, amount and terms; confidential vendor costs, internal margin and unapproved pricing rules must never leak into the customer document. Recording acceptance is not the same as registering an order.');
+ '<div class="ma6-section-sub"><h4>Dispatch & customer response</h4><button type="button" class="btn" data-action="preview-dispatch">How dispatch will work</button></div>'+
+ '<div class="ma6-response-card"><h4>'+esc(q.response)+'</h4><p>'+text(q.responseNote,"Customer response evidence has not been recorded in this demo.")+'</p>'+
+ '<p><b>Quotation status:</b> '+esc(q.status)+' · No verified issue/dispatch evidence is available here.</p></div>'+
+ note('A production PDF can include approved products, specifications, totals, taxes, terms, signatory and legal seller/buyer information. Never include supplier costs or internal margins. Acceptance is separate from order registration.');
 }
 const tabs={summary,items,commercial,approvals,revisions,documents};
 function detail(){
