@@ -304,11 +304,13 @@ function isoDate(v){
 }
 function priceTermsBuilder(q){
  return panel("3 · Price & Terms","Apply sample commercial assumptions, then set the terms to be offered to the customer.")+
+ '<div class="ma6a-pricing-layout"><div class="ma6a-pricing-inputs"><h4>Sample pricing adjustments</h4>'+
  '<div class="ma6-price-controls">'+formInput("discount","Sample discount %",q.discount,"number")+
  formInput("taxRate","Illustrative tax %",q.taxRate,"number")+'</div>'+
- financialRows(q)+
+ '<p class="ma6a-pricing-help">Rates, discounts and tax are illustrative and require approval before a customer offer can be issued.</p></div>'+
+ financialRows(q)+'</div>'+
  '<div class="ma6-section-sub"><h4>Customer-facing terms</h4></div>'+
- '<div class="ma6-field-grid">'+formInput("validUntil","Valid until",isoDate(q.validUntil),"date",false,true)+
+ '<div class="ma6-field-grid">'+formInput("validUntil","Valid until (required before issue)",isoDate(q.validUntil),"date")+
  formInput("currency","Currency",q.currency,"text")+
  '<div class="ma6-field full"><label for="quote-payment-preset">Payment terms template (optional)</label>'+
  '<select id="quote-payment-preset" data-payment-preset><option value="">Select a sample template...</option>'+
@@ -343,6 +345,7 @@ function reviewBuilder(q){
  '<div class="ma6-check-item"><span class="ma6-check-icon">'+(passed?'✓':'!')+'</span><div><b>'+esc(k)+'</b><small>'+esc(msg)+'</small></div></div>').join("")+'</div></details>'+
  '<div class="ma6a-quote-review-actions"><button type="button" class="btn" data-action="preview-builder">Preview customer layout</button>'+
  '<span class="ma6-tag">Draft only · Not issued</span></div>'+
+ '<div class="ma6a-quote-draft-hint"><b>Save Draft is available with unfinished terms.</b> Leave validity or payment/delivery details incomplete while working; an authorized approval and issue workflow must block them later.</div>'+
  note('Production sequence: Save Draft → technical/pricing validation → policy approvals → freeze revision → issue PDF → dispatch → customer response. Order registration is separate.',true);
 }
 const stepContent=[contextBuilder,boqBuilder,priceTermsBuilder,reviewBuilder];
