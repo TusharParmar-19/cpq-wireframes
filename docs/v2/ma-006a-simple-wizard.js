@@ -33,10 +33,34 @@ function updateCategory(form,kind){
  const hint=$("catalog-wizard-autofill");
  if(hint)hint.innerHTML='The catalog will use <b>'+E(typeLabel)+'</b> specifications and set the internal classification automatically.';
 }
+
+function groupsFor(kind){return db.families.filter(f=>(f.solarKind||"general")===kind&&f.status!=="Discontinued").sort((a,b)=>a.name.localeCompare(b.name));}
+function selectedGroup(form){const id=form.querySelector('[name="wizardFamilyId"]')?.value;return id&&id!=="__new__"?db.families.find(f=>f.id===id):null;}
+function updateGroupMode(form){
+ if(current?.mode!=="product-new")return;
+ const reused=selectedGroup(form),nameField=formField(form,"familyName");
+ if(nameField){
+  nameField.hidden=!!reused;
+  const input=nameField.querySelector('[name="familyName"]');if(input){input.required=!reused;input.placeholder="Name of new product group";}
+  const label=nameField.querySelector("label");if(label)label.textContent="New Product Group Name *";
+ }
+ const advanced=form.querySelector(".ma6a-wizard-advanced");if(advanced){advanced.hidden=!!reused;advanced.open=false;}
+ const hint=$("catalog-wizard-group-help");
+ if(hint)hint.textContent=reused?"A new model will be added under "+reused.name+". No duplicate group needed.":
+ "Only create a new group when none fits. Different wattages and brands normally belong in the same group.";
+}
+function refreshGroupOptions(form,kind){
+ const sel=form.querySelector('[name="wizardFamilyId"]');if(!sel)return;
+ const groups=groupsFor(kind);
+ sel.innerHTML=groups.map(f=>'<option value="'+E(f.id)+'">'+E(f.name)+'</option>').join("")+
+  '<option value="__new__">+ Create a new product group</option>';
+ sel.value=groups[0]?.id||"__new__";updateGroupMode(form);
+}
 function checkBasics(){
  if(!current)return false;
  const form=$("catalog-editor-form");
- const fields=[["familyName","Product / Family Name"],["model","Manufacturer Model Number"],["sku","Unique SKU"]];
+ const existing=current.mode==="product-new"&&!!selectedGroup(form);
+ const fields=[...(current.mode==="product-new"&&!existing?[["familyName","New Product Group Name"]]:[]),["model","Manufacturer Model Number"],["sku","Unique SKU"]];
  for(const [name,label] of fields){
   const input=form.querySelector('[name="'+name+'"]');
   if(input&&!String(input.value||"").trim()){status("Enter "+label+" before continuing.");input.focus();return false;}
@@ -44,14 +68,14 @@ function checkBasics(){
  const sku=String(form.querySelector('[name="sku"]')?.value||"").trim();
  if(db?.variants.some(v=>v.sku.toLowerCase()===sku.toLowerCase()&&v.id!==current.variantId))
   return status("This SKU already exists. Enter a unique stock code.");
- const type=form.querySelector('[name="familyType"]')?.value||current.productType;
+ const type=selectedGroup(form)?.type||form.querySelector('[name="familyType"]')?.value||current.productType;
  if(type!=="service"&&!form.querySelector('[name="manufacturerId"]')?.value)
   return status("Select a manufacturer, or add a new one below.");
  return true;
 }
 function updateReview(){
  const form=$("catalog-editor-form"),target=$("catalog-wizard-review");if(!target)return;
- const kind=form.querySelector('[name="solarKind"]')?.value||current?.solarKind||"general";
+ const kind=selectedGroup(form)?.solarKind||form.querySelector('[name="solarKind"]')?.value||current?.solarKind||"general";
  const schema=window.CPQ_MA006A_SOLAR_FIELDS?.templates?.[kind];
  const fields=schema?.essential||[];
  const entered=fields.filter(([key])=>String(form.querySelector('[name="solar_'+key+'"]')?.value??"").trim()!=="").length;
@@ -106,7 +130,13 @@ function mount(editor,database){
    const hint=node("div","ma6a-wizard-autofill");hint.id="catalog-wizard-autofill";basic.appendChild(hint);
   }
  }
- move(form,["familyName","model","sku","capacity","variantName","manufacturerId"],basicGrid);
+ if(editor.mode==="product-new"){
+   const chooser=node("div","ma6-field ma6a-group-select",
+   '<label for="catalog-wizard-family">Product Group *</label><select name="wizardFamilyId" id="catalog-wizard-family" required></select>'+
+   '<small id="catalog-wizard-group-help" class="ma6a-group-help"></small>');
+   basicGrid.appendChild(chooser);
+  }
+  move(form,["familyName","model","sku","capacity","variantName","manufacturerId"],basicGrid);
  basic.appendChild(basicGrid);
  if(editor.mode!=="product-new")basic.appendChild(node("div","ma6a-wizard-tip",
   'Adding or updating a manufacturer model inside <b>'+E(db.families.find(f=>f.id===editor.familyId)?.name||"the selected family")+'</b>.'));
@@ -127,11 +157,15 @@ function mount(editor,database){
   }
   basic.appendChild(adv);
   updateCategory(form,form.querySelector('[name="solarKind"]')?.value||"pv-module");
+  refreshGroupOptions(form,form.querySelector('[name="solarKind"]')?.value||"pv-module");
  }
  if(editor.mode==="variant-edit"){
   const st=formField(form,"variantStatus");if(st){
-   const adv=node("details","ma6a-editor-details",'<summary>Current model approval status (advanced)</summary>');
-   adv.appendChild(st);basic.appendChild(adv);
+   const oldStatus=db.variants.find(v=>v.id===editor.variantId)?.status||"Draft";
+   const input=st.querySelector('[name="variantStatus"]');if(input)input.disabled=true;
+   st.hidden=true;basic.appendChild(st);
+   basic.appendChild(node("div","ma6a-wizard-tip",'Current status: <b>'+E(oldStatus)+
+   '</b>. Only authorized review and approval can activate a model.'));
   }
  }else{
   const statusField=formField(form,"variantStatus");
@@ -149,7 +183,7 @@ function mount(editor,database){
  const dims=original.find(el=>el.tagName==="DETAILS"&&String(el.querySelector("summary")?.textContent||"").includes("Physical dimensions"));
  if(dims){dims.open=false;spec.appendChild(dims);}
  const otherTech=original.find(el=>el.tagName==="DETAILS"&&String(el.querySelector("summary")?.textContent||"").includes("Documents & other technical"));
- if(otherTech){otherTech.querySelector("summary").textContent="Additional technical specifications, drawings & notes";spec.appendChild(otherTech);}
+ if(otherTech){otherTech.open=false;otherTech.querySelector("summary").textContent="Additional technical specifications, drawings & notes";spec.appendChild(otherTech);}
  spec.appendChild(node("div","ma6a-wizard-tip",
  'A draft can be saved with missing details. Technical review is required before the model is approved for commercial use.'));
  price.appendChild(sectionHeading("3. Price & Save","Optional commercial information may be completed later by an authorized employee."));
@@ -159,10 +193,10 @@ function mount(editor,database){
   if(grid){move(form,["sell","availability","datasheet"],quick);}
   price.appendChild(quick);
   commercial.querySelector("summary").textContent="More price and sourcing fields (commercial team)";
-  price.appendChild(commercial);
+  commercial.open=false;price.appendChild(commercial);
  }
  const parts=original.find(el=>el.tagName==="DETAILS"&&String(el.querySelector("summary")?.textContent||"").includes("Parts & accessories"));
- if(parts)price.appendChild(parts);
+ if(parts){parts.open=false;price.appendChild(parts);}
  const review=node("div","ma6a-wizard-review");review.id="catalog-wizard-review";price.appendChild(review);
  price.appendChild(node("div","ma6a-wizard-tip",
   'Choose <b>Save as Draft</b>. Datasheets, compliance and commercial approvals can be completed later.'));
@@ -202,8 +236,10 @@ function init(){
   if(action.dataset.wizardMaker==="save")makeManufacturer($("catalog-editor-form"));
  });
  $("catalog-editor-form").addEventListener("change",e=>{
-  if(current?.mode!=="product-new"||e.target.name!=="solarKind")return;
-  updateCategory($("catalog-editor-form"),e.target.value);
+  if(current?.mode!=="product-new")return;
+  const form=$("catalog-editor-form");
+  if(e.target.name==="wizardFamilyId"){updateGroupMode(form);return;}
+  if(e.target.name==="solarKind"){updateCategory(form,e.target.value);refreshGroupOptions(form,e.target.value);}
  });
  $("catalog-editor-form").addEventListener("submit",e=>{
   if(!current||step===2)return;
