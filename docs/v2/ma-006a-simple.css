@@ -50,3 +50,5 @@
  .ma6a-wizard-footer .ma6a-wizard-spacer{display:none}
  .ma6a-editor-fields{max-height:calc(96vh - 195px);padding:13px}
 }
+
+.ma6a-group-select{grid-column:span 2}.ma6a-group-help{display:block;font-size:11px;color:#6c8799;line-height:1.6;margin-top:5px}.ma6a-wizard-advanced[hidden],.ma6a-wizard-grid .ma6-field[hidden]{display:none!important}.ma6a-compact-history{padding:10px 0;border-bottom:1px solid #e1ebf2}.ma6a-compact-history p{margin:5px 0 0;font-size:12px;color:#6c8799}@media(max-width:750px){.ma6a-group-select{grid-column:auto}}
