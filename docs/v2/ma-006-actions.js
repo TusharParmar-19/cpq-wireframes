@@ -219,16 +219,27 @@ $("builder-body").addEventListener("input",e=>{
   if(t.dataset.field&&["title","validUntil","currency","payment","delivery","warranty","exclusions","notes"].includes(t.dataset.field))
   updateBuilderField(t.dataset.field,t.value);
 });
-function toggleQuotationList(){
- if(state.mode!=="register")return;
- state.listExpanded=!state.listExpanded;
+function openQuotationTable(){
+ if(state.mode==="builder"){
+  const b=state.builder;
+  const dirty=!!b&&(JSON.stringify(b.quote)!==b.initialQuoteSnapshot||
+   (b.isNew&&(String(b.quote.title||"").trim()||b.quote.lines.length)));
+  if(dirty&&!window.confirm("Open the full quotation table?\\n\\nUnsaved changes in this quotation editor will be discarded. Select Cancel to stay here and save your draft first."))return;
+  state.builder=null;state.mode="register";
+ }
+ state.listExpanded=true;
  render();
+ $("quote-register").scrollIntoView({block:"start",behavior:"auto"});
+}
+function toggleQuotationList(){
+ if(state.mode==="builder"||!state.listExpanded){openQuotationTable();return;}
+ state.listExpanded=false;render();
  $("quote-register").scrollIntoView({block:"start",behavior:"auto"});
 }
 $("quote-view-toggle").addEventListener("click",toggleQuotationList);
 $("quote-expand-toggle").addEventListener("click",toggleQuotationList);
 $("new-quote").addEventListener("click",()=>newBuilder());
-$("builder-close").addEventListener("click",()=>{state.mode="register";state.builder=null;render();$("quote-register").scrollIntoView({block:"start",behavior:"auto"});});
+$("builder-close").addEventListener("click",openQuotationTable);
 $("builder-prev").addEventListener("click",()=>{if(state.builder){state.builder.step=Math.max(0,state.builder.step-1);renderBuilder();}});
 $("builder-next").addEventListener("click",()=>{if(state.builder){state.builder.step=Math.min(3,state.builder.step+1);renderBuilder();}});
 $("builder-save").addEventListener("click",saveBuilder);
