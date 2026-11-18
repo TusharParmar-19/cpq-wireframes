@@ -74,7 +74,7 @@ function setHub(hub){
  if(hub!=="configurations")renderCatalog();
 }
 function renderStats(){
- const text=[["Product Families",db.families.length],["Models",db.variants.length],["Manufacturers",db.manufacturers.length],["Parts",db.parts.length]];
+ const text=[["Product Groups",db.families.length],["Models",db.variants.length],["Manufacturers",db.manufacturers.length],["Parts",db.parts.length]];
  $("catalog-stats").innerHTML='<div class="ma6a-compact-stats">'+text.map(([name,n])=>
  '<span><b>'+n+'</b> '+esc(name)+'</span>').join("")+'</div>';
 }
@@ -99,10 +99,10 @@ function renderFamilyHeader(f){
  $("catalog-family-header").innerHTML='<div class="ma6-detail-top"><div><small>'+esc(f.id)+' · '+esc(f.category)+'</small><h2>'+esc(f.name)+'</h2>'+
  '<p>'+esc(f.rating)+' · '+esc(f.type==="config"?"Configurable product":f.type==="service"?"Service":"Standard product")+' · Unit '+esc(f.unit)+'</p></div>'+
  '<div class="ma6-detail-actions">'+badge(f.status)+
- '<button type="button" class="btn" data-catalog-action="edit-family">Edit Product Family</button>'+
- '<button type="button" class="btn primary" data-catalog-action="add-variant">+ Add Manufacturer Variant</button></div></div>'+
- '<div class="ma6-quote-meta"><span class="ma6-tag">'+siblings(f.id).length+' model(s)</span><span class="ma6-tag">One family / multiple manufacturers</span>'+
- '<span class="ma6-tag">Master records</span></div>'+
+ '<button type="button" class="btn" data-catalog-action="edit-family">Edit Product Group</button>'+
+ '<button type="button" class="btn primary" data-catalog-action="add-variant">+ Add Another Model</button></div></div>'+
+ '<div class="ma6-quote-meta"><span class="ma6-tag">'+siblings(f.id).length+' model(s)</span><span class="ma6-tag">One group / multiple manufacturers</span>'+
+ '<span class="ma6-tag">Catalog master</span></div>'+
  '<div class="ma6-banner">'+esc(f.description)+'</div>';
 }
 function variantCard(v){
@@ -363,7 +363,7 @@ function editorMarkup(){
 }
 function openEditor(mode,ids={}){
  state.editor={mode,solarKind:mode==="product-new"?"pv-module":"general",...ids};
- const titles={"product-new":"Add New Product & First Variant","family-edit":"Edit Product Family","variant-new":"Add Manufacturer / Size Variant","variant-edit":"Edit Manufacturer Variant","manufacturer-new":"Add Manufacturer","manufacturer-edit":"Edit Manufacturer","part-new":"Add Part / Accessory","part-edit":"Edit Part / Accessory"};
+ const titles={"product-new":"Add Product","family-edit":"Edit Product Group","variant-new":"Add Another Model","variant-edit":"Edit Model","manufacturer-new":"Add Manufacturer","manufacturer-edit":"Edit Manufacturer","part-new":"Add Part / Accessory","part-edit":"Edit Part / Accessory"};
  $("catalog-editor-title").textContent=titles[mode]||"Edit Catalog";
  $("catalog-editor-subtitle").textContent="Fictional master-data fields · Demo save only · Not production authorization";
  $("catalog-editor-body").innerHTML=editorMarkup();$("catalog-editor-error").hidden=true;
@@ -414,12 +414,25 @@ function getVariantForm(f,familyType,existing=null,solarKind="general"){
   return {partId:id,qty,role:trim(f,"role_"+id)==="Optional"?"Optional":"Required"};
  });
  const cost=positive(f,"cost"),sell=positive(f,"sell");
+  const solar=solarDataFromForm(f,solarKind,existing?.solar||{});
+  if(solarKind==="pv-module"){
+   for(const key of ["pmaxWp","vocV","vmpV","iscA","impA"])
+    if(solar[key]!==undefined&&solar[key]<=0)throw Error("PV electrical ratings must be positive when entered.");
+   if(solar.vocV!==undefined&&solar.vmpV!==undefined&&solar.vmpV>=solar.vocV)
+    throw Error("Vmp must be lower than Voc. Check the manufacturer's datasheet.");
+   if(solar.iscA!==undefined&&solar.impA!==undefined&&solar.impA>solar.iscA)
+    throw Error("Imp cannot exceed Isc. Check the manufacturer's datasheet.");
+   if(solar.efficiencyPct!==undefined&&(solar.efficiencyPct<=0||solar.efficiencyPct>100))
+    throw Error("Module efficiency must be greater than 0% and no more than 100%.");
+  }
+  if(solarKind==="battery"&&solar.usableKwh!==undefined&&solar.nominalKwh!==undefined&&solar.usableKwh>solar.nominalKwh)
+   throw Error("Usable battery energy cannot exceed nominal energy.");
  const from=trim(f,"priceFrom"),to=trim(f,"priceTo");
  if(from&&to&&to<from)throw Error("Price effective-until cannot precede the effective-from date.");
  return {sku:sku.slice(0,80),manufacturerId,model:model.slice(0,120),variant:trim(f,"variantName")||model,
   status:trim(f,"variantStatus")||"Draft",capacity:trim(f,"capacity"),voltage:trim(f,"voltage"),
   mounting:trim(f,"mounting"),material:trim(f,"material"),enclosure:trim(f,"enclosure"),
-  dimensions:dims,technical:techParse(trim(f,"technical")),solar:solarDataFromForm(f,solarKind,existing?.solar||{}),components,
+  dimensions:dims,technical:techParse(trim(f,"technical")),solar,components,
   price:{currency:trim(f,"currency")||"INR",list:trim(f,"priceList")||"Demo Base Price List",
    cost:cost===""?0:cost,sell:sell===""?0:sell,from,to,
    availability:trim(f,"availability")||"Unknown",supplierRef:trim(f,"supplierRef"),
@@ -432,21 +445,29 @@ function saveEditor(event){
  const fd=new FormData($("catalog-editor-form"));
  try{
   if(e.mode==="product-new"){
-   const f=getFamilyForm(fd);f.status="Draft";
-   const v=getVariantForm(fd,f.type,null,f.solarKind);v.status="Draft";
-   const fam={id:idNext("FAM-",db.families),...f};db.families.unshift(fam);
+   const chosen=trim(fd,"wizardFamilyId");
+   let fam=family(chosen),newFamily=null;
+   if(!fam){
+    if(chosen!=="__new__")throw Error("Choose an existing product group or Create a new product group.");
+    const f=getFamilyForm(fd);f.status="Draft";
+    if(db.families.some(x=>x.name.trim().toLowerCase()===f.name.trim().toLowerCase()&&(x.solarKind||"general")===(f.solarKind||"general")))
+     throw Error("Product group already exists. Choose that group instead of making a duplicate.");
+    newFamily={id:idNext("FAM-",db.families),...f};fam=newFamily;
+   }
+   const v=getVariantForm(fd,fam.type,null,fam.solarKind||"general");v.status="Draft";
+   if(newFamily)db.families.unshift(newFamily);
    const vari={id:idNext("VAR-",db.variants),familyId:fam.id,...v};db.variants.unshift(vari);
    state.family=fam.id;state.variant=vari.id;state.tab="variants";
    state.search="";state.category="all";state.manufacturer="all";state.status="all";state.hub="products";
   }else if(e.mode==="family-edit"){
    const f=family(e.familyId);if(!f)throw Error("Family not found.");
-   Object.assign(f,getFamilyForm(fd));state.family=f.id;
+   const data=getFamilyForm(fd);data.status=f.status;Object.assign(f,data);state.family=f.id;
   }else if(e.mode==="variant-new"||e.mode==="variant-edit"){
    const fam=family(e.familyId);if(!fam)throw Error("Select a valid product family.");
    const orig=e.mode==="variant-edit"?variant(e.variantId):null;
    const input=getVariantForm(fd,fam.type,orig,fam.solarKind||"general");
    if(!orig)input.status="Draft";
-   if(orig)Object.assign(orig,input);
+   if(orig){input.status=orig.status;Object.assign(orig,input);}
    else{
     const v={id:idNext("VAR-",db.variants),familyId:fam.id,...input};db.variants.unshift(v);state.variant=v.id;
    }
@@ -456,8 +477,8 @@ function saveEditor(event){
    const name=trim(fd,"name");if(!name)throw Error("Manufacturer name is required.");
    const input={name:name.slice(0,150),brand:trim(fd,"brand"),country:trim(fd,"country"),
     website:trim(fd,"website"),status:trim(fd,"status")||"Active",notes:trim(fd,"notes")};
-   if(e.mode==="manufacturer-edit"){const m=maker(e.manufacturerId);if(!m)throw Error("Manufacturer not found.");Object.assign(m,input);}
-   else db.manufacturers.push({id:idNext("MFG-",db.manufacturers),...input});
+   if(e.mode==="manufacturer-edit"){const m=maker(e.manufacturerId);if(!m)throw Error("Manufacturer not found.");input.status=m.status;Object.assign(m,input);}
+   else db.manufacturers.push({id:idNext("MFG-",db.manufacturers),...input,status:"Draft"});
    state.hub="manufacturers";
   }else if(e.mode==="part-new"||e.mode==="part-edit"){
    const code=trim(fd,"code"),name=trim(fd,"name");if(!code||!name)throw Error("Part code and name are required.");
@@ -468,7 +489,7 @@ function saveEditor(event){
     manufacturerId:trim(fd,"manufacturerId"),unit:trim(fd,"unit")||"Nos",
     status:trim(fd,"status")||"Draft",spec:trim(fd,"spec"),notes:trim(fd,"notes"),
     sellPrice:price===""?0:price};
-   if(e.mode==="part-edit"){const p=part(e.partId);if(!p)throw Error("Part not found.");Object.assign(p,input);}
+   if(e.mode==="part-edit"){const p=part(e.partId);if(!p)throw Error("Part not found.");input.status=p.status;Object.assign(p,input);}
    else db.parts.push({id:idNext("PART-",db.parts),...input});
    state.hub="parts";
   }
