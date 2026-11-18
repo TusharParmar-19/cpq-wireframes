@@ -81,15 +81,37 @@ function solarWarnings(c){
 function review(c){
  const errors=[];
  if(!String(c.name||"").trim())errors.push("Enter a configuration name");
- if(c.items.length===0)errors.push("Add at least one product or service");
+ if(!c.items.length)errors.push("Add at least one product or service");
  c.items.forEach((line,i)=>lineErrors(line).forEach(e=>errors.push("Item "+(i+1)+": "+e)));
  const validCustomer=customer(c.customerId);
- if(c.buyerId&&(!validCustomer||!master.companies.some(x=>x.id===c.buyerId&&x.customerId===c.customerId)))errors.push("Buyer must belong to the selected customer");
- if(c.opportunityId&&(!validCustomer||!opportunity(c.opportunityId)||opportunity(c.opportunityId).customerId!==c.customerId||opportunity(c.opportunityId).buyerId!==c.buyerId))errors.push("Opportunity must match the selected customer and buyer");
- if(c.branchId&&(!c.companyId||!entity(c.companyId)?.branches.some(x=>x.id===c.branchId)))errors.push("Internal branch must belong to the selected selling company");
- if(c.customerId&&c.companyId&&c.branchId&&!validCustomer?.links.some(l=>l.companyId===c.companyId&&l.branchId===c.branchId))errors.push("Selected internal company/branch is not linked to this customer");
- if(c.ownerId&&!staff.some(u=>u.id===c.ownerId&&u.status==="Active"&&(u.assignments||[]).some(a=>a.companyId===c.companyId&&a.branches.includes(c.branchId))))errors.push("Owner must be an active employee assigned to that internal branch");
- return {ok:errors.length===0,errors,warnings:solarWarnings(c),solar:solarMetrics(c)};
+ if(c.kind==="Customer configuration"){
+  if(!validCustomer)errors.push("Choose a customer for the project");
+  if(!c.buyerId)errors.push("Choose the exact buyer/legal company");
+  if(!c.companyId)errors.push("Choose our selling company");
+  if(!c.branchId)errors.push("Choose our selling branch");
+  if(!c.ownerId)errors.push("Assign a responsible employee");
+ }
+ if(c.buyerId&&(!validCustomer||!master.companies.some(x=>x.id===c.buyerId&&x.customerId===c.customerId)))
+  errors.push("Buyer must belong to the selected customer");
+ for(const [key,label,values] of [["contactId","Contact",master.contacts],["siteId","Site",master.sites],["projectId","Project",master.projects]])
+  if(c[key]&&!values.some(x=>x.id===c[key]&&x.customerId===c.customerId&&x.companyId===c.buyerId))
+   errors.push(label+" must belong to this customer and buyer");
+ if(c.opportunityId&&(!validCustomer||!opportunity(c.opportunityId)||opportunity(c.opportunityId).customerId!==c.customerId||opportunity(c.opportunityId).buyerId!==c.buyerId))
+  errors.push("Enquiry must match the selected customer and buyer");
+ if(c.branchId&&(!c.companyId||!entity(c.companyId)?.branches.some(x=>x.id===c.branchId)))
+  errors.push("Our branch must belong to the selected selling company");
+ if(c.customerId&&c.companyId&&c.branchId&&!validCustomer?.links.some(l=>l.companyId===c.companyId&&l.branchId===c.branchId))
+  errors.push("Internal company/branch must be linked to this customer");
+ if(c.ownerId&&!staff.some(u=>u.id===c.ownerId&&u.status==="Active"&&(u.assignments||[]).some(a=>a.companyId===c.companyId&&a.branches.includes(c.branchId))))
+  errors.push("Owner must be active and assigned to that branch");
+ const m=solarMetrics(c);
+ if(c.solutionType==="solar"){
+  if(!(Number(c.solar?.targetDcKwp)>0))errors.push("Enter target DC capacity (kWp)");
+  if(!(m.modules>0&&m.dcKwp>0))errors.push("Select active solar modules and quantity");
+  if(!(m.acKw>0))errors.push("Select an active inverter and quantity");
+  if(c.solar?.batteriesNeeded==="Yes"&&!(m.batteryKwh>0))errors.push("Storage requested: choose a battery model");
+ }
+ return {ok:errors.length===0,errors,warnings:solarWarnings(c),solar:m};
 }
 const status=c=>review(c).ok?"Demo check passed":"Needs changes";
 const badge=c=>review(c).ok?'<span class="ma6a-chip-ok">Demo check passed</span>':'<span class="ma6a-chip-bad">Needs changes</span>';
@@ -274,7 +296,7 @@ function renderContext(c){
 }
 function renderProduct(c,b){
  const p=itemProduct(b.productId)||itemProduct("VAR-009")||products[0];
- const catalogChoices=catalog().variants.filter(v=>v.status!=="Discontinued").map(v=>itemProduct(v.id));
+ const catalogChoices=catalog().variants.filter(v=>v.status==="Active").map(v=>itemProduct(v.id));
  const choices=[...catalogChoices,...products];
  const filtered=choices.filter(x=>b.productGroup==="all"||(b.productGroup==="solar"&&x.variant&&x.solarKind!=="general")||
  (b.productGroup==="other"&&(!x.variant||x.solarKind==="general"))).filter(x=>
@@ -291,7 +313,7 @@ function renderProduct(c,b){
  '<strong>'+esc(x.variant?x.model:x.name)+'</strong><small>'+
  esc(x.variant?[x.manufacturer,x.capacity,x.sku].filter(Boolean).join(" · "):x.id+" · "+x.unit)+'</small></div>'+
  '<span class="ma6-tag">Select</span></button>').join(""):
- '<div class="ma6a-empty-note">No matching product models. Try another search or category.</div>')+'</div></div>'+
+ '<div class="ma6a-empty-note">No approved matching models. Draft products must pass review before use.</div>')+'</div></div>'+
  '<div class="ma6a-spec-editor"><h3>'+esc(v?p.model:p.name)+'</h3>'+
  (v?'<div class="ma6-kvs">'+kv("Manufacturer",p.manufacturer)+kv("Rating",p.capacity)+kv("SKU",p.sku)+
  kv("Dimensions",d.width&&d.height&&d.depth?[d.width,d.height,d.depth].join(" × ")+" "+(d.unit||"mm"):"Not applicable")+'</div>'+
@@ -378,19 +400,20 @@ function closeDialog(){
 }
 function save(){
  const b=state.builder;if(!b)return;const c=b.value,r=review(c);
- const blockers=r.errors.filter(x=>x!=="Add at least one product or service");
- if(blockers.length){dialog("Correct these details before saving",blockers.map(esc).join("<p>")+"</p>");return;}
+ if(!String(c.name||"").trim()){dialog("Name needed","Enter a configuration name to save this draft.");return;}
+ c.updated=new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})+" (demo)";
  if(b.isNew){
   const next=Math.max(6,...records.map(x=>Number(x.id.split("-").at(-1))||0))+1;
   c.id="CF-2026-"+String(next).padStart(3,"0");
   records.unshift(clone(c));
  }else{
   const idx=records.findIndex(x=>x.id===c.id);if(idx<0){dialog("Not found","Sample configuration is no longer available.");return;}
-  const old=records[idx];c.revision="C"+(Number(old.revision.slice(1))||0)+1;
+  const old=records[idx],previous=clone(old);delete previous.history;
+  c.history=[...(old.history||[]),previous];
+  c.revision="C"+((Number(old.revision.slice(1))||0)+1);
   records[idx]=clone(c);
  }
- c.updated="07 Nov 2026 (demo)";
- const saved=record(c.id);if(saved)saved.updated=c.updated;
+
  state.selected=c.id;state.tab="overview";state.mode="register";state.builder=null;
  state.company="all";state.branch="all";state.status="all";state.search="";
  render();toast("Configuration "+c.id+" saved (demo only)");
@@ -415,8 +438,23 @@ function updateContext(field,value){
   b.productGroup=value==="solar"?"solar":"other";setProduct(b,value==="solar"?"VAR-009":products[0].id);
   renderBuilder();return;
  }
- if(field==="customerId"){c.customerId=value;c.buyerId="";c.contactId="";c.siteId="";c.projectId="";c.opportunityId="";c.companyId="";c.branchId="";c.ownerId="";renderBuilder();return;}
+ if(field==="customerId"){
+  c.customerId=value;c.buyerId="";c.contactId="";c.siteId="";c.projectId="";c.opportunityId="";c.companyId="";c.branchId="";c.ownerId="";
+  const buyers=master.companies.filter(x=>x.customerId===value);
+  if(buyers.length===1)c.buyerId=buyers[0].id;
+  const links=customer(value)?.links||[],companies=[...new Set(links.map(x=>x.companyId))];
+  if(companies.length===1){
+   c.companyId=companies[0];
+   const branches=[...new Set(links.filter(x=>x.companyId===c.companyId).map(x=>x.branchId))];
+   if(branches.length===1)c.branchId=branches[0];
+  }
+  renderBuilder();return;
+ }
  if(field==="buyerId"){c.buyerId=value;c.contactId="";c.siteId="";c.projectId="";c.opportunityId="";renderBuilder();return;}
+ if(field==="kind"&&value==="Reusable template"){
+  c.kind=value;c.customerId="";c.buyerId="";c.contactId="";c.siteId="";c.projectId="";c.opportunityId="";
+  renderBuilder();return;
+ }
  if(field==="companyId"){c.companyId=value;c.branchId="";c.ownerId="";renderBuilder();return;}
  if(field==="branchId"){c.branchId=value;c.ownerId="";renderBuilder();return;}
  if(field.startsWith("opt-")){b.options[field.slice(4)]=value;renderBuilder();return;}
