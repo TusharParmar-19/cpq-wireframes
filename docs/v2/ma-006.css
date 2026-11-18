@@ -164,3 +164,20 @@
 @media(max-width:1240px){.ma6-workspace{grid-template-columns:285px minmax(0,1fr)}.ma6-tabs button{padding:13px 10px}.ma6-step-label{font-size:10px}.ma6-checklist{grid-template-columns:1fr}}
 @media(max-width:980px){.ma6-workspace{grid-template-columns:1fr}.ma6-list-panel{position:static;max-height:none}.ma6-quote-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));overflow:visible}.ma6-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.ma6-stepper{overflow-x:auto;display:flex}.ma6-stepper button{flex:1 0 150px}}
 @media(max-width:700px){.ma6-page h1{font-size:25px}.ma6-explainer{grid-template-columns:1fr}.ma6-scope-grid,.ma6-field-grid,.ma6-config-grid,.ma6-price-controls,.ma6-kvs{grid-template-columns:1fr}.ma6-field.full,.ma6-form-section{grid-column:auto}.ma6-quote-list{grid-template-columns:1fr}.ma6-detail-header,.ma6-tab-body,.ma6-builder-content{padding:15px}.ma6-builder-head,.ma6-builder-footer{padding:15px}.ma6-dialog-head,.ma6-dialog-body,.ma6-dialog-foot{padding-left:16px;padding-right:16px}}
+
+/* MA-006: employee-first quotation workflow */
+.ma6a-quote-add{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:16px}
+.ma6a-quote-catalog-picker{border:1px solid #d9e8f2;background:#f9fcfe;padding:15px;margin:12px 0;border-radius:10px}
+.ma6a-quote-catalog-picker .ma6-config-grid{margin-top:12px}
+.ma6a-quote-catalog-picker .ma6-product-cards{max-height:390px;overflow-y:auto}
+.ma6a-quote-more{border:1px solid #dce8f1;background:#fbfdff;border-radius:10px;margin:15px 0;padding:5px 14px 12px}
+.ma6a-quote-more>summary{padding:12px 0;font-size:12px;font-weight:800;color:#315d7b;cursor:pointer}
+.ma6a-quote-more .ma6-field-grid{padding:10px 0}
+.ma6a-quote-review-status{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:15px 0}
+.ma6a-quote-review-status>.ma6-check-item{border:1px solid #e1eaf0;background:#f8fbfd;border-radius:9px;min-height:75px}
+.ma6a-quote-review-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:15px 0}
+.ma6-builder .ma6-note{margin-top:12px}
+.ma6-builder .ma6-mini-heading{font-weight:800}
+#quote-builder:not([hidden]){margin-top:12px}
+#quote-explainer[hidden],#quote-stats[hidden],#quote-scope[hidden]{display:none!important}
+@media(max-width:800px){.ma6a-quote-review-status{grid-template-columns:1fr}.ma6a-quote-catalog-picker{padding:9px}.ma6a-quote-add{align-items:start}}
