@@ -409,8 +409,11 @@ const stepContent=[contextBuilder,boqBuilder,priceTermsBuilder,reviewBuilder];
 function renderBuilder(){
  if(state.mode!=="builder"||!state.builder)return;
  const b=state.builder,q=b.quote;
+ if(!b.initialQuoteSnapshot)b.initialQuoteSnapshot=JSON.stringify(q);
  $("quote-register").hidden=true;$("quote-builder").hidden=false;
- $("quote-view-toggle").hidden=true;
+ $("quote-view-toggle").hidden=false;
+ $("quote-view-toggle").textContent="View All Quotations (Table)";
+ $("quote-view-toggle").setAttribute("aria-pressed","false");
  $("quote-explainer").hidden=true;$("quote-stats").hidden=true;$("quote-scope").hidden=true;
  $("builder-title").textContent=(b.isNew?"New Draft Quotation":"Edit Draft "+q.id)+" · "+steps[b.step][0];
  $("builder-subtitle").textContent=(b.isNew?"New quote":"Existing "+q.rev)+" · Illustrative values · Browser session only";
@@ -430,11 +433,11 @@ function render(){
  $("quote-list").hidden=expanded;$("quote-expanded-table").hidden=!expanded;
  $("quote-details").hidden=expanded;
  $("quote-explainer").hidden=expanded;$("quote-stats").hidden=expanded;$("quote-scope").hidden=false;
- $("quote-view-toggle").textContent=expanded?"Return to Details":"View Full List";
+ $("quote-view-toggle").textContent=expanded?"Return to Quotation Details":"View All Quotations (Table)";
  $("quote-view-toggle").setAttribute("aria-pressed",String(expanded));
- $("quote-expand-toggle").textContent=expanded?"Show Details":"Expand List";
+ $("quote-expand-toggle").textContent=expanded?"Show Details":"Expand as Table";
  $("quote-expand-toggle").setAttribute("aria-pressed",String(expanded));
- $("quote-list-title").textContent=expanded?"All Quotations":"Quotation Register";
+ $("quote-list-title").textContent=expanded?"Quotation Table · All Quotes":"Quotation Register";
  $("quote-list-subtitle").textContent=expanded?"Full-width list · select View Details to open a quotation":"Select a quotation to inspect";
  renderRegister();
 }
