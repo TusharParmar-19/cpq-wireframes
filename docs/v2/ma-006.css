@@ -138,6 +138,10 @@
 .ma6-config-grid{display:grid;grid-template-columns:1.15fr 1fr;gap:15px;align-items:start}
 .ma6-product-cards{display:flex;flex-direction:column;gap:10px}
 .ma6-product-card{border:1px solid #e0ebf3;border-radius:9px;padding:14px;display:flex;justify-content:space-between;gap:12px;align-items:start;cursor:pointer;background:#fff;text-align:left}
+.ma6-product-card[hidden],#quote-add-no-matches[hidden]{display:none!important}
+.ma6a-picker-results-count{font-size:11px;color:#6f8ca2;margin:6px 0 0}
+.ma6a-quote-select-help{font-size:12px;line-height:1.75;color:#64829a;margin:2px 0 4px}
+
 .ma6-product-card:hover{border-color:#8ebedf;background:#f7fbfe}
 .ma6-product-card.selected{background:#eff8ff;border-color:#8cbfe1;box-shadow:inset 3px 0 #3b8dbd}
 .ma6-product-card strong{display:block;color:#225372;font-size:12px;margin:6px 0}
