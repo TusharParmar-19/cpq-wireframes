@@ -16,7 +16,18 @@ const employee=id=>staff.find(x=>x.id===id);
 const entity=id=>org.find(x=>x.id===id);
 const branch=id=>org.flatMap(x=>x.branches.map(b=>({...b,companyId:x.id}))).find(x=>x.id===id);
 const opportunity=id=>enquiries.find(x=>x.id===id);
-const product=id=>db.products.find(x=>x.id===id);
+const product=id=>{
+ const old=db.products.find(x=>x.id===id);if(old)return old;
+ const cat=window.CPQ_MA006A_CATALOG,v=cat?.variants.find(x=>x.id===id);
+ if(!v)return null;
+ const fam=cat.families.find(f=>f.id===v.familyId),maker=cat.manufacturers.find(m=>m.id===v.manufacturerId);
+ if(!fam)return null;
+ const dims=v.dimensions||{},size=[dims.length,dims.width,dims.height].filter(x=>x!==undefined&&x!=="").join(" × ");
+ return {id:v.id,name:fam.name+" — "+v.model,unit:fam.unit||"Nos",type:"standard",
+  basePrice:Number(v.price?.sell)||0,status:v.status,sku:v.sku,model:v.model,manufacturer:maker?.brand||maker?.name||"",
+  rating:v.capacity||"",catalogSpec:[maker?.brand||maker?.name,v.sku,v.capacity,size?size+" "+(dims.unit||"mm"):""].filter(Boolean).join(" · "),
+  sourceVariantId:v.id};
+};
 const text=(x,blank="Not supplied")=>x?esc(x):esc(blank);
 const money=n=>"\u20b9"+Number(n||0).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});
 const numeric=n=>Math.max(0,Number.isFinite(+n)?+n:0);
@@ -207,7 +218,7 @@ function renderRegister(){
  if(!qs.some(q=>q.id===state.selected))state.selected=qs[0]?.id||"";
  renderList(qs);detail();
 }
-const steps=[["Customer & Context","Select buyer and selling company"],["Configure","Choose technical attributes"],["BOQ & Pricing","Review lines and sample totals"],["Commercial Terms","Validity and offer conditions"],["Review & Handoff","Inspect and save a draft"]];
+const steps=[["Customer & Project","Customer and selling scope"],["Products & BOQ","Imported items and sample rates"],["Price & Terms","Totals and offer conditions"],["Review & Save","Draft checks and preview"]];
 function formSelect(id,label,values,current,placeholder="Select...",required=false){
  return '<div class="ma6-field"><label for="b-'+esc(id)+'">'+esc(label)+(required?' *':'')+'</label><select id="b-'+esc(id)+'" data-field="'+esc(id)+'"><option value="">'+esc(placeholder)+'</option>'+opts(values,current)+'</select></div>';
 }
@@ -237,65 +248,107 @@ function contextBuilder(q){
  formInput("title","Quotation title",q.title,"text",true,true)+'</div>'+
  note('Selecting a group customer requires an exact buyer company. Contact, site and project choices must refer to that buyer; a customer’s “primary buyer” is only a default, not an authorized substitution. The selling entity and branch must be linked to this customer.');
 }
-function configureBuilder(q,b){
- const prod=product(b.productId)||db.products[0];
- const options=prod.type==="config"?Object.entries(prod.options).map(([key,spec])=>
- formSelect("config-"+key,spec.label,spec.choices.map(([val])=>[val,val]),b.options?.[key]||prod.defaults[key],"Choose option",true)).join(""):"";
- const validation=configCheck(prod,b.options||{});
- return panel("2 · Product Configuration","Choose a configurable product, standard catalog item or service. Technical rules live in an authorized product master.")+
- '<div class="ma6-config-grid"><div><div class="ma6-mini-heading">Sample product catalog</div><div class="ma6-product-cards">'+db.products.map(p=>
- '<button type="button" data-product="'+esc(p.id)+'" class="ma6-product-card'+(p.id===prod.id?' selected':'')+'"><div>'+typeBadge(p.type)+'<strong>'+esc(p.name)+'</strong><small>'+esc(p.id)+' · '+esc(p.unit)+'</small></div><span class="ma6-tag">Select</span></button>').join("")+'</div></div>'+
- '<div class="ma6-config-form"><h3>'+esc(prod.name)+'</h3>'+
- (prod.type==="config"?'<div class="ma6-field-grid">'+options+'</div>':
- '<div class="ma6-disclaimer">This is a '+(prod.type==="standard"?'standard catalog item':'service/project item')+'. Select quantity and proceed; no product-option configuration is needed.</div>')+
- '<div class="ma6-field" style="margin-top:14px"><label for="b-config-qty">Quantity</label><input id="b-config-qty" type="number" min="1" step="1" data-config-qty value="'+esc(b.quantity)+'"></div>'+
- '<div class="ma6-validation'+(validation.ok?' ok':'')+'">'+esc(validation.message)+'</div>'+
- '<div class="ma6-config-price"><span>Illustrative configured unit rate</span><strong>'+money(configUnit(prod,b.options||{}))+'</strong></div>'+
- '<button class="btn primary" type="button" data-action="add-config-item" style="margin-top:13px">+ Add item to BOQ</button></div></div>'+
- '<div class="ma6-section-sub"><h4>Current BOQ lines ('+q.lines.length+')</h4></div>'+
- (q.lines.length?table(["Selected item","Type","Quantity","Configured / selected details"],q.lines.map(l=>'<tr><td>'+esc(l.description)+'</td><td>'+typeBadge(l.type)+'</td><td>'+esc(l.quantity)+'</td><td>'+text(l.type==="config"?lineConfig(l):"Standard selection / defined scope")+'</td></tr>')):blank("Choose a product and click Add item to BOQ."))+
- note('<b>Engineering rule example:</b> The demo warns about a sample 630A / Wall mounting combination only to demonstrate validation placement. It does not establish actual product safety or technical compatibility. Real rules/BOM must be maintained by an authorized product or technical manager.');
+function catalogPicker(q,b){
+ const choice=product(b.productId)||db.products[0];
+ const options=choice.type==="config"?Object.entries(choice.options).map(([key,spec])=>
+  formSelect("config-"+key,spec.label,spec.choices.map(([val])=>[val,val]),b.options?.[key]||choice.defaults[key],"Choose option",true)).join(""):"";
+ const source=window.CPQ_MA006A_CATALOG;
+ const solar=(source?.variants||[]).filter(v=>v.status==="Active").map(v=>product(v.id)).filter(Boolean);
+ const old=db.products.filter(p=>!q.projectTechnical||p.type==="service");
+ const all=[...solar,...old];
+ const matches=all.filter(p=>!b.catalogSearch||[p.name,p.sku,p.model,p.manufacturer,p.rating].join(" ").toLowerCase().includes(b.catalogSearch.toLowerCase()));
+ const validation=configCheck(choice,b.options||{});
+ return '<div class="ma6a-product-picker-toolbar"><div class="ma6-field">'+
+ '<label for="quote-add-search">Find a model or service</label><input type="search" id="quote-add-search" data-catalog-search value="'+esc(b.catalogSearch||"")+'" placeholder="Module, inverter, manufacturer, SKU..."></div></div>'+
+ '<div class="ma6-config-grid"><div><div class="ma6-product-cards">'+
+ (matches.length?matches.map(p=>'<button type="button" data-product="'+esc(p.id)+'" class="ma6-product-card'+(p.id===choice.id?' selected':'')+'">'+
+ '<div>'+typeBadge(p.type)+'<strong>'+esc(p.name)+'</strong>'+
+ '<small>'+esc(p.catalogSpec||p.id+" · "+p.unit)+'</small></div><span class="ma6-tag">Select</span></button>').join(""):
+ blank("No matching Active catalog models. Try another search."))+
+ '</div></div><div class="ma6-config-form"><h3>'+esc(choice.name)+'</h3>'+
+ (options?'<div class="ma6-field-grid">'+options+'</div>':
+ '<p class="muted">Exact catalog model or service. Its technical master is maintained in MA-006A.</p>')+
+ '<div class="ma6-field"><label for="b-config-qty">Quantity ('+esc(choice.unit||"Nos")+')</label>'+
+ '<input id="b-config-qty" type="number" min="1" step="1" data-config-qty value="'+esc(b.quantity)+'"></div>'+
+ (choice.status&&choice.status!=="Active"?'<div class="ma6-validation">This catalog model is a Draft and cannot be selected for a quotation.</div>':
+ '<div class="ma6-validation'+(validation.ok?' ok':'')+'">'+esc(validation.message)+'</div>')+
+ '<button class="btn primary" type="button" data-action="add-config-item">+ Add to BOQ</button></div></div>';
 }
-function pricingBuilder(q){
- const totalsHtml=financialRows(q);
- return panel("3 · BOQ & Pricing","Line quantities and illustration-only selling rates. Internal costs and margin controls are excluded from this public demo.")+
- (q.lines.length?table(["BOQ line / configuration","Qty","Unit","Unit selling rate (demo)","Extended",""],
- q.lines.map(l=>'<tr><td><strong>'+esc(l.description)+'</strong><small>'+esc(lineConfig(l))+'</small></td>'+
+function boqBuilder(q,b){
+ const source=q.sourceConfigId?
+ '<div class="ma6-note"><b>Imported configuration:</b> '+esc(q.sourceConfigName||q.sourceConfigId)+
+ ' · '+esc(q.sourceConfigId)+' / '+esc(q.sourceConfigRevision||"C0")+
+ '. These lines were already selected in MA-006A. Add or edit only what this quotation needs.</div>':
+ '<div class="ma6-note">Add catalog models or services directly, or begin with a saved technical configuration from MA-006A.</div>';
+ const lineTable=q.lines.length?table(["BOQ item / specification","Qty","Unit","Sample unit rate","Line total",""],
+ q.lines.map(l=>'<tr><td><strong>'+esc(l.description)+'</strong><small>'+esc(lineConfig(l))+'</small>'+
+ (l.pricingReview?'<small>Catalog rate requires approval</small>':'')+
+ (l.technicalReview?'<small>Technical variation needs review</small>':'')+'</td>'+
  '<td><input class="ma6-qty" type="number" min="1" step="1" data-line-qty="'+esc(l.id)+'" value="'+esc(l.quantity)+'" aria-label="Quantity '+esc(l.description)+'"></td>'+
  '<td>'+esc(l.unit)+'</td><td class="ma6-money"><input class="ma6-rate" type="number" min="0" step="0.01" data-line-rate="'+esc(l.id)+'" value="'+esc(l.unitPrice)+'" aria-label="Sample selling rate '+esc(l.description)+'"></td>'+
- '<td class="ma6-money">'+money(extended(l))+'</td><td><button type="button" class="btn" data-remove-line="'+esc(l.id)+'" aria-label="Remove '+esc(l.description)+'">Remove</button></td></tr>')):blank("No products selected. Go to Configure to add BOQ lines."))+
- '<div class="ma6-price-controls">'+formInput("discount","Sample discount %",q.discount,"number")+formInput("taxRate","Illustrative tax %",q.taxRate,"number")+'</div>'+
- totalsHtml+
- note('<b>Financial design rule:</b> Demo discount and tax values are not approved rates. Actual rates, product HSN/SAC, buyer/supplier location, line-level taxation, price override authority, costs and margins require commercial master data and approval policies. Editing a rate in this demo is not authorization.',true);
+ '<td class="ma6-money">'+money(extended(l))+'</td><td><button type="button" class="btn" data-remove-line="'+esc(l.id)+'" aria-label="Remove '+esc(l.description)+'">Remove</button></td></tr>')):
+ blank("No BOQ items yet. Add a product or import a configuration.");
+ return panel("2 · Products & BOQ","The selected configuration is already here. Check models, quantities and sample rates.")+
+ source+lineTable+
+ '<div class="ma6-section-sub ma6a-quote-add"><h4>'+q.lines.length+' BOQ item(s) · Subtotal '+money(totals(q).subtotal)+'</h4>'+
+ '<button type="button" class="btn'+(b.addPickerOpen?'':' primary')+'" data-action="toggle-add-product">'+
+ (b.addPickerOpen?'Close Product Picker':'+ Add Catalog Product')+'</button></div>'+
+ (b.addPickerOpen?'<div class="ma6a-quote-catalog-picker">'+catalogPicker(q,b)+'</div>':"")+
+ note('Catalog prices and taxes are not authorized. Price and technical exceptions require approval; new project-specific specifications do not silently alter Product Catalog.');
 }
-function termsBuilder(q){
- return panel("4 · Commercial Terms","Customer-facing terms are maintained per quote revision.")+
- '<div class="ma6-field-grid">'+formInput("validUntil","Validity date",q.validUntil,"text",false,true)+formInput("currency","Currency",q.currency,"text")+
- formArea("payment","Payment terms",q.payment)+formArea("delivery","Delivery / execution terms",q.delivery)+
+function isoDate(v){
+ if(/^\d{4}-\d{2}-\d{2}$/.test(String(v||"")))return v;
+ const date=new Date(v);return Number.isFinite(date.valueOf())?date.toISOString().slice(0,10):"";
+}
+function priceTermsBuilder(q){
+ return panel("3 · Price & Terms","Apply sample commercial assumptions, then set the terms to be offered to the customer.")+
+ '<div class="ma6-price-controls">'+formInput("discount","Sample discount %",q.discount,"number")+
+ formInput("taxRate","Illustrative tax %",q.taxRate,"number")+'</div>'+
+ financialRows(q)+
+ '<div class="ma6-section-sub"><h4>Customer-facing terms</h4></div>'+
+ '<div class="ma6-field-grid">'+formInput("validUntil","Valid until",isoDate(q.validUntil),"date",false,true)+
+ formInput("currency","Currency",q.currency,"text")+
+ '<div class="ma6-field full"><label for="quote-payment-preset">Payment terms template (optional)</label>'+
+ '<select id="quote-payment-preset" data-payment-preset><option value="">Select a sample template...</option>'+
+ '<option value="50% advance; 50% before dispatch">50% advance / 50% before dispatch</option>'+
+ '<option value="30% advance; 70% after completion">30% advance / 70% after completion</option>'+
+ '<option value="Net 30 days from invoice">Net 30 days</option></select></div>'+
+ formArea("payment","Payment terms",q.payment)+formArea("delivery","Delivery / execution terms",q.delivery)+'</div>'+
+ '<details class="ma6a-quote-more"><summary>Warranty, exclusions & internal notes</summary><div class="ma6-field-grid">'+
  formArea("warranty","Warranty / support",q.warranty)+formArea("exclusions","Exclusions",q.exclusions)+
- formArea("notes","Internal commercial notes (not printed by default)",q.notes)+'</div>'+
- note('Commercial terms, addresses and tax identity are captured as an issued-revision snapshot. Template selection, bank details, payment safeguards, freight and legal clauses will be administered separately.');
+ formArea("notes","Internal notes (not on PDF)",q.notes)+'</div></details>'+
+ note('These are demo values. Real HSN/SAC, applicable GST, customer jurisdiction, freight, price list and discount approvals must come from server-controlled commercial rules.',true);
 }
 function reviewBuilder(q){
- const rows=reviewChecks(q);
- const ready=Boolean(q.customerId&&q.buyerId&&q.companyId&&q.branchId&&q.ownerId&&q.title&&q.lines.length>0&&q.lines.every(l=>numeric(l.quantity)>0&&numeric(l.unitPrice)>=0&&(l.type!=="config"||configCheck(product(l.productId),l.options).ok)));
- return panel("5 · Review Draft & Handoff","Review the configuration, commercial assumptions and customer context. Saving is not issuing.")+
- '<div class="ma6-kvs">'+kv("Customer",customer(q.customerId)?.name)+kv("Buyer entity",buyer(q.buyerId)?.name)+
- kv("Our selling company / branch",(entity(q.companyId)?.name||"Not selected")+" / "+(branch(q.branchId)?.name||"Not selected"))+
- kv("Source opportunity",q.opportunityId||"Direct quotation")+kv("BOQ lines",String(q.lines.length))+kv("Sample total",money(totals(q).total))+'</div>'+
- '<div class="ma6-section-sub"><h4>Review checklist</h4>'+statusBadge(q.status)+'</div>'+
+ const rows=reviewChecks(q),ready=Boolean(q.customerId&&q.buyerId&&q.companyId&&q.branchId&&q.ownerId&&q.title&&q.lines.length>0&&q.lines.every(l=>numeric(l.quantity)>0&&numeric(l.unitPrice)>=0&&(l.type!=="config"||configCheck(product(l.productId),l.options).ok)));
+ const termsFinalized=Boolean(isoDate(q.validUntil))&&!/^\s*(to be agreed|to be confirmed|tbd)\s*$/i.test(q.payment||"")&&!!String(q.payment||"").trim()&&!/^\s*(to be agreed|to be confirmed|tbd)\s*$/i.test(q.delivery||"");
+ return panel("4 · Review & Save Draft","Saving a quote does not approve or send it to the customer.")+
+ '<div class="ma6-kvs">'+kv("Customer",customer(q.customerId)?.name)+kv("Buyer",buyer(q.buyerId)?.name)+
+ kv("Selling company / branch",(entity(q.companyId)?.name||"Not selected")+" / "+(branch(q.branchId)?.name||"Not selected"))+
+ kv("Source configuration",q.sourceConfigId?(q.sourceConfigId+" / "+(q.sourceConfigRevision||"C0")):"Direct quotation")+
+ kv("BOQ lines",String(q.lines.length))+kv("Demo total",money(totals(q).total))+'</div>'+
+ '<div class="ma6a-quote-review-status">'+
+ '<div class="ma6-check-item"><span class="ma6-check-icon">'+(ready?'✓':'!')+'</span><div><b>'+(ready?'Draft information present':'Draft needs information')+'</b>'+
+ '<small>'+(ready?'Customer, buyer and BOQ are structurally present.':'Review missing customer, buyer, product or quantities.')+'</small></div></div>'+
+ '<div class="ma6-check-item"><span class="ma6-check-icon">'+(termsFinalized?'✓':'!')+'</span><div><b>'+(termsFinalized?'Terms entered':'Commercial terms need confirmation')+'</b>'+
+ '<small>Validity, payment and execution conditions should be agreed before issue.</small></div></div>'+
+ '<div class="ma6-check-item"><span class="ma6-check-icon">!</span><div><b>Technical and commercial approval pending</b>'+
+ '<small>Engineering, catalog rates, discounts and tax policy are not approved by this demo.</small></div></div>'+
+ '<div class="ma6-check-item"><span class="ma6-check-icon">!</span><div><b>Issuing or sending disabled</b>'+
+ '<small>An approved, locked quotation revision is required in production.</small></div></div></div>'+
+ '<details class="ma6a-quote-more"><summary>Detailed review checklist ('+rows.length+')</summary>'+
  '<div class="ma6-checklist">'+rows.map(([k,passed,msg])=>
- '<div class="ma6-check-item"><span class="ma6-check-icon">'+(passed?"✓":"!")+'</span><div><b>'+esc(k)+'</b><small>'+esc(msg)+'</small></div></div>').join("")+'</div>'+
- '<div class="ma6-validation'+(ready?' ok':'')+'">'+(ready?
- 'The sample draft has the minimum structural fields. It still requires commercial/technical policy and authorization checks before issue.':
- 'Some minimum draft fields or configuration selections are missing. You can navigate back to complete them.')+'</div>'+
- note('<b>Next production steps:</b> save draft → run product/pricing validation → request applicable approval → lock revision → generate/issue PDF → record dispatch and customer response. None of these approval/issue actions are live in this wireframe.',true);
+ '<div class="ma6-check-item"><span class="ma6-check-icon">'+(passed?'✓':'!')+'</span><div><b>'+esc(k)+'</b><small>'+esc(msg)+'</small></div></div>').join("")+'</div></details>'+
+ '<div class="ma6a-quote-review-actions"><button type="button" class="btn" data-action="preview-builder">Preview customer layout</button>'+
+ '<span class="ma6-tag">Draft only · Not issued</span></div>'+
+ note('Production sequence: Save Draft → technical/pricing validation → policy approvals → freeze revision → issue PDF → dispatch → customer response. Order registration is separate.',true);
 }
-const stepContent=[contextBuilder,configureBuilder,pricingBuilder,termsBuilder,reviewBuilder];
+const stepContent=[contextBuilder,boqBuilder,priceTermsBuilder,reviewBuilder];
 function renderBuilder(){
  if(state.mode!=="builder"||!state.builder)return;
  const b=state.builder,q=b.quote;
  $("quote-register").hidden=true;$("quote-builder").hidden=false;
+ $("quote-explainer").hidden=true;$("quote-stats").hidden=true;$("quote-scope").hidden=true;
  $("builder-title").textContent=(b.isNew?"New Draft Quotation":"Edit Draft "+q.id)+" · "+steps[b.step][0];
  $("builder-subtitle").textContent=(b.isNew?"New quote":"Existing "+q.rev)+" · Illustrative values · Browser session only";
  $("builder-steps").innerHTML=steps.map((st,i)=>'<button type="button" data-step="'+i+'" class="'+(b.step===i?'active':'')+'" aria-current="'+(b.step===i?'step':'false')+'"><span class="ma6-step-num">'+(i+1)+'</span><span class="ma6-step-label">'+esc(st[0])+'</span></button>').join("");
@@ -303,11 +356,12 @@ function renderBuilder(){
  $("builder-prev").disabled=b.step===0;
  $("builder-next").hidden=b.step===steps.length-1;
  $("builder-save").hidden=b.step!==steps.length-1;
- $("builder-hint").textContent=b.step===1?"Product rules shown here are sample UI, not engineering approval.":b.step===2?"Prices, discount and tax are fictional.":"No data is saved outside this browser page.";
+ $("builder-hint").textContent=b.step===1?"Review imported items · Catalog approval still pending":b.step===2?"All commercial values are fictional.":"Save Draft only · No customer issue or approval";
 }
 function render(){
  if(state.mode==="builder"){renderBuilder();return;}
  $("quote-builder").hidden=true;$("quote-register").hidden=false;
+ $("quote-explainer").hidden=false;$("quote-stats").hidden=false;$("quote-scope").hidden=false;
  renderRegister();
 }
 window.CPQ_MA006={ $,esc,db,master,org,staff,enquiries,state,quote,customer,buyer,contact,site,project,employee,entity,branch,opportunity,product,opts,text,money,numeric,configCheck,configUnit,extended,totals,lineConfig,visible,render,renderBuilder,financialRows,paper,note,blank,table,reviewChecks };
