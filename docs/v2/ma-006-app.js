@@ -161,11 +161,13 @@ function commercial(q){
  note('<b>Pricing safeguard:</b> These INR amounts, discounts and tax percentages are synthetic. Production needs approved price lists, item-level taxes, HSN/SAC, jurisdiction, rounding, freight handling and discount policies. Cost/margin disclosure requires separate MA-003 grants.',true);
 }
 function reviewChecks(q){
+ const hasFinal=(x)=>!!String(x||"").trim()&&!/^(to be agreed|to be confirmed|tbd)$/i.test(String(x).trim());
+ const termsOK=hasFinal(q.payment)&&hasFinal(q.delivery)&&!!String(q.validUntil||"").trim()&&Number.isFinite(Date.parse(q.validUntil));
  return [
  ["Buyer / internal scope",Boolean(buyer(q.buyerId)&&entity(q.companyId)&&branch(q.branchId)),"Customer legal buyer and selling branch identified"],
  ["BOQ lines",q.lines.length>0,"At least one item, valid quantity and selling rate"],
  ["Config rules",q.lines.every(l=>l.type!=="config"||configCheck(product(l.productId),l.options).ok),"Sample compatibility check only — engineers must approve rules"],
- ["Terms",Boolean(q.payment&&q.delivery&&q.validUntil),"Customer-facing terms and validity recorded"],
+ ["Terms",termsOK,"Validity, payment and delivery terms must be finalized before issue; placeholders are not approval"],
  ["Pricing/discount policy",false,"Real tax, pricing and approvals are not evaluated in this demo"],
  ["Imported catalog prices",!q.lines.some(l=>l.pricingReview),"Seeded rates are illustration-only. Validate manufacturer/SKU, costs, selling price and exceptions."],
  ["Issuance permission",false,"Requires authorized approval, locked revision and audit in production"]
