@@ -93,3 +93,19 @@ No secrets or real buyer, supplier pricing, tax identifiers or customer attachme
 **Not implemented:** server persistence, MA-003 enforcement, genuine price/discount/tax engine, engineering compatibility or BOM approval, role-separated approval workflow, immutable issued revision store, real PDF issuance, dispatch, customer replies, source-of-truth product catalog shared across browsers, order conversion and production-grade integration tests.
 
 **BA status:** New quotation UI flow and representative rules are specified; MA-006 still requires business approval of pricing/tax/term/approval policies and further visual workflow review before design sign-off.
+
+
+## 10. Quotation register view modes (admin/employee UX)
+
+The register supports two explicit, reversible display modes without changing its underlying quotation data or permissions:
+
+- **Split / Details (default):** a compact left quotation picker and right quotation details, including Summary, Configuration & BOQ, Commercial, Review & Approvals, Versions and PDF & Response tabs.
+- **Expanded List (on demand):** the split detail panel is replaced by a full-width quotation table. Each row displays quotation ID/revision/title, customer and exact buyer, internal legal entity/branch, owner, status, last updated, indicative total and a **View Details** action. Latest quotation ID appears first in the current demo.
+- **Switching:** "View Full List" in the page header or "Expand List" at the register switches to full view; "Return to Details"/"Show Details" switches back. "View Details" selects a row and restores the split view.
+- **Shared controls:** company/branch, search, status and owner filters apply to both modes; changing views must preserve filters. In expanded view, the explanatory CPQ cards and summary cards are hidden to focus on quotation rows; the company/branch scope filter remains accessible.
+- **Small screens:** the wide table scrolls horizontally within its own container rather than shrinking its important columns. The compact view remains accessible.
+- **Data governance:** the current demo permits all seeded sample records and does not authorize server access. Production must enforce MA-003 company/branch and record scope on every query, individual quotation open, edit, approval action and export. A UI filter is not security.
+
+**Post-save quotation detail UX**: show the key records first and hide optional fields under "More customer, project & record details". A Draft should show **Continue Editing** and a concise list of missing mandatory issue-readiness information, while still allowing incomplete Draft saves. BOQ shows its source configuration and subtotal. Commercial separates customer-facing terms from collapsed internal notes. Review & Approvals and PDF & Response explicitly state when no actual approval, issue or dispatch record exists. Versions must distinguish a new quote copy from a revision of the same quotation.
+
+**Additional acceptance checks:** switch list→details→list without losing status/owner/scope/search filters; verify freshly saved drafts appear in both views; verify an empty filter result; verify desktop/mobile table scrolling; verify that viewing a quotation never grants access outside permitted company/branch scope in production; verify no draft preview is mistaken for an issued PDF.
