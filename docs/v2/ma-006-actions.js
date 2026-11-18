@@ -179,7 +179,13 @@ function handleAction(action){
 document.addEventListener("click",e=>{
  const t=e.target.closest("[data-quote],[data-tab],[data-step],[data-product],[data-remove-line],[data-action],[data-planned]");
  if(!t)return;const d=t.dataset;
- if(d.quote){state.selected=d.quote;state.tab="summary";render();return;}
+ if(d.quote){
+  const wasExpanded=state.listExpanded;
+  state.selected=d.quote;state.tab="summary";state.listExpanded=false;
+  render();
+  if(wasExpanded)$("quote-register").scrollIntoView({block:"start",behavior:"auto"});
+  return;
+ }
  if(d.tab){state.tab=d.tab;render();return;}
  if(d.step!==undefined){const i=Number(d.step);if(state.builder&&Number.isInteger(i)&&i>=0&&i<4){state.builder.step=i;renderBuilder();}return;}
  if(d.product){if(state.builder){setProduct(state.builder,d.product);renderBuilder();}return;}
@@ -213,6 +219,14 @@ $("builder-body").addEventListener("input",e=>{
   if(t.dataset.field&&["title","validUntil","currency","payment","delivery","warranty","exclusions","notes"].includes(t.dataset.field))
   updateBuilderField(t.dataset.field,t.value);
 });
+function toggleQuotationList(){
+ if(state.mode!=="register")return;
+ state.listExpanded=!state.listExpanded;
+ render();
+ $("quote-register").scrollIntoView({block:"start",behavior:"auto"});
+}
+$("quote-view-toggle").addEventListener("click",toggleQuotationList);
+$("quote-expand-toggle").addEventListener("click",toggleQuotationList);
 $("new-quote").addEventListener("click",()=>newBuilder());
 $("builder-close").addEventListener("click",()=>{state.mode="register";state.builder=null;render();$("quote-register").scrollIntoView({block:"start",behavior:"auto"});});
 $("builder-prev").addEventListener("click",()=>{if(state.builder){state.builder.step=Math.max(0,state.builder.step-1);renderBuilder();}});
