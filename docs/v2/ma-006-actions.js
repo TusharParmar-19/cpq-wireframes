@@ -8,8 +8,10 @@ const copy=x=>JSON.parse(JSON.stringify(x));
 const demoDate=()=>new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"});
 const statusDraft="Draft";
 const toISO=v=>{
- if(/^\d{4}-\d{2}-\d{2}$/.test(String(v||"")))return v;
- const d=new Date(v);return Number.isFinite(d.valueOf())?d.toISOString().slice(0,10):"";
+ const raw=String(v||"").trim(),d=new Date(raw);
+ if(!Number.isFinite(d.valueOf()))return "";
+ const iso=d.toISOString().slice(0,10);
+ return /^\d{4}-\d{2}-\d{2}$/.test(raw)&&iso!==raw?"":iso;
 };
 function toast(message){
  const node=$("toast");node.textContent=message;node.hidden=false;
