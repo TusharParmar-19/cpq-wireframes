@@ -147,7 +147,7 @@ function renderList(items){
  '<div class="ma6-quote-bottom"><span class="ma6-tag">'+esc(customer(c.customerId)?.name||"Reusable / no buyer")+'</span><span class="ma6-quote-sub">'+c.items.length+' items</span></div></button>').join(""):empty("No configurations match this scope and search. Try Reset filters.");
 }
 function payload(c){
- return {v:1,configId:c.id,name:c.name,customerId:c.customerId||"",buyerId:c.buyerId||"",contactId:c.contactId||"",siteId:c.siteId||"",projectId:c.projectId||"",companyId:c.companyId||"",branchId:c.branchId||"",ownerId:c.ownerId||"",opportunityId:c.opportunityId||"",
+ return {v:1,configId:c.id,name:c.name,revision:c.revision||"C0",customerId:c.customerId||"",buyerId:c.buyerId||"",contactId:c.contactId||"",siteId:c.siteId||"",projectId:c.projectId||"",companyId:c.companyId||"",branchId:c.branchId||"",ownerId:c.ownerId||"",opportunityId:c.opportunityId||"",
   solutionType:c.solutionType||"general",solar:c.solutionType==="solar"?c.solar||{}:{},
   items:c.items.map(l=>{
    const v=catalogVariant(l.productId),f=v?catalogFamily(v.familyId):null;
