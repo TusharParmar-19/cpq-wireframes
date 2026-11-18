@@ -5,7 +5,7 @@ const $=id=>document.getElementById(id);
 const esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const db=JSON.parse(JSON.stringify(window.CPQ_MA006_DATA));
 const master=window.CPQ_MA004_DATA, org=window.CPQ_MA002_DATA, staff=window.CPQ_MA003_USERS, enquiries=window.CPQ_MA005_DATA.opportunities;
-const state={selected:"QT-2026-014",tab:"summary",mode:"register",company:"all",branch:"all",status:"all",owner:"all",search:"",builder:null,history:[]};
+const state={selected:"QT-2026-014",tab:"summary",mode:"register",company:"all",branch:"all",status:"all",owner:"all",search:"",listExpanded:false,builder:null,history:[]};
 const quote=id=>db.quotations.find(q=>q.id===id);
 const customer=id=>master.customers.find(x=>x.id===id);
 const buyer=id=>master.companies.find(x=>x.id===id);
@@ -111,6 +111,23 @@ function renderList(qs){
  '<div class="ma6-quote-sub">'+esc(q.id)+' / '+esc(q.rev)+' · '+text(customer(q.customerId)?.name)+'</div>'+
  '<div class="ma6-quote-bottom"><span class="ma6-tag">'+text(employee(q.ownerId)?.name)+'</span><span class="ma6-quote-sub">'+money(totals(q).total)+'</span></div></button>'
  ).join(""):blank("No quotation matches the filters. Reset filters to see other sample quotations.");
+}
+function renderFullList(qs){
+ const ordered=[...qs].sort((a,b)=>(Number(b.id.split("-").at(-1))||0)-(Number(a.id.split("-").at(-1))||0));
+ const cols=["Quotation","Customer / Buyer","Selling company / Branch","Owner","Status","Updated","Total (demo)",""];
+ const header='<thead><tr>'+cols.map(x=>'<th scope="col">'+esc(x)+'</th>').join("")+'</tr></thead>';
+ const rows=ordered.map(q=>
+  '<tr'+(q.id===state.selected?' class="ma6-selected-row"':'')+'><td><strong>'+esc(q.id)+' / '+esc(q.rev)+'</strong><span class="ma6-full-quote-title">'+esc(q.title)+'</span></td>'+
+  '<td><strong>'+text(customer(q.customerId)?.name)+'</strong><small>'+text(buyer(q.buyerId)?.name)+'</small></td>'+
+  '<td>'+text(entity(q.companyId)?.name)+'<small>'+text(branch(q.branchId)?.name)+'</small></td>'+
+  '<td>'+text(employee(q.ownerId)?.name)+'</td>'+
+  '<td>'+statusBadge(q.status)+'</td>'+
+  '<td class="ma6-nowrap">'+text(q.lastUpdated)+'</td>'+
+  '<td class="ma6-money"><strong>'+money(totals(q).total)+'</strong></td>'+
+  '<td><button type="button" class="btn ma6-full-view" data-quote="'+esc(q.id)+'" aria-label="View details of quotation '+esc(q.id)+'">View Details</button></td></tr>').join("");
+ $("quote-expanded-table").innerHTML=ordered.length?
+  '<table class="ma6-table ma6-full-table"><caption>Quotations matching your current filters · Newest quotation number first</caption>'+header+'<tbody>'+rows+'</tbody></table>':
+  blank("No quotations match the current filters. Change the search, status or scope to see more.");
 }
 function renderHeader(q){
  $("quote-header").innerHTML='<div class="ma6-detail-top"><div><small>'+esc(q.id)+' / '+esc(q.rev)+' · '+text(customer(q.customerId)?.name)+'</small><h2>'+esc(q.title)+'</h2><p>Buyer: '+text(buyer(q.buyerId)?.name)+' · '+text(entity(q.companyId)?.name)+' / '+text(branch(q.branchId)?.name)+'</p></div>'+
@@ -218,7 +235,7 @@ function detail(){
 function renderRegister(){
  renderFilters();renderStats();const qs=visible();
  if(!qs.some(q=>q.id===state.selected))state.selected=qs[0]?.id||"";
- renderList(qs);detail();
+ renderList(qs);renderFullList(qs);detail();
 }
 const steps=[["Customer & Project","Customer and selling scope"],["Products & BOQ","Imported items and sample rates"],["Price & Terms","Totals and offer conditions"],["Review & Save","Draft checks and preview"]];
 function formSelect(id,label,values,current,placeholder="Select...",required=false){
@@ -353,6 +370,7 @@ function renderBuilder(){
  if(state.mode!=="builder"||!state.builder)return;
  const b=state.builder,q=b.quote;
  $("quote-register").hidden=true;$("quote-builder").hidden=false;
+ $("quote-view-toggle").hidden=true;
  $("quote-explainer").hidden=true;$("quote-stats").hidden=true;$("quote-scope").hidden=true;
  $("builder-title").textContent=(b.isNew?"New Draft Quotation":"Edit Draft "+q.id)+" · "+steps[b.step][0];
  $("builder-subtitle").textContent=(b.isNew?"New quote":"Existing "+q.rev)+" · Illustrative values · Browser session only";
@@ -366,7 +384,18 @@ function renderBuilder(){
 function render(){
  if(state.mode==="builder"){renderBuilder();return;}
  $("quote-builder").hidden=true;$("quote-register").hidden=false;
- $("quote-explainer").hidden=false;$("quote-stats").hidden=false;$("quote-scope").hidden=false;
+ $("quote-view-toggle").hidden=false;
+ const expanded=state.listExpanded;
+ $("quote-register").classList.toggle("is-expanded",expanded);
+ $("quote-list").hidden=expanded;$("quote-expanded-table").hidden=!expanded;
+ $("quote-details").hidden=expanded;
+ $("quote-explainer").hidden=expanded;$("quote-stats").hidden=expanded;$("quote-scope").hidden=false;
+ $("quote-view-toggle").textContent=expanded?"Return to Details":"View Full List";
+ $("quote-view-toggle").setAttribute("aria-pressed",String(expanded));
+ $("quote-expand-toggle").textContent=expanded?"Show Details":"Expand List";
+ $("quote-expand-toggle").setAttribute("aria-pressed",String(expanded));
+ $("quote-list-title").textContent=expanded?"All Quotations":"Quotation Register";
+ $("quote-list-subtitle").textContent=expanded?"Full-width list · select View Details to open a quotation":"Select a quotation to inspect";
  renderRegister();
 }
 window.CPQ_MA006={ $,esc,db,master,org,staff,enquiries,state,quote,customer,buyer,contact,site,project,employee,entity,branch,opportunity,product,opts,text,money,numeric,configCheck,configUnit,extended,totals,lineConfig,visible,render,renderBuilder,financialRows,paper,note,blank,table,reviewChecks };
