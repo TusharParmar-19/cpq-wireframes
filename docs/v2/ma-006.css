@@ -181,3 +181,12 @@
 #quote-builder:not([hidden]){margin-top:12px}
 #quote-explainer[hidden],#quote-stats[hidden],#quote-scope[hidden]{display:none!important}
 @media(max-width:800px){.ma6a-quote-review-status{grid-template-columns:1fr}.ma6a-quote-catalog-picker{padding:9px}.ma6a-quote-add{align-items:start}}
+
+/* MA-006 price and terms: align sample controls and totals; avoid empty vertical column. */
+.ma6a-pricing-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(315px,380px);align-items:start;gap:24px;margin:14px 0 20px}
+.ma6a-pricing-inputs h4{font-size:13px;color:#315e7b;margin:6px 0 15px}
+.ma6a-pricing-layout .ma6-price-controls{margin:0;max-width:none}
+.ma6a-pricing-layout .ma6-pricing-summary{margin:0;max-width:none;width:100%}
+.ma6a-pricing-help{font-size:11px;line-height:1.7;color:#708ba2;margin:12px 0 0;max-width:480px}
+.ma6a-quote-draft-hint{border:1px solid #d8e7f3;background:#f4f9fd;color:#365d78;font-size:12px;line-height:1.7;border-radius:9px;padding:12px 14px;margin:15px 0}
+@media(max-width:850px){.ma6a-pricing-layout{grid-template-columns:1fr;gap:15px}}
