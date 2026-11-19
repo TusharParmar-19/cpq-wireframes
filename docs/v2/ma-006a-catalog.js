@@ -222,6 +222,7 @@ function renderPartLibrary(){
  }).join("");
 }
 function renderCatalog(){
+ if(window.CPQ_SHARED)window.CPQ_SHARED.save("catalog",db);
  renderHub();renderStats();
  if(state.hub==="products"){
   renderFilterControls();
