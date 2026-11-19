@@ -287,13 +287,39 @@ function paper(q){
  '<p><b>Exclusions:</b> '+text(q.exclusions)+'</p><p style="border-top:1px solid #e8edf2;padding-top:12px"><b>NOT AN ISSUED QUOTATION.</b> No company signature, approval, verified tax data or legally usable PDF is provided.</p></div>';
 }
 function documents(q){
- return panel("PDF Preview & Customer Response","Draft preview, dispatch history and customer responses are separate operations.","preview-pdf","Expand preview")+
- (q.status==="Draft"?'<div class="ma6a-preview-state"><b>Draft preview only.</b> This is not an approved PDF and cannot be issued or sent. Finalize terms and obtain the required authorization first.</div>':'')+
+ const dispatch=q.demoDispatch||null, events=dispatch?.events||[];
+ const simulated=dispatch?.state==="Sent in demo", historical=["Sent","Won","Lost"].includes(q.status);
+ const canSimulate=q.status==="Draft"&&!simulated&&q.demoApproval?.state==="Demo reviewed"&&demoReadiness(q).length===0;
+ const canRespond=simulated||q.status==="Sent";
+ const currentResponse=dispatch?.response?.decision?dispatch.response.decision+" (demo)":q.response||"Not recorded";
+ const dispatchLabel=simulated?"Sent in demo":historical?"Historical sample (unverified)":"Not dispatched";
+ const formatEvent=ev=>'<div class="ma6a-review-event"><strong>'+esc(ev.action)+'</strong><small>'+esc(ev.at||"")+' · '+esc(ev.actor||"Demo user")+' · '+esc(ev.revision||q.rev)+'</small>'+
+  (ev.comment?'<p>'+esc(ev.comment)+'</p>':'')+'</div>';
+ return panel("PDF Preview & Customer Response","Preview the customer layout, then review dispatch and customer communication.","preview-pdf","Expand preview")+
+ (q.status==="Draft"?'<div class="ma6a-preview-state"><b>Draft preview only.</b> This is not an approved PDF and cannot be issued or sent. Finalize terms and obtain required authorization first.</div>':'')+
  paper(q)+
- '<div class="ma6-section-sub"><h4>Dispatch & customer response</h4><button type="button" class="btn" data-action="preview-dispatch">How dispatch will work</button></div>'+
- '<div class="ma6-response-card"><h4>'+esc(q.response)+'</h4><p>'+text(q.responseNote,"Customer response evidence has not been recorded in this demo.")+'</p>'+
- '<p><b>Quotation status:</b> '+esc(q.status)+' · No verified issue/dispatch evidence is available here.</p></div>'+
- note('A production PDF can include approved products, specifications, totals, taxes, terms, signatory and legal seller/buyer information. Never include supplier costs or internal margins. Acceptance is separate from order registration.');
+ '<div class="ma6-section-sub ma6a-dispatch-heading"><h4>Dispatch & customer response</h4><button type="button" class="btn" data-action="preview-dispatch">How the real workflow works</button></div>'+
+ '<div class="ma6a-dispatch-intro"><b>Browser-only workflow demo</b><p>Practice the steps below without sending anything to a customer or changing an official quotation status. All entries disappear on refresh.</p></div>'+
+ '<div class="ma6a-dispatch-grid">'+
+ '<section class="ma6a-dispatch-card"><div class="ma6a-dispatch-card-title"><b>1 · Send quotation</b><span class="ma6a-demo-state">'+esc(dispatchLabel)+'</span></div>'+
+ '<p>Production: lock an authorized revision, create the issued PDF, and capture recipient, channel and proof of sending.</p>'+
+ (canSimulate?'<button type="button" class="btn primary" data-action="open-demo-dispatch">Simulate dispatch</button>':
+ simulated?'<div class="ma6a-dispatch-meta"><b>Recipient:</b> '+esc(dispatch.recipient||"Not recorded")+'<br><b>Channel:</b> '+esc(dispatch.channel||"Not recorded")+'<br><b>Reference:</b> '+esc(dispatch.reference||"Not recorded")+'<br><b>Date:</b> '+esc(dispatch.date||"Not recorded")+'</div>':
+ q.status==="Draft"?'<div class="ma6a-dispatch-help">Complete the two demo reviews and essential terms first. <button type="button" class="btn" data-action="go-demo-approvals">Open Reviews</button></div>':
+ '<p class="ma6a-dispatch-muted">Existing sample status only. No actual dispatch or authorization can be verified here.</p>')+
+ '</section>'+
+ '<section class="ma6a-dispatch-card"><div class="ma6a-dispatch-card-title"><b>2 · Customer response</b><span class="ma6a-demo-state">'+esc(currentResponse)+'</span></div>'+
+ '<p>Record Accepted, Rejected or Changes Requested, with the reply source, date, reference and notes.</p>'+
+ (canRespond?'<button type="button" class="btn primary" data-action="open-demo-response">'+(dispatch?.response?"Update demo response":"Record demo response")+'</button>':
+ '<p class="ma6a-dispatch-muted">Available after a simulated dispatch, or for a historical Sent sample.</p>')+
+ (dispatch?.response?'<div class="ma6a-dispatch-meta"><b>Source:</b> '+esc(dispatch.response.source)+'<br><b>Received:</b> '+esc(dispatch.response.date)+'<br><b>Evidence:</b> '+esc(dispatch.response.reference||"Not recorded")+'</div>':'')+
+ '</section></div>'+
+ (dispatch?.response?.decision==="Accepted"?note('A sample acceptance was recorded. Order registration is a separate process; no order has been created.'):'')+
+ (dispatch?.response?.decision==="Changes Requested"?note('Customer requested changes. In production create a new controlled quotation revision; never overwrite a sent revision.',true):'')+
+ '<details class="ma6a-quote-more"><summary>Dispatch and response demo history ('+events.length+')</summary>'+
+ (events.length?'<div class="ma6a-review-history">'+[...events].reverse().map(formatEvent).join("")+'</div>':
+ '<p class="ma6a-dispatch-muted">No demo activity has been recorded for this quote. Historical example statuses are not verified dispatch records.</p>')+'</details>'+
+ note('Production controls: MA-003 permission and policy checks, immutable approved revision, final buyer and seller identity, issued-PDF reference, dispatch evidence, controlled response history and separate order creation. This demo does not issue, email or authorize offers.',true);
 }
 const tabs={summary,items,commercial,approvals,revisions,documents};
 function detail(){
