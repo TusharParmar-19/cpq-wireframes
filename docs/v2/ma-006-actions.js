@@ -60,7 +60,7 @@ function existingBuilder(mode="edit"){
  }
  const q=copy(original);q.validUntil=toISO(q.validUntil);if(mode==="duplicate"){
   q.id="";q.rev="R0";q.status=statusDraft;q.date=demoDate();q.review="Not submitted";q.response="Not issued";q.responseNote="";
-  q.versionNotes="New draft based on an existing sample";q.lastUpdated=demoDate()+" (demo)";
+  q.versionNotes="New draft based on an existing sample";q.lastUpdated=demoDate()+" (demo)";delete q.demoApproval;
  }
  const b={quote:q,isNew:mode==="duplicate",step:0,productId:"",options:{},quantity:1,addPickerOpen:!q.lines.length,catalogSearch:""};
  const existingConfig=q.lines.find(l=>l.type==="config"&&product(l.productId));
@@ -105,7 +105,15 @@ function saveBuilder(){
  }else{
   const idx=db.quotations.findIndex(x=>x.id===q.id);
   if(idx<0||db.quotations[idx].status!=="Draft"){explain("Draft not available","This sample quotation is no longer an editable draft.");return;}
-  db.quotations[idx]=copy(q);
+  const before=db.quotations[idx];
+   const material=["title","customerId","buyerId","contactId","siteId","projectId","opportunityId","companyId","branchId","ownerId","validUntil","discount","taxRate","payment","delivery","warranty","exclusions","notes","lines"];
+   if(before.demoApproval&&material.some(k=>JSON.stringify(before[k])!==JSON.stringify(q[k]))){
+    const previous=before.demoApproval;
+    q.demoApproval={state:"Needs resubmission",technical:"Not requested",commercial:"Not requested",
+     events:[...(previous.events||[]),{action:"Draft changed; demo review reset",actor:"Draft editor (demo)",at:demoStamp(),revision:q.rev,comment:"Updated draft must be reviewed again."}]};
+    q.review="Demo review reset after edits · not authorized";
+   }
+   db.quotations[idx]=copy(q);
  }
  state.selected=q.id;state.mode="register";state.builder=null;state.tab="summary";
  state.search="";state.status="all";state.company="all";state.branch="all";state.owner="all";
@@ -159,8 +167,52 @@ function updateBuilderField(field,value){
  }
  q[field]=value;
 }
-function handleAction(action){
- if(action==="edit-builder"){existingBuilder("edit");return;}
+function demoStamp(){return new Date().toLocaleString("en-GB",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});}
+function submitDemoReview(){
+ const q=quote(state.selected);if(!q||q.status!=="Draft")return;
+ const missing=a.demoReadiness(q);
+ if(missing.length){
+  explain("Complete the draft first","The sample approval request needs:<ul>"+missing.map(x=>"<li>"+esc(x)+"</li>").join("")+"</ul><p>Use Continue Editing to complete the missing fields. Real technical and pricing policies are not executed in this demo.</p>");return;
+ }
+ if(q.demoApproval?.state==="In review"||q.demoApproval?.state==="Demo reviewed"){toast("The current sample review is already active or completed.");return;}
+ const events=[...(q.demoApproval?.events||[])];
+ events.push({action:"Submitted for demo review",actor:"Quote owner (sample)",at:demoStamp(),revision:q.rev,comment:"Technical and commercial review requested. No real reviewer was contacted."});
+ q.demoApproval={state:"In review",technical:"Pending",commercial:"Pending",events};
+ q.review="Sample review submitted · not authorized";q.lastUpdated=demoDate()+" (demo)";
+ state.tab="approvals";render();toast("Demo review requested. No real approver was notified.");
+}
+function openDemoDecision(role){
+ const q=quote(state.selected);
+ if(!["technical","commercial"].includes(role)||!q?.demoApproval||q.demoApproval.state!=="In review"||q.demoApproval[role]!=="Pending")return;
+ const title=role==="technical"?"Technical review":"Commercial review";
+ modal(title+" · Demo decision","Browser simulation · No authenticated approver",
+  '<div class="ma6-note"><b>Demo only.</b> Choose a simulated decision to test the workflow. It will not validate engineering, pricing or permissions, and cannot authorize issuing a quote.</div>'+
+  '<div class="ma6-field ma6a-review-comment"><label for="demo-review-comment">Reviewer comments (required for changes / rejection)</label>'+
+  '<textarea id="demo-review-comment" maxlength="400" rows="3" placeholder="What should be corrected or checked?"></textarea></div>'+
+  '<div class="ma6a-demo-decision-buttons">'+
+  '<button type="button" class="btn" data-action="record-demo-review" data-role="'+role+'" data-decision="changes">Request changes</button>'+
+  '<button type="button" class="btn" data-action="record-demo-review" data-role="'+role+'" data-decision="rejected">Reject (demo)</button>'+
+  '<button type="button" class="btn primary" data-action="record-demo-review" data-role="'+role+'" data-decision="approved">Mark demo approved</button></div>');
+}
+function recordDemoDecision(role,decision){
+ const q=quote(state.selected),d=q?.demoApproval;
+ if(!d||q.status!=="Draft"||d.state!=="In review"||d[role]!=="Pending"||!["approved","changes","rejected"].includes(decision))return;
+ const comments=$("demo-review-comment"),comment=comments?.value.trim()||"";
+ if(decision!=="approved"&&!comment){toast("Enter a reason for requesting changes or rejecting.");comments?.focus();return;}
+ const label=decision==="approved"?"Demo approved":decision==="changes"?"Changes requested":"Rejected";
+ d[role]=label;
+ d.events.push({action:(role==="technical"?"Technical":"Commercial")+" · "+label,actor:"Simulated "+role+" reviewer",at:demoStamp(),revision:q.rev,comment});
+ if(decision==="changes")d.state="Changes requested";
+ else if(decision==="rejected")d.state="Rejected";
+ else if(d.technical==="Demo approved"&&d.commercial==="Demo approved")d.state="Demo reviewed";
+ q.review=d.state+" · sample only, not authorized";q.lastUpdated=demoDate()+" (demo)";
+ closeModal();state.tab="approvals";render();toast(label+" recorded for demonstration only.");
+}
+function handleAction(action,target){
+ if(action==="submit-demo-review"){submitDemoReview();return;}
+  if(action==="simulate-review"){openDemoDecision(target?.dataset.role);return;}
+  if(action==="record-demo-review"){recordDemoDecision(target?.dataset.role,target?.dataset.decision);return;}
+  if(action==="edit-builder"){existingBuilder("edit");return;}
  if(action==="duplicate"){existingBuilder("duplicate");return;}
  if(action==="add-config-item"){addSelectedProduct();return;}
  if(action==="toggle-add-product"){if(state.builder){state.builder.addPickerOpen=!state.builder.addPickerOpen;state.builder.catalogSearch="";renderBuilder();}return;}
@@ -169,7 +221,7 @@ function handleAction(action){
   const q=quote(state.selected);if(q)modal("Customer-facing quotation preview",q.id+" / "+q.rev+" · Not an issued PDF",paper(q));return;
  }
  if(action==="preview-approval"){
-  explain("Approval policy & review (planned)","In production, the quote must pass MA-003 page/action rights, legal-entity and branch scope, pricing rules, restricted-cost controls, technical review and the applicable approval policy.<p><b>This demo does not approve any revision or issue a quotation.</b></p>");return;
+  explain("How real approvals work","The intended production sequence is:<ol><li>Complete customer, BOQ and commercial terms.</li><li>Submit an immutable revision for technical and commercial review.</li><li>Route each review through MA-003 permissions, company/branch scope and approval thresholds. Approvers may approve, request changes or reject with comments.</li><li>Only after every required authorized decision and audit record is complete may an approved revision be locked and issued.</li></ol><p><b>Here you can simulate those two decisions for UI review only.</b> No reviewer is authenticated, no real approval is recorded and issuing stays disabled.</p>");return;
  }
  if(action==="preview-dispatch"){
   explain("Dispatch & customer response (planned)","A production issue workflow should generate and lock an approved revision, capture dispatch channel/time/recipient and evidence, record a customer response with source and audit trail, and keep order registration separate.<p>Nothing is sent by the wireframe.</p>");return;
@@ -189,7 +241,7 @@ document.addEventListener("click",e=>{
  if(d.step!==undefined){const i=Number(d.step);if(state.builder&&Number.isInteger(i)&&i>=0&&i<4){state.builder.step=i;renderBuilder();}return;}
  if(d.product){if(state.builder){setProduct(state.builder,d.product);renderBuilder();}return;}
  if(d.removeLine){if(state.builder){state.builder.quote.lines=state.builder.quote.lines.filter(l=>l.id!==d.removeLine);renderBuilder();}return;}
- if(d.action){handleAction(d.action);return;}
+ if(d.action){handleAction(d.action,t);return;}
  if(d.planned){explain(esc(d.planned)+" (planned)","This is a future administration or business workflow. MA-006 only represents where it connects to quotation configuration and issuance.");return;}
 });
 function changedInput(e,commit=true){
