@@ -43,7 +43,7 @@ function directory(rows){
 }
 function heading(c){
  const archived=c.status==="Archived",personal=c.type==="Individual",count=companies(c.id).length;
- $("detail-head").innerHTML='<div class="ma4-detail-heading"><div><small style="color:#7691a5;font-size:10px">'+esc(c.id)+' · '+esc(c.type)+'</small><h2>'+esc(c.name)+'</h2><p>'+val(c.industry)+' · Owner: '+val(c.owner)+' · Updated: '+esc(c.updated)+'</p></div><div class="ma4-head-actions">'+badge(c.status)+'<button type="button" class="btn" data-action="edit-customer"'+(archived?' disabled':'')+'>Edit customer</button><button type="button" class="btn '+(archived?'':'ma4-action-danger')+'" data-action="archive-customer">'+(archived?'Restore':'Archive')+'</button></div></div>'+
+ $("detail-head").innerHTML='<div class="ma4-detail-heading"><div><small style="color:#7691a5;font-size:10px">'+esc(c.id)+' · '+esc(c.type)+'</small><h2>'+esc(c.name)+'</h2><p>'+val(c.industry)+' · Owner: '+val(c.owner)+' · Updated: '+esc(c.updated)+'</p></div><div class="ma4-head-actions">'+badge(c.status)+(archived?'':'<a class="btn" href="ma-005-opportunities.html?action=new&amp;customer='+encodeURIComponent(c.id)+'">+ New Enquiry</a>')+'<button type="button" class="btn" data-action="edit-customer"'+(archived?' disabled':'')+'>Edit customer</button><button type="button" class="btn '+(archived?'':'ma4-action-danger')+'" data-action="archive-customer">'+(archived?'Restore':'Archive')+'</button></div></div>'+
  '<div class="ma4-meta-row"><span class="ma4-tag neutral">'+(personal?'Individual buyer profile':count+' buyer '+(count===1?'company':'companies'))+'</span><span class="ma4-tag neutral">'+contacts(c.id).length+' additional contacts</span><span class="ma4-tag neutral">'+sites(c.id).length+' sites</span><span class="ma4-tag neutral">'+projects(c.id).length+' projects</span></div>'+
  '<div class="ma4-header-note">'+(personal?'<b>Individual customer:</b> The purchaser and billing identity are the same person. Contacts are optional representatives. Company tax and registration fields are not needed to create an individual.':
  '<b>Customer relationship ≠ buyer legal entity.</b> A quotation identifies the exact buyer company and, when relevant, a different project/delivery site.')+'</div>';
@@ -144,5 +144,7 @@ function render(){
 }
 function audit(c,text){c.updated="07 Nov 2026 (demo)";state.history.unshift({customerId:c.id,text,when:new Date().toLocaleString("en-IN",{dateStyle:"medium",timeStyle:"short"})+" · Demo"});}
 window.CPQ_MA004={$,esc,db,own,state,cust,companies,contacts,sites,projects,related,buyer,ent,branch,next,filtered,render,detail,directory,summary,scopeControls,audit,checkScope};
+const requestedCustomer=new URLSearchParams(window.location.search).get("customer");
+if(requestedCustomer&&cust(requestedCustomer))state.selected=requestedCustomer;
 render();
 })();
