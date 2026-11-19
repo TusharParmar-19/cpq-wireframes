@@ -146,6 +146,7 @@ function detail(){
  $("detail-body").innerHTML=(tabRender[state.tab]||overview)(o);
 }
 function render(){
+ if(window.CPQ_SHARED)window.CPQ_SHARED.save('opportunities',db);
  renderFilters();stats();pipeline();
  const records=visible();
  if(!records.some(o=>o.id===state.selected))state.selected=records[0]?.id||"";
