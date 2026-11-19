@@ -382,6 +382,7 @@ function renderBuilder(){
 }
 function render(){
  if(state.mode==="builder"){renderBuilder();return;}
+ if(window.CPQ_SHARED)window.CPQ_SHARED.save("configurations",window.CPQ_MA006A_DATA={configurations:records});
  $("configuration-builder").hidden=true;$("configuration-register").hidden=false;
  renderFilters();renderStats();
  const rows=visible();if(!rows.some(x=>x.id===state.selected))state.selected=rows[0]?.id||"";
