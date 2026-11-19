@@ -104,7 +104,7 @@ function stakeholders(o){
  kv("Buyer / bill-to identity",b?.name)+kv("Contact person",p?.name)+kv("Contact role",p?.role)+
  kv("Project",pr?.name)+kv("Customer site",si?.name)+kv("Site city",si?.city)+
  kv("Our legal entity",entity(o.companyId)?.name)+kv("Our branch",branch(o.branchId)?.name)+kv("Owner",employee(o.ownerId)?.name)+kv("Ownership scope","Assigned branch (demo preview)")+'</div>'+
- '<div class="ma5-subhead"><h4>Customer master</h4><a class="btn" href="ma-004-customers.html">Open MA-004</a></div>'+
+ '<div class="ma5-subhead"><h4>Customer master</h4><a class="btn" href="ma-004-customers.html?customer='+encodeURIComponent(o.customerId)+'">Open this customer (MA-004)</a></div>'+
  note('On a group account, buyer selection must refer to the exact customer legal entity. Contacts, sites and projects offered in the enquiry should belong to that selected buyer. MA-003 rights and backend scope checks will determine who may view or edit each record.');
 }
 function followups(o){
