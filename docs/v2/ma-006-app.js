@@ -299,7 +299,7 @@ function documents(q){
  (q.status==="Draft"?'<div class="ma6a-preview-state"><b>Draft preview only.</b> This is not an approved PDF and cannot be issued or sent. Finalize terms and obtain required authorization first.</div>':'')+
  paper(q)+
  '<div class="ma6-section-sub ma6a-dispatch-heading"><h4>Dispatch & customer response</h4><button type="button" class="btn" data-action="preview-dispatch">How the real workflow works</button></div>'+
- '<div class="ma6a-dispatch-intro"><b>Browser-only workflow demo</b><p>Practice the steps below without sending anything to a customer or changing an official quotation status. All entries disappear on refresh.</p></div>'+
+ '<div class="ma6a-dispatch-intro"><b>Browser-only workflow demo</b><p>Practice the steps below without sending anything to a customer or changing an official quotation status. Simulated review and response records persist only in this browser; Reset demo data clears them.</p></div>'+
  '<div class="ma6a-dispatch-grid">'+
  '<section class="ma6a-dispatch-card"><div class="ma6a-dispatch-card-title"><b>1 · Send quotation</b><span class="ma6a-demo-state">'+esc(dispatchLabel)+'</span></div>'+
  '<p>Production: lock an authorized revision, create the issued PDF, and capture recipient, channel and proof of sending.</p>'+
