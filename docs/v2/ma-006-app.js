@@ -147,7 +147,7 @@ function renderHeader(q){
  '<div class="ma6-detail-actions">'+statusBadge(q.status)+
  (q.status==="Draft"?'<button type="button" class="btn primary" data-action="edit-builder">Continue Editing</button>':'<button type="button" class="btn" data-action="preview-pdf">Preview Offer</button>')+
  '<button type="button" class="btn" data-action="duplicate">Duplicate as Draft</button></div></div>'+
- '<div class="ma6-quote-meta"><span class="ma6-tag">Revision '+esc(q.rev)+'</span><span class="ma6-tag">Owner: '+text(employee(q.ownerId)?.name)+'</span><span class="ma6-tag">Updated '+esc(q.lastUpdated)+'</span><span class="ma6-tag">Total (demo): '+money(totals(q).total)+'</span></div>'+
+ '<div class="ma6-quote-meta"><span class="ma6-tag">Revision '+esc(q.rev)+'</span><span class="ma6-tag">Owner: '+text(employee(q.ownerId)?.name)+'</span><span class="ma6-tag">Updated '+esc(q.lastUpdated)+'</span><span class="ma6-tag">Total (demo): '+money(totals(q).total)+'</span>'+(q.demoDispatch?.response?.decision?'<span class="ma6-tag">Customer response (demo): '+esc(q.demoDispatch.response.decision)+'</span>':'')+'</div>'+
  (issues.length?'<div class="ma6a-draft-alert"><div><strong>Draft saved · '+issues.length+' detail'+(issues.length===1?'':'s')+' to complete</strong><p>'+esc(issues.join(" · "))+'</p></div><button type="button" class="btn" data-action="edit-builder">Complete Draft</button></div>':'')+
  '<div class="ma6-banner"><b>Configuration → BOQ → Quotation:</b> Technical selections and commercial terms are recorded separately. This public demo does not issue an approved customer offer.</div>';
 }
