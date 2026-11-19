@@ -480,7 +480,7 @@ function renderBuilder(){
  $("quote-view-toggle").setAttribute("aria-pressed","false");
  $("quote-explainer").hidden=true;$("quote-stats").hidden=true;$("quote-scope").hidden=true;
  $("builder-title").textContent=(b.isNew?"New Draft Quotation":"Edit Draft "+q.id)+" · "+steps[b.step][0];
- $("builder-subtitle").textContent=(b.isNew?"New quote":"Existing "+q.rev)+" · Illustrative values · Browser session only";
+ $("builder-subtitle").textContent=(b.isNew?"New quote":"Existing "+q.rev)+" · Illustrative values · Saved in this browser only";
  $("builder-steps").innerHTML=steps.map((st,i)=>'<button type="button" data-step="'+i+'" class="'+(b.step===i?'active':'')+'" aria-current="'+(b.step===i?'step':'false')+'"><span class="ma6-step-num">'+(i+1)+'</span><span class="ma6-step-label">'+esc(st[0])+'</span></button>').join("");
  $("builder-body").innerHTML=stepContent[b.step](q,b);
  $("builder-prev").disabled=b.step===0;
