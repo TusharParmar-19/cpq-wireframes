@@ -158,6 +158,7 @@ function summary(q){
  kv("Customer account",customer(q.customerId)?.name)+kv("Buyer / bill-to",buyer(q.buyerId)?.name)+
  kv("Our selling legal entity",entity(q.companyId)?.name)+kv("Our branch",branch(q.branchId)?.name)+
  kv("Quotation date",q.date)+kv("Valid until",q.validUntil)+'</div>'+
+ '<div class="ma6-section-sub"><h4>Customer master</h4><a class="btn" href="ma-004-customers.html?customer='+encodeURIComponent(q.customerId)+'">View customer (MA-004)</a></div>'+
  '<details class="ma6a-quote-more"><summary>More customer, project & record details</summary><div class="ma6-kvs">'+
  kv("Customer contact",contact(q.contactId)?.name)+kv("Customer site",site(q.siteId)?.name)+
  kv("Customer project",project(q.projectId)?.name)+kv("Source enquiry",q.opportunityId||"Direct quotation — no enquiry required")+
@@ -167,7 +168,7 @@ function summary(q){
  kv("Roof / installation site",[solar.roofType,solar.siteLocation].filter(Boolean).join(" · ")):"")+
  kv("Revision",q.rev)+kv("Last updated",q.lastUpdated)+'</div></details>'+
  (q.sourceConfigId?'<div class="ma6a-quote-source"><b>Source technical configuration:</b> '+esc(q.sourceConfigId)+' / '+esc(q.sourceConfigRevision||"C0")+
- ' · '+esc(q.sourceConfigName||"Saved configuration")+' (snapshot reference)</div>':'')+
+ ' · '+esc(q.sourceConfigName||"Saved configuration")+' (snapshot reference) · <a href="ma-006a-configuration.html?configuration='+encodeURIComponent(q.sourceConfigId)+'">View configuration</a></div>':'')+
  (q.opportunityId?'<div class="ma6-section-sub"><h4>Source opportunity</h4><a class="btn" href="ma-005-opportunities.html?opportunity='+encodeURIComponent(q.opportunityId)+'">View MA-005</a></div>':'')+
  note('Customer and buyer are separate records. An issued revision must preserve exact buyer identity, legal selling scope, product details and pricing. Issuing is disabled in this demo.');
 }
