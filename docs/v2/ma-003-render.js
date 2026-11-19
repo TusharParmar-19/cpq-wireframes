@@ -189,6 +189,7 @@ function renderPreviewResult(){
  '<div class="ma3-inline-note">Selected record: '+esc(companyBy(state.preview.company)?.name||"—")+' / '+esc(branchBy(state.preview.branch)?.name||"—")+'. Record relationship: '+esc(state.preview.relation)+'. No real database record or financial data is accessed.</div>';
 }
 function render(){
+ if(window.CPQ_SHARED)window.CPQ_SHARED.saveMany({users,roles});
  renderStats();
  for(const key of ["users","roles","preview"]){
   const on=state.panel===key;
