@@ -44,6 +44,7 @@ notice('<strong>Branch rules:</strong> Each branch belongs to one legal entity. 
 }
 const tabs={overview,legal,branding,bank,branches};
 function render(){
+ if(window.CPQ_SHARED)window.CPQ_SHARED.save('entities',records);
  const e=current();if(!e)return;
  const n=records.length,b=records.reduce((s,x)=>s+x.branches.length,0),a=records.filter(x=>x.status==="Active").length;
  $("org-summary").innerHTML=[
