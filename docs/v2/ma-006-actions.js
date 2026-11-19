@@ -55,12 +55,13 @@ function newBuilder(sourceId=""){
 }
 function existingBuilder(mode="edit"){
  const original=quote(state.selected);if(!original)return;
+ if(mode==="edit"&&original.demoDispatch?.state==="Sent in demo"){explain("Demo snapshot locked","This quote has a simulated dispatch record. A sent revision must not be silently edited. In production, create a controlled new revision; Duplicate as Draft creates a separate quote, not a revision.");return;}
  if(mode==="edit"&&original.status!==statusDraft){
   explain("Editing not available","Only permitted, unissued draft revisions may be edited. Sent, accepted and awaiting-approval quotations require a controlled new revision / duplication flow.");return;
  }
  const q=copy(original);q.validUntil=toISO(q.validUntil);if(mode==="duplicate"){
   q.id="";q.rev="R0";q.status=statusDraft;q.date=demoDate();q.review="Not submitted";q.response="Not issued";q.responseNote="";
-  q.versionNotes="New draft based on an existing sample";q.lastUpdated=demoDate()+" (demo)";delete q.demoApproval;
+  q.versionNotes="New draft based on an existing sample";q.lastUpdated=demoDate()+" (demo)";delete q.demoApproval;delete q.demoDispatch;
  }
  const b={quote:q,isNew:mode==="duplicate",step:0,productId:"",options:{},quantity:1,addPickerOpen:!q.lines.length,catalogSearch:""};
  const existingConfig=q.lines.find(l=>l.type==="config"&&product(l.productId));
@@ -208,7 +209,90 @@ function recordDemoDecision(role,decision){
  q.review=d.state+" · sample only, not authorized";q.lastUpdated=demoDate()+" (demo)";
  closeModal();state.tab="approvals";render();toast(label+" recorded for demonstration only.");
 }
+/* Everything below is a simulated employee workflow. No email, PDF issue or role authorization occurs. */
+function localISO(){
+ const d=new Date();
+ return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-");
+}
+function openDemoDispatch(){
+ const q=quote(state.selected);
+ if(!q||q.status!=="Draft"||q.demoDispatch?.state==="Sent in demo")return;
+ if(q.demoApproval?.state!=="Demo reviewed"||a.demoReadiness(q).length){
+  explain("Review required before dispatch","First complete the quote and record both sample review decisions under Review & Approvals. The demo still cannot authorize or issue an actual quotation.");return;
+ }
+ modal("Simulate quotation dispatch","Browser-only · No PDF issued or message sent",
+  '<div class="ma6-note"><b>Demonstration only.</b> This records a pretend dispatch against '+esc(q.id)+' / '+esc(q.rev)+'. Do not enter actual recipient email addresses or confidential evidence.</div>'+
+  '<div class="ma6-field-grid ma6a-dispatch-form">'+
+  '<div class="ma6-field"><label for="demo-send-recipient">Recipient name *</label><input id="demo-send-recipient" maxlength="120" value="'+esc(contact(q.contactId)?.name||"Customer contact (sample)")+'" placeholder="Contact name"></div>'+
+  '<div class="ma6-field"><label for="demo-send-channel">Delivery method *</label><select id="demo-send-channel"><option value="">Choose method</option><option>Email</option><option>WhatsApp</option><option>Customer portal</option><option>In person / courier</option></select></div>'+
+  '<div class="ma6-field"><label for="demo-send-date">Dispatch date *</label><input id="demo-send-date" type="date" value="'+localISO()+'" max="'+localISO()+'"></div>'+
+  '<div class="ma6-field"><label for="demo-send-ref">Demo reference *</label><input id="demo-send-ref" maxlength="100" placeholder="e.g. TEST-DISPATCH-001"></div>'+
+  '<div class="ma6-field full"><label for="demo-send-note">Internal dispatch note (optional)</label><textarea id="demo-send-note" rows="2" maxlength="400" placeholder="Describe the simulated communication"></textarea></div></div>'+
+  '<div class="ma6a-demo-decision-buttons"><button class="btn primary" type="button" data-action="record-demo-dispatch">Save simulated dispatch</button></div>');
+}
+function recordDemoDispatch(){
+ const q=quote(state.selected);
+ if(!q||q.status!=="Draft"||q.demoDispatch?.state==="Sent in demo"||
+    q.demoApproval?.state!=="Demo reviewed"||a.demoReadiness(q).length)return;
+ const recipient=$("demo-send-recipient")?.value.trim()||"";
+ const channel=$("demo-send-channel")?.value||"";
+ const date=$("demo-send-date")?.value||"";
+ const reference=$("demo-send-ref")?.value.trim()||"";
+ const noteText=$("demo-send-note")?.value.trim()||"";
+ if(!recipient||!channel||!reference||!toISO(date)||date>localISO()){
+  toast("Enter recipient, method, valid past/today date and a demo reference.");return;
+ }
+ q.demoDispatch={state:"Sent in demo",recipient,channel,date,reference,note:noteText,revision:q.rev,
+  events:[{action:"Simulated dispatch recorded",actor:"Demo quotation user",at:demoStamp(),revision:q.rev,
+   comment:"To "+recipient+" · "+channel+" · "+date+" · "+reference+(noteText?" · "+noteText:"")}]};
+ q.lastUpdated=demoDate()+" (demo)";
+ closeModal();state.tab="documents";render();toast("Simulated dispatch saved. Nothing was actually sent.");
+}
+function openDemoResponse(){
+ const q=quote(state.selected);
+ if(!q||(q.demoDispatch?.state!=="Sent in demo"&&q.status!=="Sent"))return;
+ const response=q.demoDispatch?.response||{};
+ const selectOption=(value,label,selected)=>'<option value="'+esc(value)+'"'+(value===selected?' selected':'')+'>'+esc(label)+'</option>';
+ modal("Record customer response (demo)","Browser-only · Does not change official quotation or create an order",
+  '<div class="ma6-note"><b>Demo response log.</b> This is not verified acceptance. Attach actual customer evidence and confirm authorized issue status in the production system.</div>'+
+  '<div class="ma6-field-grid ma6a-dispatch-form">'+
+  '<div class="ma6-field"><label for="demo-response-decision">Customer decision *</label><select id="demo-response-decision">'+
+  selectOption("","Choose response",response.decision||"")+["Accepted","Rejected","Changes Requested"].map(x=>selectOption(x,x,response.decision||"")).join("")+'</select></div>'+
+  '<div class="ma6-field"><label for="demo-response-source">Response received through *</label><select id="demo-response-source">'+
+  selectOption("","Choose source",response.source||"")+["Email","Phone call","WhatsApp","Customer portal","In person"].map(x=>selectOption(x,x,response.source||"")).join("")+'</select></div>'+
+  '<div class="ma6-field"><label for="demo-response-date">Response date *</label><input id="demo-response-date" type="date" value="'+esc(response.date||localISO())+'" max="'+localISO()+'"></div>'+
+  '<div class="ma6-field"><label for="demo-response-ref">Evidence / message reference *</label><input id="demo-response-ref" maxlength="100" placeholder="e.g. TEST-REPLY-001" value="'+esc(response.reference||"")+'"></div>'+
+  '<div class="ma6-field full"><label for="demo-response-notes">Customer response details (required for rejection or changes)</label><textarea id="demo-response-notes" rows="3" maxlength="500" placeholder="Summarize the customer reply and next action">'+esc(response.notes||"")+'</textarea></div></div>'+
+  '<div class="ma6a-demo-decision-buttons"><button class="btn primary" type="button" data-action="save-demo-response">Save demo response</button></div>');
+}
+function saveDemoResponse(){
+ const q=quote(state.selected);
+ if(!q||(q.demoDispatch?.state!=="Sent in demo"&&q.status!=="Sent"))return;
+ const decision=$("demo-response-decision")?.value||"";
+ const source=$("demo-response-source")?.value||"";
+ const date=$("demo-response-date")?.value||"";
+ const reference=$("demo-response-ref")?.value.trim()||"";
+ const notes=$("demo-response-notes")?.value.trim()||"";
+ if(!["Accepted","Rejected","Changes Requested"].includes(decision)||!source||!reference||!toISO(date)||date>localISO()){
+  toast("Choose a decision, reply source, valid date and demo evidence reference.");return;
+ }
+ if(decision!=="Accepted"&&!notes){toast("Enter the customer's reason or requested changes.");return;}
+ if(!q.demoDispatch)q.demoDispatch={state:"Historical sample",events:[]};
+ const wasUpdate=!!q.demoDispatch.response;
+ q.demoDispatch.response={decision,source,date,reference,notes};
+ q.demoDispatch.events.push({action:(wasUpdate?"Updated":"Recorded")+" demo customer response · "+decision,
+  actor:"Demo quotation user",at:demoStamp(),revision:q.rev,comment:source+" · "+date+" · "+reference+(notes?" · "+notes:"")});
+ q.response=decision+" (demo)";
+ q.responseNote=notes||"Sample reply recorded without actual customer verification.";
+ q.lastUpdated=demoDate()+" (demo)";
+ closeModal();state.tab="documents";render();toast("Demo response recorded. No order was created.");
+}
 function handleAction(action,target){
+ if(action==="go-demo-approvals"){state.tab="approvals";render();return;}
+ if(action==="open-demo-dispatch"){openDemoDispatch();return;}
+ if(action==="record-demo-dispatch"){recordDemoDispatch();return;}
+ if(action==="open-demo-response"){openDemoResponse();return;}
+ if(action==="save-demo-response"){saveDemoResponse();return;}
  if(action==="submit-demo-review"){submitDemoReview();return;}
   if(action==="simulate-review"){openDemoDecision(target?.dataset.role);return;}
   if(action==="record-demo-review"){recordDemoDecision(target?.dataset.role,target?.dataset.decision);return;}
@@ -224,7 +308,7 @@ function handleAction(action,target){
   explain("How real approvals work","The intended production sequence is:<ol><li>Complete customer, BOQ and commercial terms.</li><li>Submit an immutable revision for technical and commercial review.</li><li>Route each review through MA-003 permissions, company/branch scope and approval thresholds. Approvers may approve, request changes or reject with comments.</li><li>Only after every required authorized decision and audit record is complete may an approved revision be locked and issued.</li></ol><p><b>Here you can simulate those two decisions for UI review only.</b> No reviewer is authenticated, no real approval is recorded and issuing stays disabled.</p>");return;
  }
  if(action==="preview-dispatch"){
-  explain("Dispatch & customer response (planned)","A production issue workflow should generate and lock an approved revision, capture dispatch channel/time/recipient and evidence, record a customer response with source and audit trail, and keep order registration separate.<p>Nothing is sent by the wireframe.</p>");return;
+  explain("Dispatch & customer response","Production flow: <ol><li>Complete technical and commercial approvals with verified MA-003 rights.</li><li>Lock the approved revision and issue its numbered PDF.</li><li>Dispatch to the authorized recipient; record channel, time and message/document proof.</li><li>Record Accepted, Rejected or Changes Requested with customer evidence and action owner.</li><li>Create an order separately after validating acceptance and terms.</li></ol><p><b>Try the two demo cards on this tab.</b> Neither card sends a message or authorizes a quotation.</p>");return;
  }
 }
 document.addEventListener("click",e=>{
