@@ -1,4 +1,4 @@
-/* MA-005 · Demonstration interaction only, no persistence or production rights. */
+/* MA-005 · Browser-persistent demonstration only; no backend or production rights. */
 (()=>{
 "use strict";
 const a=window.CPQ_MA005;
@@ -199,7 +199,7 @@ function handoff(){
  '<p><b>Site:</b> '+esc(site(o.siteId)?.name||"Not selected")+'</p>'+
  '<p><b>Requirement:</b> '+esc(o.summary)+'</p>'+
  '<p><b>Next step:</b> Configure the technical products or solution in MA-006A, then pass the checked sample items into MA-006 for BOQ, pricing, terms and quotation review. For a standard item you may also start a quote directly.</p>'+
- '<b>No quotation is created or changed by this button.</b><p><a class="btn primary" href="ma-006a-configuration.html?opportunity='+encodeURIComponent(o.id)+'">Configure Products First (MA-006A)</a> <a class="btn" href="ma-006-quotations.html?opportunity='+encodeURIComponent(o.id)+'">Direct Quotation (MA-006)</a></p><p>Only seeded enquiry references travel between wireframe pages. Unsaved browser-only edits are not shared.</p>';
+ '<b>No quotation is created or changed by this button.</b><p><a class="btn primary" href="ma-006a-configuration.html?opportunity='+encodeURIComponent(o.id)+'">Configure Products First (MA-006A)</a> <a class="btn" href="ma-006-quotations.html?opportunity='+encodeURIComponent(o.id)+'">Direct Quotation (MA-006)</a></p><p>Saved enquiries, including new ones, are shared across these CPQ pages in this browser. Save your changes before navigating.</p>';
  help(title,description);
 }
 function handleAction(name){
