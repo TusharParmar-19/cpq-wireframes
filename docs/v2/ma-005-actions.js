@@ -248,5 +248,17 @@ $("overlay").addEventListener("click",e=>{if(e.target===$("overlay"))close();});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("overlay").classList.contains("open"))close();});
 const params=new URLSearchParams(window.location.search);
 const ref=params.get("opportunity");if(ref&&opp(ref)){state.selected=ref;render();}
-if(params.get("action")==="new")createForm();
+if(params.get("action")==="new"){
+ createForm();
+ const requestedCustomer=params.get("customer");
+ if(requestedCustomer&&customer(requestedCustomer)){
+  const field=$("f-customerId");
+  if(field){
+   field.value=requestedCustomer;
+   updateCustomerBuyers();
+   const preferred=master.companies.find(c=>c.customerId===requestedCustomer&&c.primary);
+   if(preferred&&$("f-buyerId")){$("f-buyerId").value=preferred.id;updateBuyerLinks();}
+  }
+ }
+}
 })();
