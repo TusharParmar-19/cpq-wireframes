@@ -9,7 +9,8 @@ const master=window.CPQ_MA004_DATA;
 const org=window.CPQ_MA002_DATA;
 const staff=window.CPQ_MA003_USERS;
 const quoteData=window.CPQ_MA001_DEMO.quotations;
-const state={selected:"OP-2026-008",tab:"overview",company:"all",branch:"all",stage:"all",priority:"all",owner:"all",query:"",history:[]};
+const state={selected:"OP-2026-008",tab:"overview",company:"all",branch:"all",stage:"all",priority:"all",owner:"all",query:"",history:db.history||[]};
+db.history=state.history;
 const opp=id=>db.opportunities.find(x=>x.id===id);
 const customer=id=>master.customers.find(x=>x.id===id);
 const buyer=id=>master.companies.find(x=>x.id===id);
@@ -84,6 +85,7 @@ function overview(o){
  kv("Priority",o.priority)+kv("Owner",employee(o.ownerId)?.name)+kv("Enquiry received",o.received)+kv("Customer required-by date",o.needBy)+
  kv("Expected decision date",o.expectedClose)+kv("Next follow-up",o.nextFollowUp)+
  kv("Next action",o.nextAction)+kv("Last updated",o.lastUpdated)+'</div>'+
+ (o.demoQuoteOutcome?note('<b>Quotation outcome (demo only):</b> '+esc(o.demoQuoteOutcome.decision)+' for <a href="ma-006-quotations.html?quote='+encodeURIComponent(o.demoQuoteOutcome.quoteId)+'">'+esc(o.demoQuoteOutcome.quoteId)+'</a>. This is a shared browser simulation, not verified customer acceptance or an order.'):"")+
  (o.stage==="Lost"?note('<b>Lost reason:</b> '+text(o.lostReason),true):"")+
  note('The next follow-up and expected decision are planning fields. No automatic notifications, commitments or SLA rules are active in this wireframe.');
 }
@@ -118,7 +120,8 @@ function followups(o){
 function quotations(o){
  const qs=o.linkedQuotes.map(id=>{const r=quoteData.find(q=>q[0]===id);return {id,status:r?.[4]||"Unverified",revision:r?.[5]||"Not supplied"}});
  const files=db.documents.filter(f=>f.opportunityId===o.id);
- return panel("Linked quotations and evidence","Opportunity references only; the quotation editor and document storage belong to separate modules.","prepare","Prepare quotation")+
+ return panel("Linked quotations and evidence","Quotation drafts saved in this browser are linked automatically; PDF issue and verified acceptance are separate.","prepare","Prepare quotation")+
+ (o.demoQuoteOutcome?note('<b>Most recent simulated response:</b> '+esc(o.demoQuoteOutcome.decision)+' for '+esc(o.demoQuoteOutcome.quoteId)+'. No official status change or order is created by the demo.'):"")+
  '<div class="ma5-subhead"><h4>Quotation references ('+qs.length+')</h4></div>'+
  (qs.length?'<div class="ma5-table-wrap"><table class="ma5-table"><thead><tr><th>Quotation</th><th>Status</th><th>Revision</th><th>Action</th></tr></thead><tbody>'+qs.map(q=>
  '<tr><td><strong>'+esc(q.id)+'</strong></td><td>'+esc(q.status)+'</td><td>'+esc(q.revision)+'</td><td><a class="btn" href="ma-006-quotations.html?quote='+encodeURIComponent(q.id)+'">View MA-006</a></td></tr>').join("")+'</tbody></table></div>':
@@ -135,7 +138,7 @@ function activity(o){
  (hist.length?'<div class="ma5-timeline">'+hist.map(h=>
  '<div class="ma5-timeline-entry"><b>'+esc(h.title)+'</b><p>'+esc(h.detail)+'</p><small>'+esc(h.when)+'</small></div>').join("")+'</div>':"")+
  '<div class="ma5-timeline-entry"><b>Enquiry recorded (sample)</b><p>'+esc(o.title)+'</p><small>'+esc(o.received)+' · Sample record</small></div>'+
- note('Production activity history must be durable and actor-attributed; it must record stage changes, scope changes, follow-up outcomes and quote links. This timeline resets on refresh.');
+ note('Demo activity is saved in this browser across navigation and refresh, but is not a production audit. Real history must preserve authenticated actor, timestamp and before/after values.');
 }
 const tabRender={overview,requirements,stakeholders,followups,quotations,activity};
 function detail(){
