@@ -489,6 +489,7 @@ function renderBuilder(){
 }
 function render(){
  if(state.mode==="builder"){renderBuilder();return;}
+ if(window.CPQ_SHARED)window.CPQ_SHARED.save("quotations",db);
  $("quote-builder").hidden=true;$("quote-register").hidden=false;
  $("quote-view-toggle").hidden=false;
  const expanded=state.listExpanded;
