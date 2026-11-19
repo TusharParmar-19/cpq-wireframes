@@ -5,7 +5,8 @@ const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const db=JSON.parse(JSON.stringify(window.CPQ_MA004_DATA));
 const own=window.CPQ_MA002_DATA.map(e=>({id:e.id,name:e.name,branches:e.branches.map(b=>({id:b.id,name:b.name,city:b.city}))}));
-const state={selected:"CU-001",tab:"overview",company:"all",branch:"all",q:"",status:"all",type:"all",history:[]};
+const state={selected:"CU-001",tab:"overview",company:"all",branch:"all",q:"",status:"all",type:"all",history:db.history||[]};
+db.history=state.history;
 const cust=id=>db.customers.find(x=>x.id===id);
 const companies=id=>db.companies.filter(x=>x.customerId===id);
 const contacts=id=>db.contacts.filter(x=>x.customerId===id);
@@ -109,16 +110,16 @@ function relatedTab(c){
  return panel("Related commercial records","Illustrative references to future Opportunity, Quotation and Order pages.")+
  (r.length?'<div class="ma4-table-scroller"><table class="ma4-table"><thead><tr><th>Reference</th><th>Type / status</th><th>Buyer identity</th><th>Our internal scope</th><th></th></tr></thead><tbody>'+
  r.map(x=>'<tr><td><strong>'+esc(x.id)+'</strong></td><td>'+esc(x.type)+'<small>'+esc(x.status)+'</small></td><td>'+val(buyer(x.customerCompanyId)?.name)+'</td><td>'+val(ent(x.companyId)?.name)+'<small>'+val(branch(x.branchId)?.name)+'</small></td><td>'+(x.type==="Opportunity"?'<a class="btn" href="ma-005-opportunities.html?opportunity='+encodeURIComponent(x.id)+'">View MA-005</a>':x.type==="Quotation"?'<a class="btn" href="ma-006-quotations.html?quote='+encodeURIComponent(x.id)+'">View MA-006</a>':'<button type="button" class="btn" data-record="'+esc(x.id)+'">Planned page</button>')+'</td></tr>').join("")+'</tbody></table></div>':'<div class="ma4-empty">No related records for this internal company/branch scope.</div>')+
- info('Cross-company records must not be combined for an unauthorized employee. Production checks tenant, internal company/branch, record relationship, action and snapshot. Opening MA-005 or MA-006 leaves this separate demo page; unsaved browser-only edits are not transferred.');
+ info('Cross-company records must remain protected by production authorization. Saved demo customer and related-record changes are available across the CPQ pages in this browser; unsaved form input is not transferred.');
 }
 function activityTab(c){
  const events=state.history.filter(x=>x.customerId===c.id);
  const creationRecorded=events.some(x=>/^(?:customer group|company customer|individual customer) created\b/i.test(x.text));
  // Historic seed accounts have no session creation event; show one fallback entry at the END.
  const items=creationRecorded?events:[...events,{text:"Fictional account created",when:c.created+" · Sample"}];
- return panel("Customer activity","Newest events first. Browser-session demonstration only; not a permanent or legal audit.")+
+ return panel("Customer activity","Newest events first. Browser-saved demonstration only; not a permanent or legal audit.")+
  items.map(x=>'<div class="ma4-activity-item"><b>'+esc(x.text)+'</b><small>'+esc(x.when)+'</small></div>').join("")+
- info('Activity disappears on refresh. Production audit records must also retain the actual actor, time, record ID and the before/after values.');
+ info('Demo activity survives refresh in this browser. Production audit records must independently retain authenticated actor, time, record ID and before/after values.');
 }
 function detail(){
  const c=cust(state.selected);
