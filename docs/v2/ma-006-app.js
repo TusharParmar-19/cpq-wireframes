@@ -220,18 +220,49 @@ function reviewChecks(q){
  ["Issuance permission",false,"Requires authorized approval, locked revision and audit in production"]
  ];
 }
+function demoReadiness(q){
+ const missing=[],c=customer(q.customerId),b=buyer(q.buyerId),co=entity(q.companyId),br=branch(q.branchId),own=employee(q.ownerId);
+ if(!String(q.title||"").trim())missing.push("Quotation title");
+ if(!c||!b||b.customerId!==q.customerId)missing.push("Customer and exact buyer");
+ if(!co||!br||br.companyId!==q.companyId||!c?.links?.some(x=>x.companyId===q.companyId&&x.branchId===q.branchId))missing.push("Valid selling company and branch");
+ if(!own||own.status!=="Active"||!(own.assignments||[]).some(x=>x.companyId===q.companyId&&(x.branches||[]).includes(q.branchId)))missing.push("Responsible employee assigned to this branch");
+ if(!q.lines?.length||q.lines.some(l=>!Number.isInteger(Number(l.quantity))||Number(l.quantity)<=0||!Number.isFinite(Number(l.unitPrice))||Number(l.unitPrice)<0))missing.push("Valid BOQ products, quantities and sample rates");
+ if(!reviewChecks(q)[2][1])missing.push("Complete product option selections");
+ if(!reviewChecks(q)[3][1])missing.push("Validity, payment and delivery terms");
+ return missing;
+}
 function approvals(q){
- const checks=reviewChecks(q),passed=checks.filter(x=>x[1]).length;
- return panel("Review & Approvals","A draft can be saved before terms or technical approvals are complete.","preview-approval","How approvals work")+
- '<div class="ma6a-approval-intro"><div><strong>'+passed+' of '+checks.length+' sample checks present</strong>'+
- '<p>Blue ticks show basic record checks only, not authorization. An approval decision has not been completed by this wireframe.</p></div>'+
- statusBadge(q.status)+'</div>'+
- '<div class="ma6-checklist">'+checks.map(([title,done,desc])=>
- '<div class="ma6-check-item"><span class="ma6-check-icon">'+(done?'✓':'!')+'</span><div><b>'+esc(title)+'</b><small>'+esc(desc)+'</small></div></div>').join("")+'</div>'+
- '<div class="ma6-kvs">'+kv("Quotation status",q.status)+kv("Review state",q.review)+
- kv("Discount",q.discount+"% (illustrative)")+kv("Approver / decision","No verified decision in this demo")+'</div>'+
- (q.status==="Draft"?'<div class="ma6-section-sub"><h4>What to do next</h4><button type="button" class="btn" data-action="edit-builder">Continue Editing</button></div>':'')+
- note('Actual submission, approver routing, commercial exceptions, technical sign-off, decisions and audit history depend on MA-003 permissions and approval policy. No approval is granted here.',true);
+ const checks=reviewChecks(q),passed=checks.filter(x=>x[1]).length,d=q.demoApproval||null;
+ const canTry=q.status==="Draft",missing=canTry?demoReadiness(q):[];
+ const stage=d?.state||"Not requested";
+ const reviewCard=(role,label,desc)=>{
+  const current=d?.[role]||"Not requested",pending=d?.state==="In review"&&current==="Pending"&&canTry;
+  return '<div class="ma6a-review-card"><div class="ma6a-review-card-title"><b>'+esc(label)+'</b><span class="ma6a-demo-state">'+esc(current)+'</span></div>'+
+   '<p>'+esc(desc)+'</p><small>Reviewer assignment comes from policy; this public demo has no signed-in reviewer.</small>'+
+   (pending?'<button type="button" class="btn" data-action="simulate-review" data-role="'+role+'">Simulate decision</button>':'')+'</div>';
+ };
+ const events=d?.events||[];
+ return panel("Review & Approvals","Simple employee workflow · role-based approval design","preview-approval","How real approvals work")+
+  '<div class="ma6a-demo-approval-intro"><div><span class="ma6a-demo-kicker">BROWSER-ONLY DEMONSTRATION</span><h4>Approval workflow</h4><p>Submit for sample review, then test technical and commercial decisions. These actions do not authenticate an approver or authorize a quotation.</p></div>'+
+  '<span class="ma6a-demo-state">'+esc(stage)+'</span></div>'+
+  '<div class="ma6a-review-grid">'+
+  reviewCard("technical","1 · Technical review","Engineering scope, product compatibility, specifications and site checks.")+
+  reviewCard("commercial","2 · Commercial review","SKU pricing, discount, tax assumptions, terms and policy exceptions.")+'</div>'+
+  (canTry?'<div class="ma6a-review-next"><div><b>'+(missing.length?'Before sample submission: '+missing.length+' item(s) to complete':stage==="Demo reviewed"?'Both sample decisions recorded':'Next: submit the draft for sample review')+'</b>'+
+  '<p>'+(missing.length?esc(missing.join(" · ")):stage==="Demo reviewed"?'This is not a real approval. The production system must validate and authorize the locked revision.':stage==="In review"?'Open a review card to simulate a reviewer response.':'The demo will route this draft to both sample review queues; no actual permission or engineering check is executed.')+'</p></div>'+
+  (stage==="In review"||stage==="Demo reviewed"?'':missing.length?
+  '<button type="button" class="btn" data-action="edit-builder">Complete draft</button>':
+  '<button type="button" class="btn primary" data-action="submit-demo-review">'+(d?'Resubmit Demo Review':'Submit Demo Review')+'</button>')+
+  '</div>':'<div class="ma6a-review-next"><div><b>Historical sample / not an editable draft</b><p>This record is read-only here. No validated approval evidence is available in this public demonstration.</p></div></div>')+
+  '<details class="ma6a-quote-more"><summary>Quotation checks ('+passed+' of '+checks.length+' sample checks shown as passed)</summary>'+
+  '<div class="ma6-checklist">'+checks.map(([title,done,desc])=>
+  '<div class="ma6-check-item"><span class="ma6-check-icon">'+(done?'✓':'!')+'</span><div><b>'+esc(title)+'</b><small>'+esc(desc)+'</small></div></div>').join("")+'</div></details>'+
+  '<details class="ma6a-quote-more"><summary>Demo review history ('+events.length+')</summary>'+
+  (events.length?'<div class="ma6a-review-history">'+[...events].reverse().map(ev=>'<div class="ma6a-review-event"><strong>'+esc(ev.action)+'</strong><small>'+esc(ev.at)+' · '+esc(ev.actor)+' · '+esc(ev.revision||q.rev)+'</small>'+
+  (ev.comment?'<p>'+esc(ev.comment)+'</p>':'')+'</div>').join("")+'</div>':blank("No demo review actions recorded yet."))+'</details>'+
+  '<div class="ma6-kvs">'+kv("Quotation status",q.status)+kv("Real approval state","Not verified · no actual submission")+
+  kv("Discount",q.discount+"% (illustrative)")+kv("Production approver","Assigned by MA-003 rights and approval policy")+'</div>'+
+  note('<b>Production boundary:</b> Technical and commercial decisions must be made by authorized, separate reviewers, with policy routing, immutable audit records and locked revision snapshots. This demo cannot approve, issue, email or send a quotation.',true);
 }
 function revisions(q){
  const sample=db.revisions.filter(x=>x.quoteId===q.id);
@@ -447,6 +478,6 @@ function render(){
  $("quote-list-subtitle").textContent=expanded?"Full-width list · select View Details to open a quotation":"Select a quotation to inspect";
  renderRegister();
 }
-window.CPQ_MA006={ $,esc,db,master,org,staff,enquiries,state,quote,customer,buyer,contact,site,project,employee,entity,branch,opportunity,product,opts,text,money,numeric,configCheck,configUnit,extended,totals,lineConfig,visible,render,renderBuilder,financialRows,paper,note,blank,table,reviewChecks };
+window.CPQ_MA006={ $,esc,db,master,org,staff,enquiries,state,quote,customer,buyer,contact,site,project,employee,entity,branch,opportunity,product,opts,text,money,numeric,configCheck,configUnit,extended,totals,lineConfig,visible,render,renderBuilder,financialRows,paper,note,blank,table,reviewChecks,demoReadiness };
 render();
 })();
