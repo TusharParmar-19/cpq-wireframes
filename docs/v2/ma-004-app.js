@@ -135,6 +135,7 @@ function detail(){
  $("detail-body").innerHTML=({overview,companies:legalCompanies,contacts:contactsTab,sites:siteTab,related:relatedTab,activity:activityTab}[state.tab]||overview)(c);
 }
 function render(){
+ if(window.CPQ_SHARED)window.CPQ_SHARED.save('customers',db);
  scopeControls();summary();
  const list=filtered();
  if(!list.some(x=>x.id===state.selected))state.selected=list[0]?.id||"";
