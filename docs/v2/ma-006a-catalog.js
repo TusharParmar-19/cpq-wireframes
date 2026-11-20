@@ -23,6 +23,60 @@ const dimension=d=>{
  return x.join(" × ")+" "+(d.unit||"mm");
 };
 const badge=s=>'<span class="ma6a-flag '+esc(String(s||"").toLowerCase().replace(/ /g,"-"))+'">'+esc(s||"Draft")+'</span>';
+/* Browser-demo model review never represents real technical or price approval. */
+const demoEnabled=v=>v?.status==="Active"&&v?.demoReview?.state==="Enabled for demo";
+function demoIssues(v){
+ const f=family(v.familyId),issues=[];
+ if(f?.solarKind==="inverter"){
+  if(!(Number(v.solar?.ratedAcKw)>0))issues.push("Rated AC output not defined");
+  if(!(Number(v.solar?.maxPvInputKwp)>0))issues.push("Supported PV input not verified");
+  if(!(Number(v.solar?.maxDcVoltage)>0))issues.push("Maximum DC voltage not verified");
+  if(!(Number(v.solar?.mpptMinV)>0)||!(Number(v.solar?.mpptMaxV)>0))issues.push("MPPT voltage range not verified");
+ }
+ if(!String(v.datasheet||"").trim()||/pending|not attached/i.test(v.datasheet))issues.push("Manufacturer datasheet missing");
+ if(f?.solarKind&&!["general","mounting","bos"].includes(f.solarKind)&&(!String(v.solar?.certifications||"").trim()||/demo|not verified|pending/i.test(v.solar?.certifications||"")))issues.push("Certifications not verified");
+ if(!(Number(v.price?.sell)>0))issues.push("Selling price unverified (₹0)");
+ return issues;
+}
+const modelBadge=v=>badge(v.status)+(demoEnabled(v)?'<span class="ma6a-flag ma6a-demo-only">Demo-enabled · unverified</span>':"");
+function modelReviewPanel(v){
+ if(!v||(!["Draft","In Review"].includes(v.status)&&!demoEnabled(v)))return "";
+ const warnings=demoIssues(v),events=v.demoReview?.events||[],enabled=demoEnabled(v);
+ const next=v.status==="Draft"?'<button type="button" class="btn" data-catalog-action="demo-submit-review">Start Demo Review</button>':
+ v.status==="In Review"?'<button type="button" class="btn primary" data-catalog-action="demo-enable-model">Enable for Demo Testing</button>':
+ '<button type="button" class="btn" data-catalog-action="demo-revoke-model">Return to Draft</button>';
+ return '<section class="ma6a-model-review" aria-label="Model review for browser demo">'+
+ '<div class="ma6a-model-review-head"><h4>Model review · browser demo only</h4><span class="ma6a-flag">'+esc(enabled?"Enabled for demo":v.status)+'</span></div>'+
+ '<p>This simulated lifecycle is NOT an authenticated technical approval, product certification, permission grant or approved selling price. '+(enabled?"Selectable in demo configuration only.":"Draft/In Review models cannot be used in configuration.")+'</p>'+
+ '<div class="ma6a-model-review-warning"><b>Unverified information ('+warnings.length+')</b>'+
+ (warnings.length?'<ul>'+warnings.map(x=>'<li>'+esc(x)+'</li>').join("")+'</ul>':'<p>Basic fields are filled, but production engineering and pricing approval remain separate.</p>')+'</div>'+
+ (events.length?'<details class="ma6a-editor-details"><summary>Demo lifecycle history ('+events.length+')</summary><ul>'+events.map(x=>'<li>'+esc(x.at+" · "+x.action)+'</li>').join("")+'</ul></details>':"")+
+ '<div class="ma6a-model-review-actions">'+next+'</div></section>';
+}
+function applyDemoReview(action){
+ const v=variant(state.variant);if(!v)return;
+ const events=[...(v.demoReview?.events||[])],at=new Date().toLocaleString("en-GB",{dateStyle:"medium",timeStyle:"short"});
+ if(action==="demo-submit-review"){
+  if(v.status!=="Draft")return;
+  v.status="In Review";events.push({action:"Submitted for simulated catalog review",at,actor:"Demo operator"});
+  v.demoReview={state:"In Review",events};
+ }else if(action==="demo-enable-model"){
+  if(v.status!=="In Review"||v.demoReview?.state!=="In Review")return;
+  const f=family(v.familyId),m=maker(v.manufacturerId);
+  if(!f||f.status!=="Active"||(v.manufacturerId&&m?.status!=="Active")){window.alert("Use an Active product group and manufacturer for this demo review.");return;}
+  if(f.solarKind==="inverter"&&!(Number(v.solar?.ratedAcKw)>0)){window.alert("Enter a positive rated AC output before enabling an inverter for the demo.");return;}
+  const warnings=demoIssues(v);
+  if(!window.confirm("DEMO ONLY: Enable "+v.model+" for browser configuration testing?\n\nThis is NOT engineering approval, supplier verification, pricing approval or authorization to issue a real quote.\n\nUnverified: "+(warnings.join("; ")||"Production certification and approval")+"\n\nContinue with simulated eligibility?"))return;
+  v.status="Active";events.push({action:"Enabled for browser demo ONLY; unverified details retained",at,actor:"Demo operator"});
+  v.demoReview={state:"Enabled for demo",events,unverified:warnings};
+ }else if(action==="demo-revoke-model"){
+  if(!demoEnabled(v)||!window.confirm("Return this demo-enabled model to Draft? Existing configurations referencing it will require changes."))return;
+  v.status="Draft";events.push({action:"Returned to Draft; demo eligibility revoked",at,actor:"Demo operator"});
+  v.demoReview={state:"Returned to Draft",events};
+ }else return;
+ state.status="all";renderCatalog();
+}
+
 const kv=(key,value)=>'<div class="ma6-kv"><small>'+esc(key)+'</small><strong>'+esc(value===0?value:(value||"Not supplied"))+'</strong></div>';
 const note=html=>'<div class="ma6-note">'+html+'</div>';
 const panel=(title,desc)=>'<div class="ma6-panel-head"><div><h3>'+esc(title)+'</h3><p>'+esc(desc)+'</p></div></div>';
@@ -108,7 +162,7 @@ function renderFamilyHeader(f){
 function variantCard(v){
  const m=maker(v.manufacturerId);
  return '<button type="button" data-variant="'+esc(v.id)+'" class="ma6a-variant-card'+(state.variant===v.id?' selected':'')+'" aria-pressed="'+String(state.variant===v.id)+'">'+
- '<div class="ma6a-row"><span class="ma6-tag">'+esc(v.sku)+'</span>'+badge(v.status)+'</div>'+
+ '<div class="ma6a-row"><span class="ma6-tag">'+esc(v.sku)+'</span>'+modelBadge(v)+'</div>'+
  '<h4>'+esc(m?.brand||m?.name||"No manufacturer (service)")+'</h4>'+
  '<p><b>'+esc(v.model)+'</b> · '+esc(v.variant)+'</p>'+
  '<div class="ma6a-big-rating">'+esc(v.capacity||"Rating not supplied")+'</div>'+
@@ -119,7 +173,7 @@ function selectedVariant(v){
  if(!v)return '<div class="ma6a-empty-note">Select a manufacturer/model variant above.</div>';
  const m=maker(v.manufacturerId),d=v.dimensions||{};
  return '<div class="ma6a-selected-variant"><div class="ma6a-selected-variant-head"><div><h4>'+esc(v.model)+' · '+esc(v.variant)+'</h4>'+
- '<p>'+esc(v.sku)+' · '+esc(m?.name||"Service — no manufacturer")+'</p></div>'+
+ '<p>'+esc(v.sku)+' · '+esc(m?.name||"Service — no manufacturer")+'</p><div class="ma6a-variant-badges">'+modelBadge(v)+'</div></div>'+
  '<div class="ma6-detail-actions"><button type="button" class="btn" data-catalog-tab="more">View Full Details</button>'+
  '<button type="button" class="btn primary" data-catalog-action="edit-variant">Edit Model</button></div></div>'+
  '<div class="ma6-kvs">'+kv("Manufacturer",m?.brand||m?.name||"Not applicable")+
@@ -131,7 +185,7 @@ function renderVariants(f,v){
  const rows=familyVariants(f);
  return panel("Manufacturer & Model Variants","Compare products with the same general rating but different brands, dimensions, features and sample selling prices.")+
  '<div class="ma6a-variant-comparison">'+(rows.length?rows.map(variantCard).join(""):'<div class="ma6a-empty-note">No variants match the manufacturer / status filters.</div>')+'</div>'+
- (rows.length?selectedVariant(v):"")+
+ (rows.length?selectedVariant(v)+modelReviewPanel(v):"")+
  note('<b>Important distinction:</b> A product family is not one fixed item. Each manufacturer/model/SKU is a separate sellable variant with its own physical dimensions, technical attributes and price-list entry. These are demo examples, not verified engineering specifications.');
 }
 function renderSpecs(f,v){
@@ -198,7 +252,7 @@ function renderDetails(){
    (all.length?'<details class="ma6a-view-details"><summary>Technical specifications · '+entered.length+' values entered</summary>'+solarInfo+'</details>':"")+
    '<details class="ma6a-view-details"><summary>Dimensions & model comparison</summary>'+renderSpecs(f,v)+'</details>'+
    '<details class="ma6a-view-details"><summary>Parts & accessories</summary>'+renderParts(f,v)+'</details>'+
-   '<details class="ma6a-view-details"><summary>Pricing, documents & warranty</summary>'+renderPrices(f,v)+'</details>';
+   '<details class="ma6a-view-details"><summary>Pricing, documents & warranty</summary>'+renderPrices(f,v)+'</details>'+modelReviewPanel(v);
  }else{
   $("catalog-family-body").innerHTML=renderVariants(f,v);
  }
@@ -468,7 +522,13 @@ function saveEditor(event){
    const orig=e.mode==="variant-edit"?variant(e.variantId):null;
    const input=getVariantForm(fd,fam.type,orig,fam.solarKind||"general");
    if(!orig)input.status="Draft";
-   if(orig){input.status=orig.status;Object.assign(orig,input);}
+   if(orig){
+    const before=JSON.stringify({...orig,status:undefined,demoReview:undefined});
+    input.status=orig.status;Object.assign(orig,input);
+    if(orig.demoReview&&before!==JSON.stringify({...orig,status:undefined,demoReview:undefined})){
+     orig.status="Draft";orig.demoReview={state:"Returned to Draft",events:[...(orig.demoReview.events||[]),{action:"Model details edited; simulated eligibility reset",at:new Date().toLocaleString("en-GB"),actor:"Demo operator"}]};
+    }
+   }
    else{
     const v={id:idNext("VAR-",db.variants),familyId:fam.id,...input};db.variants.unshift(v);state.variant=v.id;
    }
@@ -508,6 +568,7 @@ document.addEventListener("click",event=>{
  if(d.catalogTab){state.tab=d.catalogTab;renderDetails();return;}
  const action=d.catalogAction;
  if(!action)return;
+ if(["demo-submit-review","demo-enable-model","demo-revoke-model"].includes(action)){applyDemoReview(action);return;}
  if(action==="edit-family")openEditor("family-edit",{familyId:state.family});
  else if(action==="add-variant")openEditor("variant-new",{familyId:state.family});
  else if(action==="edit-variant"){
