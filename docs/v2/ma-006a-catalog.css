@@ -167,3 +167,15 @@
 .ma6a-solar-summary .ma6-kvs{grid-template-columns:repeat(2,minmax(0,1fr))}
 @media(max-width:850px){.ma6a-simple-filters{grid-template-columns:1fr}.ma6a-product-picker-toolbar{grid-template-columns:1fr}.ma6a-compact-stats{gap:10px}}
 @media(max-width:650px){.ma6a-simple-nav{flex-wrap:wrap}.ma6a-manage-menu{margin:0;width:100%}.ma6a-manage-menu>summary{width:100%}.ma6a-manage-items{left:0;right:auto;max-width:100%}.ma6a-configuration-intro{display:block}.ma6a-configuration-intro span{display:block;margin-top:4px}#configuration-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.ma6a-solar-summary .ma6-kvs{grid-template-columns:1fr}}
+
+/* Browser-demo catalog lifecycle, intentionally distinct from real approval. */
+.ma6a-model-review{margin-top:14px;padding:16px;border:1px solid #e5d1ab;border-radius:11px;background:#fffaf2}
+.ma6a-model-review-head{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.ma6a-model-review h4{margin:0;color:#71552a;font-size:14px}
+.ma6a-model-review p,.ma6a-model-review li{font-size:12px;line-height:1.6;color:#665c4e}
+.ma6a-model-review-warning{padding:11px 13px;background:#fff;border:1px solid #eedfc4;border-radius:8px;margin:12px 0}
+.ma6a-model-review-warning b{font-size:12px;color:#71552a}
+.ma6a-model-review-warning ul{margin:7px 0 0;padding-left:19px}
+.ma6a-model-review-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+.ma6a-demo-only{background:#fff3dc!important;color:#91621d!important;border-color:#ebd5af!important}
+.ma6a-variant-badges{margin-top:8px}
