@@ -132,7 +132,7 @@ function addSelectedProduct(){
  const index=Math.max(0,...q.lines.map(x=>Number(x.id.replace(/[^0-9]/g,""))||0))+1;
  const line={id:"L"+String(index).padStart(2,"0"),productId:p.id,type:p.type,description:p.name,
   quantity:qty,unit:p.unit,unitPrice:configUnit(p,b.options),options:p.type==="config"?{...b.options}:{},
-  catalogSpec:p.catalogSpec||"",sourceVariantId:p.sourceVariantId||"",pricingReview:!!p.sourceVariantId};
+  catalogSpec:p.catalogSpec||"",sourceVariantId:p.sourceVariantId||"",pricingReview:!!p.sourceVariantId,technicalReview:!!p.demoOnly,unverified:!!p.demoOnly||(!!p.sourceVariantId&&!(Number(p.basePrice)>0))};
  q.lines.push(line);
  renderBuilder();toast("Sample product added to BOQ");
 }
@@ -422,9 +422,10 @@ function openConfigurationHandoff(raw){
     if(!fam)return false;
     const dims=v.dimensions||{},spec=[v.sku,m?.brand||m?.name,v.capacity,
       dims.width&&dims.height&&dims.depth?dims.width+" × "+dims.height+" × "+dims.depth+" "+(dims.unit||"mm"):""].filter(Boolean).join(" · ");
+    const demoModel=v.demoReview?.state==="Enabled for demo";
     lines.push({id:"L"+String(i+1).padStart(2,"0"),productId:v.id,type:"standard",description:fam.name+" — "+v.model,
-     quantity:qty,unit:fam.unit||"Nos",unitPrice:Math.max(0,Number(v.price?.sell)||0),options:{},catalogSpec:spec+(value.customSpec?" · Custom project specification requires review: "+String(value.customSpec).slice(0,250):""),
-     sourceVariantId:v.id,pricingReview:true,technicalReview:!!value.customSpec});
+     quantity:qty,unit:fam.unit||"Nos",unitPrice:Math.max(0,Number(v.price?.sell)||0),options:{},catalogSpec:spec+(demoModel?" · DEMO-ENABLED ONLY: technical and selling-price verification pending":"")+(value.customSpec?" · Custom project specification requires review: "+String(value.customSpec).slice(0,250):""),
+     sourceVariantId:v.id,pricingReview:true,technicalReview:demoModel||!!value.customSpec,unverified:demoModel||!(Number(v.price?.sell)>0)});
     continue;
    }
    const snap=value.model;
