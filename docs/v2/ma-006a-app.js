@@ -73,6 +73,7 @@ function solarWarnings(c){
  if(!Number(p.usableArea))a.push("Usable area / roof survey is not supplied.");
  if(!m.modules)a.push("Select a PV module and quantity from the product catalog.");
  if(!m.acKw)a.push("Select an inverter model and quantity from the catalog.");
+ for(const l of c.items){const v=catalogVariant(l.productId);if(v?.demoReview?.state==="Enabled for demo")a.push(v.model+" is enabled for browser demo only: technical specifications and pricing are not approved.");}
  if(Number(p.targetDcKwp)>0&&m.dcKwp>0&&Math.abs(m.dcKwp-Number(p.targetDcKwp))/Number(p.targetDcKwp)>0.1)
   a.push("Selected module DC capacity differs by over 10% from target.");
  a.push("Electrical string/MPPT pairing, structural load, shading and performance require engineering verification.");
@@ -321,7 +322,7 @@ function renderProduct(c,b){
  '<div class="ma6a-spec-editor"><h3>'+esc(v?p.model:p.name)+'</h3>'+
  (v?'<div class="ma6-kvs">'+kv("Manufacturer",p.manufacturer)+kv("Rating",p.capacity)+kv("SKU",p.sku)+
  kv("Dimensions",d.width&&d.height&&d.depth?[d.width,d.height,d.depth].join(" × ")+" "+(d.unit||"mm"):"Not applicable")+'</div>'+
- '<div class="ma6a-quiet-box">Specifications come from the selected catalog model. Custom changes below apply only to this project.</div>':
+ '<div class="ma6a-quiet-box">'+(v.demoReview?.state==="Enabled for demo"?'<b>Demo-enabled · not verified.</b> Manufacturer technical evidence and approved selling price are still pending. ':"")+'Specifications come from the selected catalog model. Custom changes below apply only to this project.</div>':
  p.type==="config"?'<div class="ma6-field-grid">'+Object.entries(p.options).map(([key,spec])=>
  select("opt-"+key,spec.label,spec.choices.map(([value])=>[value,value]),b.options[key],"Choose option")).join("")+'</div>':
  '<div class="ma6a-quiet-box">Standard item or service: enter quantity. No product attributes to configure.</div>')+
@@ -338,7 +339,7 @@ function renderProduct(c,b){
 }
 function itemsCompact(c,edit=false){
  return c.items.length?c.items.map((l,i)=>{
-  const p=itemProduct(l.productId);return '<div class="ma6a-line-row"><div><h4>'+(i+1)+'. '+esc(p?.name||l.productId)+'</h4><p>'+esc(optionText(l))+'</p>'+(l.note?'<p>'+esc(l.note)+'</p>':'')+'</div>'+
+  const p=itemProduct(l.productId);return '<div class="ma6a-line-row"><div><h4>'+(i+1)+'. '+esc(p?.name||l.productId)+'</h4><p>'+esc(optionText(l))+'</p>'+(l.note?'<p>'+esc(l.note)+'</p>':'')+(p?.variant?.demoReview?.state==="Enabled for demo"?'<p><b>Demo-enabled model · technical and price verification pending.</b></p>':'')+'</div>'+
   (edit?'<div class="ma6a-line-row-actions"><div class="ma6-field"><label for="config-qty-'+esc(l.id)+'">Qty ('+esc(p?.unit||"unit")+')</label><input class="ma6a-line-qty" id="config-qty-'+esc(l.id)+'" data-line-qty="'+esc(l.id)+'" type="number" min="1" step="1" value="'+esc(l.quantity)+'"></div><button type="button" class="btn" data-remove="'+esc(l.id)+'">Remove</button></div>':
   '<span class="ma6-tag">'+esc(l.quantity)+' '+esc(p?.unit||"unit")+'</span>')+'</div>';
  }).join(""):empty("No items yet. Add the first product in Select & Configure.");
