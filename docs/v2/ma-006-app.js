@@ -26,7 +26,7 @@ const product=id=>{
  return {id:v.id,name:fam.name+" — "+v.model,unit:fam.unit||"Nos",type:"standard",
   basePrice:Number(v.price?.sell)||0,status:v.status,sku:v.sku,model:v.model,manufacturer:maker?.brand||maker?.name||"",
   rating:v.capacity||"",catalogSpec:[maker?.brand||maker?.name,v.sku,v.capacity,size?size+" "+(dims.unit||"mm"):""].filter(Boolean).join(" · "),
-  sourceVariantId:v.id};
+  sourceVariantId:v.id,demoOnly:v.demoReview?.state==="Enabled for demo"};
 };
 const text=(x,blank="Not supplied")=>x?esc(x):esc(blank);
 const money=n=>"\u20b9"+Number(n||0).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -218,6 +218,7 @@ function reviewChecks(q){
  ["Terms",termsOK,"Validity, payment and delivery terms must be finalized before issue; placeholders are not approval"],
  ["Pricing/discount policy",false,"Real tax, pricing and approvals are not evaluated in this demo"],
  ["Imported catalog prices",!q.lines.some(l=>l.pricingReview),"Seeded rates are illustration-only. Validate manufacturer/SKU, costs, selling price and exceptions."],
+ ["Demo-only model verification",!q.lines.some(l=>l.technicalReview||l.unverified),"Demo-enabled catalog models and incomplete technical data are not production-approved"],
  ["Issuance permission",false,"Requires authorized approval, locked revision and audit in production"]
  ];
 }
@@ -228,6 +229,7 @@ function demoReadiness(q){
  if(!co||!br||br.companyId!==q.companyId||!c?.links?.some(x=>x.companyId===q.companyId&&x.branchId===q.branchId))missing.push("Valid selling company and branch");
  if(!own||own.status!=="Active"||!(own.assignments||[]).some(x=>x.companyId===q.companyId&&(x.branches||[]).includes(q.branchId)))missing.push("Responsible employee assigned to this branch");
  if(!q.lines?.length||q.lines.some(l=>!Number.isInteger(Number(l.quantity))||Number(l.quantity)<=0||!Number.isFinite(Number(l.unitPrice))||Number(l.unitPrice)<0))missing.push("Valid BOQ products, quantities and sample rates");
+ if(q.lines?.some(l=>!(Number(l.unitPrice)>0)))missing.push("Enter a positive fictional sample selling rate for each BOQ line; ₹0 means unpriced");
  if(!reviewChecks(q)[2][1])missing.push("Complete product option selections");
  if(!reviewChecks(q)[3][1])missing.push("Validity, payment and delivery terms");
  return missing;
