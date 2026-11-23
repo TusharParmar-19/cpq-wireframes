@@ -36,7 +36,7 @@ function error(msg){const node=$("form-error");if(node){node.textContent=msg;nod
 function notify(msg){const n=$("toast");n.textContent=msg;n.hidden=false;if(toastHandle)clearTimeout(toastHandle);toastHandle=setTimeout(()=>n.hidden=true,3900);}
 function done(o,title,detail,tab=""){audit(o,title,detail);if(tab)state.tab=tab;close();render();notify(title+" · demo only");}
 function refList(){
- return '<span class="ma5-form-help">Select an existing customer from MA-004. <a href="ma-004-customers.html" target="_blank" rel="noopener" style="color:#1c729b;text-decoration:underline">Open Customer Master</a> to review the directory. New records in one wireframe do not synchronize to other wireframe pages; production should allow quick prospect creation.</span>';
+ return '<span class="ma5-form-help">Select an existing customer from MA-004. <a href="ma-004-customers.html" target="_blank" rel="noopener" style="color:#1c729b;text-decoration:underline">Open Customer Master</a> to review the directory. Saved demo records synchronize between CPQ pages in this browser; production requires a secure shared database and quick prospect creation.</span>';
 }
 function createForm(){
  const f=wrap(
@@ -55,6 +55,8 @@ function createForm(){
  section("2 · Enquiry information")+
  field("title","Opportunity / enquiry title","",true,"text",true)+
  select("kind","Enquiry type",db.kinds.map(x=>[x,x]),"Products / Equipment")+
+ section("2A · Services & sub-services (optional)")+
+ '<div class="ma5-field full">'+window.CPQ_FLOW.selector([],"serviceIds")+'</div>'+
  select("source","Enquiry source",db.sources.map(x=>[x,x]),"Direct Enquiry")+
  select("priority","Priority",db.priorities.map(x=>[x,x]),"Medium")+
  field("received","Enquiry received on",todayInput(),true,"date")+
@@ -71,6 +73,7 @@ function createForm(){
  open("New Enquiry","Create a sample opportunity from an existing customer",f,fd=>{
   const customerId=v(fd,"customerId"),buyerId=v(fd,"buyerId"),companyId=v(fd,"companyId"),branchId=v(fd,"branchId"),ownerId=v(fd,"ownerId");
   const title=v(fd,"title"),summary=v(fd,"summary");
+  const serviceIds=window.CPQ_FLOW.normalized(fd.getAll("serviceIds"),false);
   if(!customer(customerId)){error("Select a customer from MA-004.");return;}
   if(!master.companies.some(x=>x.id===buyerId&&x.customerId===customerId)){error("Select a buyer that belongs to the chosen customer.");return;}
   if(!linkedScopes(customerId).some(x=>x.companyId===companyId&&x.branchId===branchId)){error("Our company/branch must be linked to that customer.");return;}
@@ -82,7 +85,7 @@ function createForm(){
   if(projectId&&!projectFor(customerId,buyerId).some(x=>x.id===projectId)){error("Project must belong to the selected buyer company.");return;}
   const nextIndex=Math.max(17,...db.opportunities.map(x=>Number(x.id.split("-").at(-1))||0))+1;
   const id="OP-2026-"+String(nextIndex).padStart(3,"0");
-  const record={id,title,customerId,buyerId,contactId,siteId,projectId,companyId,branchId,ownerId,stage:"New",priority:v(fd,"priority")||"Medium",source:v(fd,"source")||"Direct Enquiry",kind:v(fd,"kind")||"Mixed Requirement",summary,requirements:v(fd,"requirements").split(/\n/).map(x=>x.trim()).filter(Boolean),received:dateText(v(fd,"received"))||today(),needBy:dateText(v(fd,"needBy")),expectedClose:"",nextFollowUp:dateText(v(fd,"nextFollowUp")),nextAction:v(fd,"nextAction"),remarks:v(fd,"remarks"),lostReason:"",linkedQuotes:[],lastUpdated:"07 Nov 2026 (demo)"};
+  const record={id,title,customerId,buyerId,contactId,siteId,projectId,companyId,branchId,ownerId,serviceIds,stage:"New",priority:v(fd,"priority")||"Medium",source:v(fd,"source")||"Direct Enquiry",kind:v(fd,"kind")||"Mixed Requirement",summary,requirements:v(fd,"requirements").split(/\n/).map(x=>x.trim()).filter(Boolean),received:dateText(v(fd,"received"))||today(),needBy:dateText(v(fd,"needBy")),expectedClose:"",nextFollowUp:dateText(v(fd,"nextFollowUp")),nextAction:v(fd,"nextAction"),remarks:v(fd,"remarks"),lostReason:"",linkedQuotes:[],lastUpdated:"07 Nov 2026 (demo)"};
   db.opportunities.unshift(record);
   state.company="all";state.branch="all";state.stage="all";state.owner="all";state.priority="all";state.query="";state.selected=id;
   done(record,"Enquiry created: "+id,title,"overview");
@@ -133,6 +136,8 @@ function editEnquiry(){
  section("Enquiry details")+
  field("title","Enquiry title",o.title,true,"text",true)+
  select("kind","Enquiry type",db.kinds.map(x=>[x,x]),o.kind)+
+ section("Services & sub-services (optional)")+
+ '<div class="ma5-field full">'+window.CPQ_FLOW.selector(o.serviceIds||[],"serviceIds")+'</div>'+
  select("source","Source",db.sources.map(x=>[x,x]),o.source)+
  select("priority","Priority",db.priorities.map(x=>[x,x]),o.priority)+
  field("needBy","Customer required-by date",dateValue(o.needBy),false,"date")+
@@ -148,7 +153,9 @@ function editEnquiry(){
   if(contactId&&!contactFor(o.customerId,o.buyerId).some(x=>x.id===contactId)){error("Contact must belong to the selected buyer.");return;}
   if(siteId&&!siteFor(o.customerId,o.buyerId).some(x=>x.id===siteId)){error("Site must belong to the selected buyer.");return;}
   if(projectId&&!projectFor(o.customerId,o.buyerId).some(x=>x.id===projectId)){error("Project must belong to the selected buyer.");return;}
-  Object.assign(o,{title,summary,contactId,siteId,projectId,ownerId,kind:v(fd,"kind")||o.kind,source:v(fd,"source")||o.source,priority:v(fd,"priority")||o.priority,needBy:dateText(v(fd,"needBy")),requirements:v(fd,"requirements").split(/\n/).map(x=>x.trim()).filter(Boolean),nextFollowUp:dateText(v(fd,"nextFollowUp")),nextAction:v(fd,"nextAction"),remarks:v(fd,"remarks")});
+  const existingInactive=(o.serviceIds||[]).filter(id=>window.CPQ_FLOW.service(id)?.status!=="Active");
+  const serviceIds=window.CPQ_FLOW.normalized([...fd.getAll("serviceIds"),...existingInactive],true);
+  Object.assign(o,{title,summary,contactId,siteId,projectId,ownerId,serviceIds,kind:v(fd,"kind")||o.kind,source:v(fd,"source")||o.source,priority:v(fd,"priority")||o.priority,needBy:dateText(v(fd,"needBy")),requirements:v(fd,"requirements").split(/\n/).map(x=>x.trim()).filter(Boolean),nextFollowUp:dateText(v(fd,"nextFollowUp")),nextAction:v(fd,"nextAction"),remarks:v(fd,"remarks")});
   done(o,"Enquiry updated",title);
  },"Save enquiry (demo)");
 }
@@ -198,7 +205,8 @@ function handoff(){
  '<p><b>Buyer:</b> '+esc(buyer(o.buyerId)?.name||"Not found")+'</p>'+
  '<p><b>Site:</b> '+esc(site(o.siteId)?.name||"Not selected")+'</p>'+
  '<p><b>Requirement:</b> '+esc(o.summary)+'</p>'+
- '<p><b>Next step:</b> Configure the technical products or solution in MA-006A, then pass the checked sample items into MA-006 for BOQ, pricing, terms and quotation review. For a standard item you may also start a quote directly.</p>'+
+ '<div class="cpq-scope-panel"><h4>Selected services & sub-services</h4>'+window.CPQ_FLOW.summary(o.serviceIds||[])+'</div>'+
+ '<p><b>Next step:</b> For product-only or combined work, configure manufacturer models in MA-006A. For service-only or straightforward supply, go directly to MA-006. The selected services are carried into the draft as unpriced lines; there is no automatic charge.</p>'+
  '<b>No quotation is created or changed by this button.</b><p><a class="btn primary" href="ma-006a-configuration.html?opportunity='+encodeURIComponent(o.id)+'">Configure Products First (MA-006A)</a> <a class="btn" href="ma-006-quotations.html?opportunity='+encodeURIComponent(o.id)+'">Direct Quotation (MA-006)</a></p><p>Saved enquiries, including new ones, are shared across these CPQ pages in this browser. Save your changes before navigating.</p>';
  help(title,description);
 }
