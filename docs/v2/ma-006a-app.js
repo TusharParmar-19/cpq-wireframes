@@ -337,6 +337,17 @@ function renderProduct(c,b){
  p.type==="config"?'<div class="ma6-field-grid">'+Object.entries(p.options).map(([key,spec])=>
  select("opt-"+key,spec.label,spec.choices.map(([value])=>[value,value]),b.options[key],"Choose option")).join("")+'</div>':
  '<div class="ma6a-quiet-box">Standard item or service: enter quantity. No product attributes to configure.</div>')+
+ (v?'<details class="ma6a-builder-details"><summary>Model technical data, warranty &amp; document references</summary>'+
+  '<div class="ma6-kvs">'+
+  Object.entries(v.categorySpecs||{}).slice(0,20).map(([key,val])=>kv(key,String(val))).join("")+
+  Object.entries(v.solar||{}).slice(0,20).map(([key,val])=>kv(key,String(val))).join("")+
+  kv("Product warranty",v.warranty?.months!==undefined?v.warranty.months+" months":"Not specified")+
+  kv("Guarantee",v.warranty?.guaranteeMonths!==undefined?v.warranty.guaranteeMonths+" months":"Not specified")+
+  '</div>'+
+  ((v.documents||[]).some(d=>d.status==="Current")?'<div class="cpq-model-snapshot"><h4>Documents (references only)</h4><ul>'+
+   v.documents.filter(d=>d.status==="Current").slice(0,20).map(d=>'<li>'+esc(d.name)+' · v'+esc(d.version)+' · '+esc(d.type)+'</li>').join("")+'</ul></div>':
+   '<p class="cpq-scope-caption">No current product document references recorded.</p>')+
+  '<p class="cpq-scope-caption">Model metadata is captured when added to configuration. No file contents are stored in this demo.</p></details>':"")+
  '<div class="ma6a-field-inline"><div class="ma6-field"><label for="config-add-qty">Quantity *</label>'+
  '<input id="config-add-qty" type="number" min="1" step="1" data-add-qty value="'+esc(b.quantity)+'"></div><span>'+esc(p.unit||"Nos")+'</span></div>'+
  '<details class="ma6a-builder-details"><summary>Project-specific changes & technical notes</summary>'+
