@@ -17,7 +17,7 @@ function itemProduct(id){
  const old=products.find(p=>p.id===id);if(old)return old;
  const v=catalogVariant(id);if(!v)return null;
  const f=catalogFamily(v.familyId),m=catalogMaker(v.manufacturerId);
- return {id:v.id,name:(f?.name||"Catalog item")+" — "+v.model,type:"standard",unit:f?.unit||"Nos",
+ return {id:v.id,name:(f?.name||"Catalog item")+" — "+v.model,type:f?.type==="service"?"service":"standard",unit:f?.unit||"Nos",
  model:v.model,sku:v.sku,manufacturer:m?.brand||m?.name||"Service",capacity:v.capacity,solarKind:f?.solarKind||"general",variant:v};
 }
 const record=id=>records.find(c=>c.id===id);
