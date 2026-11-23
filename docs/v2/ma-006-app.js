@@ -399,7 +399,9 @@ function catalogPicker(q,b){
  const catalog=(source?.variants||[]).filter(v=>v.status==="Active").map(v=>product(v.id)).filter(p=>p&&p.type!=="service");
  const builtins=db.products.filter(p=>!q.projectTechnical&&p.type!=="service");
  const serviceChoices=flow.services().filter(s=>s.status==="Active").map(s=>product(s.id));
- const all=[...catalog,...builtins,...serviceChoices];
+ const suggested=new Set(flow.quotedServiceIds(q).flatMap(id=>flow.service(id)?.productIds||[]));
+ const sortedCatalog=[...catalog].sort((a,b)=>Number(suggested.has(b.id))-Number(suggested.has(a.id)));
+ const all=[...sortedCatalog,...builtins,...serviceChoices];
  const search=String(b.catalogSearch||"").trim().toLowerCase();
  const searchText=p=>[p.name,p.id,p.sku,p.model,p.manufacturer,p.rating,p.catalogSpec].filter(Boolean).join(" ").toLowerCase();
  const matches=all.filter(p=>!search||searchText(p).includes(search));
@@ -423,7 +425,8 @@ function catalogPicker(q,b){
  '<div class="ma6-config-grid"><div><div class="ma6-product-cards" id="quote-add-results">'+
  matches.map(p=>'<button type="button" data-product="'+esc(p.id)+'" data-search="'+esc(searchText(p))+'" class="ma6-product-card'+(p.id===choice?.id?' selected':'')+'">'+
  '<div>'+typeBadge(p.type)+'<strong>'+esc(p.name)+'</strong>'+
- '<small>'+esc(p.catalogSpec||p.id+" · "+p.unit)+'</small></div><span class="ma6-tag">Select</span></button>').join("")+
+ '<small>'+esc(p.catalogSpec||p.id+" · "+p.unit)+
+ (suggested.has(p.id)?' · Suggested for selected service':'')+'</small></div><span class="ma6-tag">Select</span></button>').join("")+
  '<div class="ma6-empty" id="quote-add-no-matches"'+(matches.length?' hidden':'')+'>No matching active catalog products. Check the model/SKU or try a broader search.</div>'+
  '</div></div><div class="ma6-config-form" id="quote-add-selection">'+selection+'</div></div>';
 }
