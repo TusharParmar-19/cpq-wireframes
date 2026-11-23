@@ -100,9 +100,12 @@ function allParentIds(){
  return db.services.filter(s=>subs(s.id).length).map(s=>s.id);
 }
 function updateExpandAll(){
- const toggles=allParentIds(),allOpen=toggles.length>0&&toggles.every(id=>state.expanded.has(id));
+ const {rows,autoExpanded}=matchingResults();
+ const candidateIds=new Set(rows.map(({s})=>s.id));
+ const toggles=allParentIds().filter(id=>candidateIds.has(id));
+ const allOpen=toggles.length>0&&toggles.every(id=>isOpen(id,autoExpanded));
  $("sm-expand-all").textContent=allOpen?"Collapse all":"Expand all";
- $("sm-expand-all").hidden=state.type!=="all";
+ $("sm-expand-all").hidden=state.type!=="all"||toggles.length===0;
 }
 function toggleChildren(id){
  if(!subs(id).length||state.type!=="all")return;
@@ -315,10 +318,13 @@ $("sm-type").addEventListener("change",event=>{state.type=event.target.value;sta
 $("sm-back").addEventListener("click",backToList);
 $("sm-expand-table").addEventListener("click",backToList);
 $("sm-expand-all").addEventListener("click",()=>{
- const parents=allParentIds();
- if(parents.length&&parents.every(id=>state.expanded.has(id))){state.expanded.clear();}
- else parents.forEach(id=>state.expanded.add(id));
- state.collapsedInFilter.clear();
+ const {rows,autoExpanded}=matchingResults(),eligibleIds=new Set(rows.map(({s})=>s.id));
+ const parents=allParentIds().filter(id=>eligibleIds.has(id));
+ if(parents.length&&parents.every(id=>isOpen(id,autoExpanded))){
+  for(const id of parents){state.expanded.delete(id);state.collapsedInFilter.add(id);}
+ }else{
+  for(const id of parents){state.expanded.add(id);state.collapsedInFilter.delete(id);}
+ }
  renderTable();
 });
 $("sm-table-body").addEventListener("click",event=>{
