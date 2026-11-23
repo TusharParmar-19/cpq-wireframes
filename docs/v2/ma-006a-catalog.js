@@ -394,6 +394,7 @@ function variantFields(v={},f={}){
  areaField("technical","Other technical attributes (Label: Value)",techToText(v.technical))+
  areaField("variantNotes","Internal Model Notes",v.notes||"")))+
  pim.warrantyFields(v)+
+ pim.wizardDocumentFields(v)+
  '<div class="ma6a-editor-section-note">Document files can be recorded under Documents &amp; Warranty after saving the model. Customer-specific technical changes belong in a configuration, not a silent edit of the shared product.</div>';
 }
 function manufacturerFields(m={}){
@@ -508,6 +509,13 @@ function getVariantForm(f,familyType,existing=null,solarKind="general",category=
    hsnSac:trim(f,"hsnSac"),leadTimeDays:positive(f,"leadTimeDays")},
   datasheet:trim(f,"datasheet"),drawing:trim(f,"drawing"),notes:trim(f,"variantNotes")};
 }
+function stagedWizardDocuments(form,old){
+ const picker=form.querySelector('[name="wizardDocFiles"]');
+ if(!picker?.files?.length)return null;
+ const staged={documents:clone(old?.documents||[]),documentHistory:clone(old?.documentHistory||[])};
+ pim.addDocuments(staged,form,"wizardDoc");
+ return staged;
+}
 function saveEditor(event){
  event.preventDefault();
  const e=state.editor;if(!e)return;
@@ -524,8 +532,9 @@ function saveEditor(event){
     newFamily={id:idNext("FAM-",db.families),...f};fam=newFamily;
    }
    const v=getVariantForm(fd,fam.type,null,fam.solarKind||"general",fam.category||"Other");v.status="Draft";
+   const docs=stagedWizardDocuments($("catalog-editor-form"),null);
    if(newFamily)db.families.unshift(newFamily);
-   const vari={id:idNext("VAR-",db.variants),familyId:fam.id,documents:[],documentHistory:[],revisionHistory:[],...v};db.variants.unshift(vari);
+   const vari={id:idNext("VAR-",db.variants),familyId:fam.id,documents:docs?.documents||[],documentHistory:docs?.documentHistory||[],revisionHistory:[],...v};db.variants.unshift(vari);
    state.family=fam.id;state.variant=vari.id;state.tab="variants";
    state.search="";state.category="all";state.manufacturer="all";state.status="all";state.hub="products";
   }else if(e.mode==="family-edit"){
@@ -535,18 +544,20 @@ function saveEditor(event){
    const fam=family(e.familyId);if(!fam)throw Error("Select a valid product family.");
    const orig=e.mode==="variant-edit"?variant(e.variantId):null;
    const input=getVariantForm(fd,fam.type,orig,fam.solarKind||"general",fam.category||"Other");
+   const docs=stagedWizardDocuments($("catalog-editor-form"),orig);
    if(!orig)input.status="Draft";
    if(orig){
     const prior=clone(orig);
     const before=JSON.stringify({...orig,status:undefined,demoReview:undefined});
     input.status=orig.status;Object.assign(orig,input);
+    if(docs){orig.documents=docs.documents;orig.documentHistory=docs.documentHistory;}
     pim.recordModelChange(orig,prior,input);
     if(orig.demoReview&&before!==JSON.stringify({...orig,status:undefined,demoReview:undefined})){
      orig.status="Draft";orig.demoReview={state:"Returned to Draft",events:[...(orig.demoReview.events||[]),{action:"Model details edited; simulated eligibility reset",at:new Date().toLocaleString("en-GB"),actor:"Demo operator"}]};
     }
    }
    else{
-    const v={id:idNext("VAR-",db.variants),familyId:fam.id,documents:[],documentHistory:[],revisionHistory:[],...input};db.variants.unshift(v);state.variant=v.id;
+    const v={id:idNext("VAR-",db.variants),familyId:fam.id,documents:docs?.documents||[],documentHistory:docs?.documentHistory||[],revisionHistory:[],...input};db.variants.unshift(v);state.variant=v.id;
    }
    state.family=fam.id;state.tab="variants";
    state.manufacturer="all";state.status="all";state.search="";
