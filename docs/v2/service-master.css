@@ -193,3 +193,8 @@
  .sm-workspace.is-split .sm-filter{grid-template-columns:1fr}
  .sm-workspace.is-split .sm-filter>div:first-child{grid-column:auto}
 }
+
+/* Keep chosen sub-service visible while browsing the compact left-hand register. */
+.sm-workspace.is-split .sm-table-scroll{max-height:560px;overflow-y:auto;overscroll-behavior-y:contain}
+.sm-workspace.is-split .sm-table thead th{position:sticky;top:0;z-index:1}
+@media(max-width:1240px){.sm-workspace.is-split .sm-table-scroll{max-height:480px;overflow:auto}}

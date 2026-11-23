@@ -7,6 +7,7 @@ const $=id=>document.getElementById(id);
 const esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const clone=x=>JSON.parse(JSON.stringify(x));
 const db=clone(window.CPQ_MA006A_CATALOG);
+const pim=window.CPQ_MA006A_PRODUCT_INFO;
 const state={hub:"products",family:"FAM-005",variant:"VAR-009",tab:"variants",category:"all",manufacturer:"all",status:"all",search:"",editor:null};
 const family=id=>db.families.find(x=>x.id===id);
 const variant=id=>db.variants.find(x=>x.id===id);
@@ -175,6 +176,7 @@ function selectedVariant(v){
  return '<div class="ma6a-selected-variant"><div class="ma6a-selected-variant-head"><div><h4>'+esc(v.model)+' · '+esc(v.variant)+'</h4>'+
  '<p>'+esc(v.sku)+' · '+esc(m?.name||"Service — no manufacturer")+'</p><div class="ma6a-variant-badges">'+modelBadge(v)+'</div></div>'+
  '<div class="ma6-detail-actions"><button type="button" class="btn" data-catalog-tab="more">View Full Details</button>'+
+ '<button type="button" class="btn" data-catalog-tab="documents">Documents &amp; Warranty</button>'+
  '<button type="button" class="btn primary" data-catalog-action="edit-variant">Edit Model</button></div></div>'+
  '<div class="ma6-kvs">'+kv("Manufacturer",m?.brand||m?.name||"Not applicable")+
  kv("Capacity / Rating",v.capacity)+kv("Dimensions",dimension(d))+
@@ -237,7 +239,10 @@ function renderDetails(){
  for(const btn of $("catalog-detail-tabs").querySelectorAll("[data-catalog-tab]")){
   const active=btn.dataset.catalogTab===state.tab;btn.classList.toggle("active",active);btn.setAttribute("aria-selected",String(active));
  }
- if(state.tab==="more"){
+ if(state.tab==="documents"){
+  $("catalog-family-body").innerHTML=panel("Product Documents & Warranty","Model-specific documents, warranties and edit history.")+
+   pim.renderDocuments(v,window.CPQ_SERVICE_MASTER?.services||[]);
+ }else if(state.tab==="more"){
   const schema=solarKindSchema(f.solarKind||"general");
   const val=v?.solar||{},all=(schema&&f.solarKind!=="general")?[...schema.essential,...schema.advanced]:[];
   const entered=all.filter(([key])=>val[key]!==undefined&&val[key]!==null&&String(val[key]).trim()!=="");
@@ -250,9 +255,14 @@ function renderDetails(){
     '<div class="ma6a-list-inline">'+missing.map(([,label])=>'<span class="ma6a-flag">'+esc(label)+'</span>').join("")+'</div></details>':"")+'</div>':"";
   $("catalog-family-body").innerHTML=panel("Product Details","Only information needed for this product is shown. Other technical and commercial sections stay available.")+
    (all.length?'<details class="ma6a-view-details"><summary>Technical specifications · '+entered.length+' values entered</summary>'+solarInfo+'</details>':"")+
+   (pim.categorySummary(f,v)?'<details class="ma6a-view-details"><summary>Category-specific technical specifications</summary>'+
+    '<div class="ma6a-pim-summary"><h4>Model-specific values</h4>'+pim.categorySummary(f,v)+'</div></details>':"")+
    '<details class="ma6a-view-details"><summary>Dimensions & model comparison</summary>'+renderSpecs(f,v)+'</details>'+
    '<details class="ma6a-view-details"><summary>Parts & accessories</summary>'+renderParts(f,v)+'</details>'+
-   '<details class="ma6a-view-details"><summary>Pricing, documents & warranty</summary>'+renderPrices(f,v)+'</details>'+modelReviewPanel(v);
+   '<details class="ma6a-view-details"><summary>Pricing and legacy document references</summary>'+renderPrices(f,v)+'</details>'+
+   '<details class="ma6a-view-details"><summary>Warranty &amp; guarantee</summary>'+pim.warrantySummary(v)+'</details>'+
+   '<div class="ma6a-pim-summary"><b>Documents and version history</b><p class="muted">Open Documents &amp; Warranty to record file metadata and versions. Actual files are not stored in this wireframe.</p>'+
+   '<button type="button" class="btn" data-catalog-tab="documents">Manage Documents &amp; Warranty</button></div>'+modelReviewPanel(v);
  }else{
   $("catalog-family-body").innerHTML=renderVariants(f,v);
  }
@@ -352,6 +362,7 @@ function variantFields(v={},f={}){
  textField("capacity","Capacity / Main Rating",v.capacity||"")+
  selectField("variantStatus","Model Status",statuses.map(x=>[x,x]),v.status||"Draft"))+
  '<div id="catalog-solar-fields">'+solarFields(kind,v.solar||{})+'</div>'+
+ '<div id="catalog-category-spec-fields">'+pim.categoryFields(f,v)+'</div>'+
  details("Physical dimensions, weight & mounting",
  group(selectField("dimensionUnit","Dimensions Unit",[["mm","mm"],["cm","cm"],["m","m"],["in","in"]],d.unit||"mm")+
  numberField("dimLength","Length",d.length)+numberField("dimWidth","Width",d.width)+
@@ -382,7 +393,9 @@ function variantFields(v={},f={}){
  textField("drawing","Drawing / Diagram Reference",v.drawing||"")+
  areaField("technical","Other technical attributes (Label: Value)",techToText(v.technical))+
  areaField("variantNotes","Internal Model Notes",v.notes||"")))+
- '<div class="ma6a-editor-section-note">Customer-specific size or technical changes belong in a project configuration, not a silent change to this shared master product.</div>';
+ pim.warrantyFields(v)+
+ pim.wizardDocumentFields(v)+
+ '<div class="ma6a-editor-section-note">Document files can be recorded under Documents &amp; Warranty after saving the model. Customer-specific technical changes belong in a configuration, not a silent edit of the shared product.</div>';
 }
 function manufacturerFields(m={}){
  return section("Manufacturer & Brand","Separate from our internal legal entity (MA-002) and from the eventual purchasing supplier.")+
@@ -454,7 +467,7 @@ function getFamilyForm(f){
   rating:trim(f,"familyRating"),description:trim(f,"familyDescription"),status:trim(f,"familyStatus")||"Draft",
   attributes:trim(f,"familyAttributes")};
 }
-function getVariantForm(f,familyType,existing=null,solarKind="general"){
+function getVariantForm(f,familyType,existing=null,solarKind="general",category="Other"){
  const sku=trim(f,"sku"),model=trim(f,"model"),manufacturerId=trim(f,"manufacturerId");
  if(!sku||!model)throw Error("Variant SKU and manufacturer model number are required.");
  if(db.variants.some(v=>v.sku.toLowerCase()===sku.toLowerCase()&&v.id!==existing?.id))throw Error("This SKU already exists. Each model must have a unique product code.");
@@ -482,17 +495,28 @@ function getVariantForm(f,familyType,existing=null,solarKind="general"){
   }
   if(solarKind==="battery"&&solar.usableKwh!==undefined&&solar.nominalKwh!==undefined&&solar.usableKwh>solar.nominalKwh)
    throw Error("Usable battery energy cannot exceed nominal energy.");
+ const categorySpecs=pim.readCategory(f,{category,solarKind},existing?.categorySpecs||{});
+ const warranty=pim.readWarranty(f,existing?.warranty||{});
  const from=trim(f,"priceFrom"),to=trim(f,"priceTo");
  if(from&&to&&to<from)throw Error("Price effective-until cannot precede the effective-from date.");
  return {sku:sku.slice(0,80),manufacturerId,model:model.slice(0,120),variant:trim(f,"variantName")||model,
   status:trim(f,"variantStatus")||"Draft",capacity:trim(f,"capacity"),voltage:trim(f,"voltage"),
   mounting:trim(f,"mounting"),material:trim(f,"material"),enclosure:trim(f,"enclosure"),
   dimensions:dims,technical:techParse(trim(f,"technical")),solar,components,
+  ...(Object.keys(categorySpecs).length||existing?.categorySpecs?{categorySpecs}:{}),
+  ...(Object.keys(warranty).length||existing?.warranty?{warranty}:{}),
   price:{currency:trim(f,"currency")||"INR",list:trim(f,"priceList")||"Demo Base Price List",
    cost:cost===""?0:cost,sell:sell===""?0:sell,from,to,
    availability:trim(f,"availability")||"Unknown",supplierRef:trim(f,"supplierRef"),
    hsnSac:trim(f,"hsnSac"),leadTimeDays:positive(f,"leadTimeDays")},
   datasheet:trim(f,"datasheet"),drawing:trim(f,"drawing"),notes:trim(f,"variantNotes")};
+}
+function stagedWizardDocuments(form,old){
+ const picker=form.querySelector('[name="wizardDocFiles"]');
+ if(!picker?.files?.length)return null;
+ const staged={documents:clone(old?.documents||[]),documentHistory:clone(old?.documentHistory||[])};
+ pim.addDocuments(staged,form,"wizardDoc");
+ return staged;
 }
 function saveEditor(event){
  event.preventDefault();
@@ -509,9 +533,10 @@ function saveEditor(event){
      throw Error("Product group already exists. Choose that group instead of making a duplicate.");
     newFamily={id:idNext("FAM-",db.families),...f};fam=newFamily;
    }
-   const v=getVariantForm(fd,fam.type,null,fam.solarKind||"general");v.status="Draft";
+   const v=getVariantForm(fd,fam.type,null,fam.solarKind||"general",fam.category||"Other");v.status="Draft";
+   const docs=stagedWizardDocuments($("catalog-editor-form"),null);
    if(newFamily)db.families.unshift(newFamily);
-   const vari={id:idNext("VAR-",db.variants),familyId:fam.id,...v};db.variants.unshift(vari);
+   const vari={id:idNext("VAR-",db.variants),familyId:fam.id,documents:docs?.documents||[],documentHistory:docs?.documentHistory||[],revisionHistory:[],...v};db.variants.unshift(vari);
    state.family=fam.id;state.variant=vari.id;state.tab="variants";
    state.search="";state.category="all";state.manufacturer="all";state.status="all";state.hub="products";
   }else if(e.mode==="family-edit"){
@@ -520,17 +545,21 @@ function saveEditor(event){
   }else if(e.mode==="variant-new"||e.mode==="variant-edit"){
    const fam=family(e.familyId);if(!fam)throw Error("Select a valid product family.");
    const orig=e.mode==="variant-edit"?variant(e.variantId):null;
-   const input=getVariantForm(fd,fam.type,orig,fam.solarKind||"general");
+   const input=getVariantForm(fd,fam.type,orig,fam.solarKind||"general",fam.category||"Other");
+   const docs=stagedWizardDocuments($("catalog-editor-form"),orig);
    if(!orig)input.status="Draft";
    if(orig){
+    const prior=clone(orig);
     const before=JSON.stringify({...orig,status:undefined,demoReview:undefined});
     input.status=orig.status;Object.assign(orig,input);
+    if(docs){orig.documents=docs.documents;orig.documentHistory=docs.documentHistory;}
+    pim.recordModelChange(orig,prior,input);
     if(orig.demoReview&&before!==JSON.stringify({...orig,status:undefined,demoReview:undefined})){
      orig.status="Draft";orig.demoReview={state:"Returned to Draft",events:[...(orig.demoReview.events||[]),{action:"Model details edited; simulated eligibility reset",at:new Date().toLocaleString("en-GB"),actor:"Demo operator"}]};
     }
    }
    else{
-    const v={id:idNext("VAR-",db.variants),familyId:fam.id,...input};db.variants.unshift(v);state.variant=v.id;
+    const v={id:idNext("VAR-",db.variants),familyId:fam.id,documents:docs?.documents||[],documentHistory:docs?.documentHistory||[],revisionHistory:[],...input};db.variants.unshift(v);state.variant=v.id;
    }
    state.family=fam.id;state.tab="variants";
    state.manufacturer="all";state.status="all";state.search="";
@@ -590,6 +619,29 @@ $("catalog-editor-form").addEventListener("change",e=>{
  if(e.target.name!=="solarKind"||state.editor?.mode!=="product-new")return;
  state.editor.solarKind=e.target.value;
  const target=$("catalog-solar-fields");if(target)target.innerHTML=solarFields(e.target.value,{});
+});
+/* Document picker stores safe metadata only. File bytes never enter localStorage. */
+$("catalog-family-body").addEventListener("submit",event=>{
+ const form=event.target.closest("#catalog-document-form");
+ if(!form)return;
+ event.preventDefault();
+ const v=variant(state.variant),error=form.querySelector("#catalog-document-error");
+ if(!v)return;
+ try{
+  pim.addDocuments(v,form);
+  state.tab="documents";renderCatalog();
+ }catch(err){
+  if(error){error.hidden=false;error.textContent=err.message||"Unable to record document metadata.";}
+ }
+});
+$("catalog-family-body").addEventListener("click",event=>{
+ const target=event.target.closest("[data-product-doc-archive]");
+ if(!target)return;
+ const v=variant(state.variant);if(!v)return;
+ if(!window.confirm("Archive this document reference? Earlier metadata and versions will be retained."))return;
+ try{
+  pim.archiveDocument(v,target.dataset.productDocArchive);state.tab="documents";renderCatalog();
+ }catch(err){window.alert(err.message||"Unable to archive this document reference.");}
 });
 $("catalog-editor-form").addEventListener("submit",saveEditor);
 $("catalog-editor-cancel").addEventListener("click",closeEditor);

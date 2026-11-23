@@ -185,17 +185,30 @@ function syncView(){
  const split=state.view==="detail";
  $("sm-register-view").hidden=false;
  $("sm-detail-view").hidden=!split;
- $("sm-expand-table").hidden=!split;
  $("sm-workspace").classList.toggle("is-split",split);
 }
 function render(){stats();renderTable();renderDetail();syncView();}
+function keepSelectedRowVisible(){
+ const table=$("sm-table-body");
+ const rows=table.querySelectorAll?.("tr[data-service-row]")||[];
+ const selected=Array.from(rows).find(row=>row.dataset?.serviceRow===state.selected);
+ if(selected&&typeof selected.scrollIntoView==="function"){
+  selected.scrollIntoView({block:"nearest",inline:"nearest"});
+ }
+}
 function choose(id){
  if(!item(id))return;
  state.selected=id;
  revealParents(id);
+ if(!visibleRows().rows.some(({s})=>s.id===id)){
+  state.type="all";state.status="all";state.search="";
+  $("sm-type").value="all";$("sm-status").value="all";$("sm-search").value="";
+  state.collapsedInFilter.clear();revealParents(id);
+ }
  state.view="detail";
  syncView();renderTable();renderDetail();
  $("sm-workspace").scrollIntoView({block:"start"});
+ keepSelectedRowVisible();
 }
 function backToList(){
  state.view="list";
@@ -298,7 +311,9 @@ function saveEditor(event){
  if(!window.CPQ_SHARED||!window.CPQ_SHARED.save("services",next))return showError("Could not save demo changes in this browser. Check available local storage.");
  db=next;window.CPQ_SERVICE_MASTER=copy(next);state.selected=record.id;
  revealParents(record.id);state.collapsedInFilter.clear();
- closeEditor();render();toast(existing?"Service updated (demo).":"Service created (demo).");
+ closeEditor();render();
+ if(state.view==="detail")keepSelectedRowVisible();
+ toast(existing?"Service updated (demo).":"Service created (demo).");
 }
 let toastId=null;
 function toast(msg){
@@ -316,7 +331,6 @@ $("sm-search").addEventListener("input",event=>{state.search=event.target.value;
 $("sm-status").addEventListener("change",event=>{state.status=event.target.value;state.collapsedInFilter.clear();renderTable();});
 $("sm-type").addEventListener("change",event=>{state.type=event.target.value;state.collapsedInFilter.clear();renderTable();});
 $("sm-back").addEventListener("click",backToList);
-$("sm-expand-table").addEventListener("click",backToList);
 $("sm-expand-all").addEventListener("click",()=>{
  const {rows,autoExpanded}=matchingResults(),eligibleIds=new Set(rows.map(({s})=>s.id));
  const parents=allParentIds().filter(id=>eligibleIds.has(id));

@@ -36,6 +36,14 @@ function updateCategory(form,kind){
 
 function groupsFor(kind){return db.families.filter(f=>(f.solarKind||"general")===kind&&f.status!=="Discontinued").sort((a,b)=>a.name.localeCompare(b.name));}
 function selectedGroup(form){const id=form.querySelector('[name="wizardFamilyId"]')?.value;return id&&id!=="__new__"?db.families.find(f=>f.id===id):null;}
+function refreshCategoryFields(form){
+ const target=form.querySelector("#catalog-category-spec-fields");
+ if(!target)return;
+ const selected=selectedGroup(form);
+ const category=selected?.category||form.querySelector('[name="familyCategory"]')?.value||"Other";
+ const solarKind=selected?.solarKind||form.querySelector('[name="solarKind"]')?.value||"general";
+ target.innerHTML=window.CPQ_MA006A_PRODUCT_INFO?.categoryFields({category,solarKind,type:selected?.type||"standard"},{})||"";
+}
 function updateGroupMode(form){
  if(current?.mode!=="product-new")return;
  const reused=selectedGroup(form),nameField=formField(form,"familyName");
@@ -48,6 +56,7 @@ function updateGroupMode(form){
  const hint=$("catalog-wizard-group-help");
  if(hint)hint.textContent=reused?"A new model will be added under "+reused.name+". No duplicate group needed.":
  "Only create a new group when none fits. Different wattages and brands normally belong in the same group.";
+ refreshCategoryFields(form);
 }
 function refreshGroupOptions(form,kind){
  const sel=form.querySelector('[name="wizardFamilyId"]');if(!sel)return;
@@ -184,10 +193,16 @@ function mount(editor,database){
   solar.querySelectorAll("details").forEach(el=>{if(String(el.querySelector("summary")?.textContent||"").toLowerCase().includes("advanced"))el.open=false;});
   spec.appendChild(solar);
  }
+ const categorySpecs=$("catalog-category-spec-fields");
+ if(categorySpecs)spec.appendChild(categorySpecs);
  const dims=original.find(el=>el.tagName==="DETAILS"&&String(el.querySelector("summary")?.textContent||"").includes("Physical dimensions"));
  if(dims){dims.open=false;spec.appendChild(dims);}
  const otherTech=original.find(el=>el.tagName==="DETAILS"&&String(el.querySelector("summary")?.textContent||"").includes("Documents & other technical"));
  if(otherTech){otherTech.open=false;otherTech.querySelector("summary").textContent="Additional technical specifications, drawings & notes";spec.appendChild(otherTech);}
+ const warranty=original.find(el=>el.tagName==="DETAILS"&&el.hasAttribute("data-product-warranty"));
+ if(warranty){warranty.open=false;spec.appendChild(warranty);}
+ const docs=original.find(el=>el.tagName==="DETAILS"&&el.hasAttribute("data-product-documents"));
+ if(docs){docs.open=false;spec.appendChild(docs);}
  spec.appendChild(node("div","ma6a-wizard-tip",
  'A draft can be saved with missing details. Technical review is required before the model is approved for commercial use.'));
  price.appendChild(sectionHeading("3. Price & Save","Optional commercial information may be completed later by an authorized employee."));
@@ -203,9 +218,9 @@ function mount(editor,database){
  if(parts){parts.open=false;price.appendChild(parts);}
  const review=node("div","ma6a-wizard-review");review.id="catalog-wizard-review";price.appendChild(review);
  price.appendChild(node("div","ma6a-wizard-tip",
-  'Choose <b>Save as Draft</b>. Datasheets, compliance and commercial approvals can be completed later.'));
+  'Choose <b>Save as Draft</b>. You may attach document filenames during step 2, or add and revise them later in <b>Documents &amp; Warranty</b>. The wireframe never stores file contents.'));
  // Keep all unmoved fields and existing values for the original save/validation function.
- const moved=new Set([basicGrid,solar,dims,otherTech,commercial,parts]);
+ const moved=new Set([basicGrid,solar,categorySpecs,dims,otherTech,warranty,docs,commercial,parts]);
  const leftovers=node("details","ma6a-editor-details ma6a-wizard-extra",'<summary>Other advanced information</summary>');
  for(const el of original){
   if(el.parentElement===body&&el.querySelector("input,select,textarea"))leftovers.appendChild(el);

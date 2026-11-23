@@ -117,3 +117,29 @@ Use permissions **and** company/branch record scope, not only human-readable rol
 14. Verify active product deactivation/master revision does not retroactively modify saved/issued quote content.
 
 **BA sign-off boundary:** Page structure, guided UX, data entities and the intended rules above are ready for review. Final engineering rule sets, regulatory jurisdiction, approval thresholds, company policy, pricing/tax and server security **must still be approved by responsible owners before production development or go-live**.
+
+## 10. Model Product Information and Documents — November 2026 wireframe extension
+
+This extension adds information to the existing Product Master; it does **not** replace manufacturer/model/SKU variants, model status, prices, parts, solar templates, configuration records or quotations.
+
+- **Separate masters:** New business services and sub-services belong to `service-master.html`. The historical example service model `FAM-004` stays in the product catalog until its legacy quotation references are migrated; don't silently delete it.
+- **Model-level specifications:** Each manufacturer model/SKU retains its own dimensions, solar equipment specifications and free-form `technical[]`. General panels, distribution assemblies, cables, switchgear and other equipment additionally use `categorySpecs` with appropriate field labels/units. Unavailable specifications remain blank.
+- **Warranty and guarantee:** Optional structured `warranty` object stores provider, duration in months, guarantee duration, effective trigger, coverage/exclusions, guarantee terms and notes. Warranty certificates are separate document references.
+- **Multiple documents:** Each exact model can have many `documents[]`, including datasheets, blueprints/CAD, installation manuals, user guides, photos, warranties, guarantees, test reports, certificates and brochures. Each record contains document ID, filename, type, version, visibility, notes, recorded timestamp, demo actor, lifecycle status, and optional `supersedesId`.
+- **Documents at creation:** The Add Product and Add Model wizard's technical stage includes an optional multi-file picker. Filenames/metadata are associated with the newly saved Draft model. Users can also add files in the separate **Documents & Warranty** details tab later.
+- **Versions and archival:** A later record may replace a selected current document and mark the earlier version Superseded. Archive hides current availability but preserves history. Document and model-edit histories are maintained separately.
+- **Product revisions:** `revisionHistory[]` stores a capped audit-style demo record of changed model fields and their previous values. This is **not** a legally reliable production audit log.
+- **Optional service links:** The Documents & Warranty page shows which Service Master records optionally suggest this exact model, without making the product mandatory or billable.
+- **Demo boundary:** Selecting a file records only filename/type/version/size/metadata in browser storage; **actual file bytes are never uploaded, saved, previewable or downloadable**. Use fictional files only. Document categories/visibility are planning controls, not enforced server permissions.
+
+**Production Laravel implementation requirements:** Keep manufacturer and internal selling entities distinct; enforce MA-003 company/branch and document visibility permissions on every request; store attachments privately outside public web root; validate extension, MIME and content, scan files, limit sizes, use protected or expiring download URLs, and maintain audit metadata and explicit document revisions. Version product data and freeze appropriate specification/document references on issued quotations. Do not put binary attachments in localStorage. Custom master field-definition administration and real approval workflows are separate production modules.
+
+### Additional QA checks
+
+15. Edit an existing model's structured warranty, dimensions, category specifications and advanced attributes; verify its sibling manufacturer's model remains unchanged.
+16. Add a model with a fictional datasheet in the Add Product wizard; verify the saved Draft shows document metadata under Documents & Warranty after refresh.
+17. Record several documents, including a drawing, manual and warranty certificate, on an existing model. File bytes must not be retained by the wireframe.
+18. Supersede one document with a new version; verify the old record remains in history and no unrelated document is replaced.
+19. Archive a document reference, verify it is retained under previous/archived records, and verify product/master lifecycle records still exist.
+20. Change a model's technical value; verify the previous value appears in its model edit history and existing quotation snapshots are not overwritten by master edits.
+21. Confirm Service Master optional link to a model is visible in Product Management, and manufacturer/multiple-variant associations are preserved.
