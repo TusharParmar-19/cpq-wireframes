@@ -11,6 +11,7 @@
   opportunities:"CPQ_MA005_DATA",
   configurations:"CPQ_MA006A_DATA",
   catalog:"CPQ_MA006A_CATALOG",
+  services:"CPQ_SERVICE_MASTER",
   quotations:"CPQ_MA006_DATA"
  };
  const copy=x=>JSON.parse(JSON.stringify(x));
