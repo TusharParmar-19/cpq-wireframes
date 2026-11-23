@@ -201,6 +201,8 @@ function mount(editor,database){
  if(otherTech){otherTech.open=false;otherTech.querySelector("summary").textContent="Additional technical specifications, drawings & notes";spec.appendChild(otherTech);}
  const warranty=original.find(el=>el.tagName==="DETAILS"&&el.hasAttribute("data-product-warranty"));
  if(warranty){warranty.open=false;spec.appendChild(warranty);}
+ const docs=original.find(el=>el.tagName==="DETAILS"&&el.hasAttribute("data-product-documents"));
+ if(docs){docs.open=false;spec.appendChild(docs);}
  spec.appendChild(node("div","ma6a-wizard-tip",
  'A draft can be saved with missing details. Technical review is required before the model is approved for commercial use.'));
  price.appendChild(sectionHeading("3. Price & Save","Optional commercial information may be completed later by an authorized employee."));
@@ -216,9 +218,9 @@ function mount(editor,database){
  if(parts){parts.open=false;price.appendChild(parts);}
  const review=node("div","ma6a-wizard-review");review.id="catalog-wizard-review";price.appendChild(review);
  price.appendChild(node("div","ma6a-wizard-tip",
-  'Choose <b>Save as Draft</b>. Afterwards open <b>Documents &amp; Warranty</b> to record datasheets, blueprints, manuals, warranty certificates and versions. Only file metadata is kept in this wireframe.'));
+  'Choose <b>Save as Draft</b>. You may attach document filenames during step 2, or add and revise them later in <b>Documents &amp; Warranty</b>. The wireframe never stores file contents.'));
  // Keep all unmoved fields and existing values for the original save/validation function.
- const moved=new Set([basicGrid,solar,categorySpecs,dims,otherTech,warranty,commercial,parts]);
+ const moved=new Set([basicGrid,solar,categorySpecs,dims,otherTech,warranty,docs,commercial,parts]);
  const leftovers=node("details","ma6a-editor-details ma6a-wizard-extra",'<summary>Other advanced information</summary>');
  for(const el of original){
   if(el.parentElement===body&&el.querySelector("input,select,textarea"))leftovers.appendChild(el);
