@@ -160,7 +160,7 @@ function payload(c){
   })};
 }
 function quotationLink(c){
- return 'ma-006-quotations.html?configData='+encodeURIComponent(JSON.stringify(payload(c)));
+ return 'ma-006-quotations.html?configuration='+encodeURIComponent(c.id);
 }
 function renderHead(c){
  $("configuration-header").innerHTML='<div class="ma6-detail-top"><div><small>'+esc(c.id)+' / '+esc(c.revision)+' · '+esc(c.kind)+'</small><h2>'+esc(c.name)+'</h2><p>'+esc(customer(c.customerId)?.name||"Reusable configuration without a customer")+' · '+esc(owner(c.ownerId)?.name||"Unassigned owner")+'</p></div>'+
