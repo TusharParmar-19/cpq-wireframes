@@ -63,7 +63,9 @@ function warrantyFields(v={}){
 function readWarranty(fd,old={}){
  const out={...old};
  for(const [name,key] of [["warrantyProvider","provider"],["warrantyTrigger","trigger"],["warrantyCoverage","coverage"],["guaranteeTerms","guaranteeTerms"],["warrantyNotes","notes"]]){
-  out[key]=String(fd.get(name)||"").trim().slice(0,key==="coverage"||key==="guaranteeTerms"?3000:700);
+  const value=String(fd.get(name)||"").trim().slice(0,key==="coverage"||key==="guaranteeTerms"?3000:700);
+  if(value)out[key]=value;
+  else delete out[key];
  }
  for(const [name,key] of [["warrantyMonths","months"],["guaranteeMonths","guaranteeMonths"]]){
   const raw=String(fd.get(name)||"").trim();
