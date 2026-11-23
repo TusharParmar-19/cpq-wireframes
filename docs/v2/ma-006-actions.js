@@ -5,6 +5,7 @@ const a=window.CPQ_MA006;
 const {$,esc,db,master,org,staff,enquiries,state,quote,customer,buyer,contact,site,project,employee,entity,branch,opportunity,product,configCheck,configUnit,numeric,render,renderBuilder,paper,note}=a;
 let toastTimer=null,priorFocus=null;
 const copy=x=>JSON.parse(JSON.stringify(x));
+const flow=window.CPQ_FLOW;
 const demoDate=()=>new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"});
 const statusDraft="Draft";
 const toISO=v=>{
@@ -31,7 +32,7 @@ function closeModal(){
 function explain(title,body){modal(title,"MA-006 · Wireframe only",'<div class="ma6-note">'+body+'</div>');}
 function makeBlank(){
  return {
-  id:"",rev:"R0",status:statusDraft,title:"",customerId:"",buyerId:"",contactId:"",siteId:"",projectId:"",opportunityId:"",
+  id:"",rev:"R0",status:statusDraft,title:"",customerId:"",buyerId:"",contactId:"",siteId:"",projectId:"",opportunityId:"",serviceIds:[],enquiryServiceIds:[],
   companyId:"",branchId:"",ownerId:"",date:demoDate(),validUntil:"",currency:"INR",
   discount:0,taxRate:18,payment:"To be agreed",delivery:"To be confirmed",warranty:"Subject to approved product terms",
   exclusions:"",notes:"",lines:[],review:"Not submitted",response:"Not issued",responseNote:"",lastUpdated:demoDate()+" (demo)",versionNotes:"New unissued draft"
@@ -48,6 +49,9 @@ function newBuilder(sourceId=""){
   q.customerId=src.customerId;q.buyerId=src.buyerId;q.contactId=src.contactId;q.siteId=src.siteId;
   q.projectId=src.projectId;q.companyId=src.companyId;q.branchId=src.branchId;q.ownerId=src.ownerId;
   q.opportunityId=src.id;q.title="Quotation — "+src.title;q.notes="Source enquiry: "+src.summary;
+   q.enquiryServiceIds=flow.normalized(src.serviceIds||[],true);
+   q.lines=flow.serviceLines(q.enquiryServiceIds,1,src.id);
+   q.serviceIds=q.lines.map(l=>l.serviceId);
  }
  const b={quote:q,isNew:true,step:0,productId:"",options:{},quantity:1,addPickerOpen:true,catalogSearch:""};
  state.mode="builder";state.builder=b;renderBuilder();
@@ -100,6 +104,7 @@ function saveBuilder(){
  else if(!percentOK)error="Sample discount and tax percentages must be between 0 and 100.";
  else if(q.validUntil&&!toISO(q.validUntil))error="Choose a valid calendar date or leave validity blank until review.";
  if(error){explain("Please correct the saved data",esc(error)+"<p>Incomplete quotation details and unconfirmed terms are allowed in Draft. Invalid relationships or numbers are not.</p>");return;}
+ syncPackageBilling(q);
  if(b.isNew){
   const max=Math.max(20,...db.quotations.map(x=>Number(x.id.split("-").at(-1))||0));
   q.id="QT-2026-"+String(max+1).padStart(3,"0");q.rev="R0";db.quotations.unshift(copy(q));
@@ -121,6 +126,17 @@ function saveBuilder(){
  render();toast("Draft quotation "+q.id+" saved in demo browser state");
  $("quote-register").scrollIntoView({block:"start",behavior:"auto"});
 }
+function syncPackageBilling(q){
+ const selections=(q.lines||[]).filter(l=>l.serviceId).map(l=>l.serviceId);
+ for(const line of q.lines||[]){
+  if(!line.serviceId)continue;
+  const ancestor=flow.hasSelectedAncestor(line.serviceId,selections);
+  line.includedInParent=!!ancestor;
+  line.includedInServiceId=ancestor?.id||"";
+  if(ancestor)line.unitPrice=0;
+ }
+ q.serviceIds=flow.normalized(selections,true);
+}
 function addSelectedProduct(){
  const b=state.builder;if(!b)return;const q=b.quote,p=product(b.productId);
  if(!p)return;
@@ -130,11 +146,19 @@ function addSelectedProduct(){
  const qty=Number(b.quantity);
  if(!Number.isInteger(qty)||qty<=0||qty>100000){explain("Quantity required","Enter a whole number between 1 and 100,000.");return;}
  const index=Math.max(0,...q.lines.map(x=>Number(x.id.replace(/[^0-9]/g,""))||0))+1;
+ if(p.serviceId&&q.lines.some(l=>l.serviceId===p.id)){
+  explain("Service already selected","This service is already in the BOQ. Edit its existing line rather than adding a duplicate.");return;
+ }
  const line={id:"L"+String(index).padStart(2,"0"),productId:p.id,type:p.type,description:p.name,
   quantity:qty,unit:p.unit,unitPrice:configUnit(p,b.options),options:p.type==="config"?{...b.options}:{},
   catalogSpec:p.catalogSpec||"",sourceVariantId:p.sourceVariantId||"",pricingReview:!!p.sourceVariantId,technicalReview:!!p.demoOnly,unverified:!!p.demoOnly||(!!p.sourceVariantId&&!(Number(p.basePrice)>0))};
- q.lines.push(line);
- renderBuilder();toast("Sample product added to BOQ");
+ if(p.serviceId){
+  const selected=[...q.lines.filter(l=>l.serviceId).map(l=>l.serviceId),p.id];
+  Object.assign(line,flow.lineFor(p.id,index,selected,""));
+ }
+ if(p.sourceVariantId)flow.attachModel(line,p.sourceVariantId);
+ q.lines.push(line);syncPackageBilling(q);
+ renderBuilder();toast(p.serviceId?"Service added as an unpriced BOQ line":"Sample product added to BOQ");
 }
 function updateBuilderField(field,value){
  const b=state.builder;if(!b)return;const q=b.quote;
@@ -324,7 +348,7 @@ document.addEventListener("click",e=>{
  if(d.tab){state.tab=d.tab;render();return;}
  if(d.step!==undefined){const i=Number(d.step);if(state.builder&&Number.isInteger(i)&&i>=0&&i<4){state.builder.step=i;renderBuilder();}return;}
  if(d.product){if(state.builder){setProduct(state.builder,d.product);renderBuilder();}return;}
- if(d.removeLine){if(state.builder){state.builder.quote.lines=state.builder.quote.lines.filter(l=>l.id!==d.removeLine);renderBuilder();}return;}
+ if(d.removeLine){if(state.builder){const q=state.builder.quote;q.lines=q.lines.filter(l=>l.id!==d.removeLine);syncPackageBilling(q);renderBuilder();}return;}
  if(d.action){handleAction(d.action,t);return;}
  if(d.planned){explain(esc(d.planned)+" (planned)","This is a future administration or business workflow. MA-006 only represents where it connects to quotation configuration and issuance.");return;}
 });
@@ -340,7 +364,7 @@ function changedInput(e,commit=true){
  }
  if(t.dataset.catalogSearch!==undefined){b.catalogSearch=t.value;return;}
   if(t.dataset.lineRate!==undefined){
-  const l=q.lines.find(x=>x.id===t.dataset.lineRate);if(l){l.unitPrice=Math.max(0,Number(t.value)||0);if(commit)renderBuilder();}return;
+  const l=q.lines.find(x=>x.id===t.dataset.lineRate);if(l&&!l.includedInParent){l.unitPrice=Math.max(0,Number(t.value)||0);if(commit)renderBuilder();}return;
  }
 }
 $("builder-body").addEventListener("change",e=>changedInput(e,true));
