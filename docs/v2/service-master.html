@@ -40,10 +40,15 @@
    </div>
    <div class="info"><b>WIREFRAME ONLY · Fictional sample services.</b> Changes are saved only in this browser. There is no real authentication, approval, database, file storage or quotation update. Existing demo service lines inside Products / Quotations are preserved for compatibility until their migration is designed.</div>
    <div class="sm-summary" id="sm-summary" aria-label="Service summary"></div>
+   <div class="sm-workspace" id="sm-workspace">
    <section class="card sm-register" id="sm-register-view" aria-label="Service register">
     <div class="sm-head">
-     <div><h2>Service Register</h2><p class="muted">Browse all main services and sub-services. Open details only when needed.</p></div>
-     <span class="chip" id="sm-count">0 shown</span>
+     <div><h2>Service Register</h2><p class="muted">Expand a main service to view its sub-services, or select a row to see details.</p></div>
+     <div class="sm-head-actions">
+      <span class="chip" id="sm-count">0 shown</span>
+      <button type="button" class="btn sm-head-toggle" id="sm-expand-all">Expand all</button>
+      <button type="button" class="btn sm-head-toggle" id="sm-expand-table" hidden>⤢ Expand Table</button>
+     </div>
     </div>
     <div class="sm-filter" role="search" aria-label="Filter services">
      <div><label for="sm-search">Search services</label><input id="sm-search" type="search" placeholder="Search name, code, parent, work type..."></div>
@@ -56,12 +61,13 @@
       <tbody id="sm-table-body" aria-live="polite"></tbody>
      </table>
     </div>
-    <div class="sm-table-footer"><span id="sm-result-summary"></span><span>Choose <b>View Details</b> for scope, deliverables, linked products and sub-services.</span></div>
+    <div class="sm-table-footer"><span id="sm-result-summary"></span><span>Use the arrow to expand sub-services. Select <b>View Details</b> to open the right panel.</span></div>
    </section>
    <section class="card sm-detail" id="sm-detail-view" aria-label="Service details" hidden>
-    <div class="sm-detail-nav"><button type="button" class="btn" id="sm-back">← Back to Services</button><span>Service details</span></div>
+    <div class="sm-detail-nav"><button type="button" class="btn" id="sm-back">⤢ Expand Table</button><span>Service details</span></div>
     <div id="sm-detail" aria-live="polite"></div>
    </section>
+   </div>
    <section class="card sm-guide">
     <b>How this will connect to CPQ:</b> An employee selects one or more services/sub-services on MA-005 Enquiry. Product mapping suggests exact manufacturer/model/SKU variants; it does not insert or price them automatically. MA-006A configures physical products when required, and MA-006 owns quotation charges, packages and approved pricing. These cross-page changes are the next wireframe step.
    </section>

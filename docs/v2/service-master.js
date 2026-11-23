@@ -7,7 +7,7 @@ const copy=v=>JSON.parse(JSON.stringify(v));
 let db=copy(window.CPQ_SERVICE_MASTER||{services:[]});
 if(!Array.isArray(db.services))db.services=[];
 const catalog=window.CPQ_MA006A_CATALOG||{variants:[],manufacturers:[],families:[]};
-const state={selected:db.services[0]?.id||"",search:"",status:"all",type:"all",view:"list",editing:null,focus:null};
+const state={selected:db.services[0]?.id||"",search:"",status:"all",type:"all",view:"list",expanded:new Set(),collapsedInFilter:new Set(),editing:null,focus:null};
 const item=id=>db.services.find(s=>s.id===id);
 const family=id=>(catalog.families||[]).find(f=>f.id===id);
 const manufacturer=id=>(catalog.manufacturers||[]).find(m=>m.id===id);
@@ -44,7 +44,8 @@ function stats(){
   ["Main services",parents],["Sub-services",all.length-parents],["Active services",active],["Optional product links",links]
  ].map(v=>'<div class="card sm-stat"><span>'+esc(v[0])+'</span><strong>'+v[1]+'</strong></div>').join("");
 }
-/* Preserve the hierarchy in data, but show one full-width register table by default. */
+/* Main services start collapsed. Expanding rows reveals nested sub-services.
+ * Filtered matches also reveal ancestor context; all IDs remain unchanged. */
 function orderedServices(){
  const rows=[],seen=new Set();
  function walk(s,depth){
@@ -56,25 +57,86 @@ function orderedServices(){
  db.services.forEach(s=>{if(!seen.has(s.id))walk(s,0);});
  return rows;
 }
-function filteredRows(){
+function parentIds(id){
+ const out=[],seen=new Set([id]);
+ let s=item(id);
+ while(s?.parentId&&!seen.has(s.parentId)){
+  seen.add(s.parentId);out.unshift(s.parentId);s=item(s.parentId);
+ }
+ return out;
+}
+function revealParents(id){parentIds(id).forEach(parentId=>{state.expanded.add(parentId);state.collapsedInFilter.delete(parentId);});}
+function matchingResults(){
  const needle=state.search.toLowerCase().trim();
- return orderedServices().filter(({s})=>{
-  if(state.status!=="all"&&s.status!==state.status)return false;
-  if(state.type==="main"&&s.parentId)return false;
-  if(state.type==="sub"&&!s.parentId)return false;
-  const parent=item(s.parentId);
-  return !needle||[s.name,s.code,s.domain,s.workType,s.description,parent?.name||"",lineage(s).join(" / ")].join(" ").toLowerCase().includes(needle);
+ const type=state.type,status=state.status;
+ const all=orderedServices();
+ const isFiltered=!!needle||status!=="all";
+ const matches=all.filter(({s,depth})=>{
+  if(type==="main"&&depth!==0)return false;
+  if(type==="sub"&&depth===0)return false;
+  if(status!=="all"&&s.status!==status)return false;
+  if(!needle)return true;
+  return [s.name,s.code,s.domain,s.workType,s.description,item(s.parentId)?.name||"",lineage(s).join(" / ")].join(" ").toLowerCase().includes(needle);
  });
+ if(type!=="all")return {rows:matches,autoExpanded:new Set(),isFiltered};
+ if(!isFiltered)return {rows:all,autoExpanded:new Set(),isFiltered:false};
+ const relevant=new Set(),autoExpanded=new Set();
+ for(const {s} of matches){
+  relevant.add(s.id);
+  for(const ancestor of parentIds(s.id)){relevant.add(ancestor);autoExpanded.add(ancestor);}
+ }
+ return {rows:all.filter(({s})=>relevant.has(s.id)),autoExpanded,isFiltered:true};
+}
+function isOpen(id,autoExpanded){
+ return !state.collapsedInFilter.has(id)&&(state.expanded.has(id)||autoExpanded.has(id));
+}
+function visibleRows(){
+ const {rows,autoExpanded,isFiltered}=matchingResults();
+ if(state.type!=="all")return {rows,autoExpanded,isFiltered};
+ const show=rows.filter(({s})=>parentIds(s.id).every(id=>isOpen(id,autoExpanded)));
+ return {rows:show,autoExpanded,isFiltered};
+}
+function allParentIds(){
+ return db.services.filter(s=>subs(s.id).length).map(s=>s.id);
+}
+function updateExpandAll(){
+ const {rows,autoExpanded}=matchingResults();
+ const candidateIds=new Set(rows.map(({s})=>s.id));
+ const toggles=allParentIds().filter(id=>candidateIds.has(id));
+ const allOpen=toggles.length>0&&toggles.every(id=>isOpen(id,autoExpanded));
+ $("sm-expand-all").textContent=allOpen?"Collapse all":"Expand all";
+ $("sm-expand-all").hidden=state.type!=="all"||toggles.length===0;
+}
+function toggleChildren(id){
+ if(!subs(id).length||state.type!=="all")return;
+ const {autoExpanded}=matchingResults();
+ if(isOpen(id,autoExpanded)){
+  state.expanded.delete(id);
+  state.collapsedInFilter.add(id);
+ }else{
+  state.expanded.add(id);
+  state.collapsedInFilter.delete(id);
+ }
+ renderTable();
 }
 function renderTable(){
- const rows=filteredRows();
+ const {rows,autoExpanded,isFiltered}=visibleRows();
+ const eligible=state.type==="all"?matchingResults().rows:rows;
+ const eligibleIds=new Set(eligible.map(({s})=>s.id));
  $("sm-count").textContent=rows.length+" shown";
- $("sm-result-summary").textContent="Showing "+rows.length+" of "+db.services.length+" services";
+ $("sm-result-summary").textContent="Showing "+rows.length+" of "+db.services.length+" services"+(state.type==="all"&&!isFiltered?" · Expand a row to view sub-services":"");
+ updateExpandAll();
  $("sm-table-body").innerHTML=rows.length?rows.map(({s,depth})=>{
-  const parent=item(s.parentId),children=subs(s.id).length,pad=8+Math.min(depth,5)*12;
-  return '<tr data-service-row="'+esc(s.id)+'">'+
-   '<td><div class="sm-table-name" style="padding-left:'+pad+'px">'+
-   (depth?'<span class="sm-tree-hint" aria-hidden="true">↳</span>':"")+
+  const parent=item(s.parentId),children=subs(s.id).length;
+  const availableChildren=subs(s.id).some(child=>eligibleIds.has(child.id));
+  const canExpand=state.type==="all"&&children>0&&availableChildren;
+  const opened=canExpand&&isOpen(s.id,autoExpanded);
+  const pad=8+Math.min(depth,6)*12;
+  const toggle=canExpand?
+   '<button type="button" class="sm-row-toggle'+(opened?' is-open':'')+'" data-toggle-children="'+esc(s.id)+'" aria-expanded="'+String(opened)+'" aria-label="'+(opened?'Collapse':'Expand')+' sub-services for '+esc(s.name)+'"><span aria-hidden="true">▸</span></button>':
+   '<span class="sm-row-spacer" aria-hidden="true"></span>';
+  return '<tr data-service-row="'+esc(s.id)+'" class="'+(state.view==="detail"&&state.selected===s.id?'sm-selected-row':'')+'">'+
+   '<td><div class="sm-table-name" style="padding-left:'+pad+'px">'+toggle+
    '<span class="sm-table-name-cell"><button type="button" class="sm-open-link" data-view-service="'+esc(s.id)+'">'+esc(s.name)+'</button>'+
    '<small class="sm-row-kind">'+esc(s.parentId?"Sub-service":"Main service")+'</small></span></div></td>'+
    '<td><span class="sm-table-code">'+esc(s.code)+'</span></td>'+
@@ -85,7 +147,7 @@ function renderTable(){
    '<td><span class="'+safeStatus(s.status)+'">'+esc(s.status)+'</span></td>'+
    '<td><div class="sm-row-actions"><button type="button" class="sm-row-view" data-view-service="'+esc(s.id)+'" aria-label="View details of '+esc(s.name)+'">View Details</button>'+
    '<button type="button" class="sm-row-edit" data-edit-service="'+esc(s.id)+'" aria-label="Edit '+esc(s.name)+'">Edit</button></div></td></tr>';
- }).join(""):'<tr><td colspan="8" class="sm-table-empty">No services match your filters. Try a different search or choose another status/type.</td></tr>';
+ }).join(""):'<tr><td colspan="8" class="sm-table-empty">No services match your filters. Try a different search or change the status/type.</td></tr>';
 }
 function productText(id){
  const v=variant(id),f=family(v?.familyId),m=manufacturer(v?.manufacturerId);
@@ -120,18 +182,24 @@ function renderDetail(){
   '<p class="sm-status-note">Changes are recorded in this browser only. Production will enforce MA-003 permissions and immutable quotation snapshots.</p>';
 }
 function syncView(){
- const listing=state.view!=="detail";
- $("sm-register-view").hidden=!listing;
- $("sm-detail-view").hidden=listing;
+ const split=state.view==="detail";
+ $("sm-register-view").hidden=false;
+ $("sm-detail-view").hidden=!split;
+ $("sm-expand-table").hidden=!split;
+ $("sm-workspace").classList.toggle("is-split",split);
 }
 function render(){stats();renderTable();renderDetail();syncView();}
 function choose(id){
  if(!item(id))return;
- state.selected=id;state.view="detail";renderDetail();syncView();
- $("sm-detail-view").scrollIntoView({block:"start"});
+ state.selected=id;
+ revealParents(id);
+ state.view="detail";
+ syncView();renderTable();renderDetail();
+ $("sm-workspace").scrollIntoView({block:"start"});
 }
 function backToList(){
- state.view="list";syncView();
+ state.view="list";
+ syncView();renderTable();
  $("sm-register-view").scrollIntoView({block:"start"});
 }
 function parentOptions(editId,current){
@@ -229,6 +297,7 @@ function saveEditor(event){
  else next.services.push(record);
  if(!window.CPQ_SHARED||!window.CPQ_SHARED.save("services",next))return showError("Could not save demo changes in this browser. Check available local storage.");
  db=next;window.CPQ_SERVICE_MASTER=copy(next);state.selected=record.id;
+ revealParents(record.id);state.collapsedInFilter.clear();
  closeEditor();render();toast(existing?"Service updated (demo).":"Service created (demo).");
 }
 let toastId=null;
@@ -243,11 +312,24 @@ $("sm-cancel").addEventListener("click",closeEditor);
 $("sm-overlay").addEventListener("click",event=>{if(event.target===$("sm-overlay"))closeEditor();});
 document.addEventListener("keydown",event=>{if(event.key==="Escape"&&$("sm-overlay").classList.contains("open"))closeEditor();});
 $("sm-form").addEventListener("submit",saveEditor);
-$("sm-search").addEventListener("input",event=>{state.search=event.target.value;renderTable();});
-$("sm-status").addEventListener("change",event=>{state.status=event.target.value;renderTable();});
-$("sm-type").addEventListener("change",event=>{state.type=event.target.value;renderTable();});
+$("sm-search").addEventListener("input",event=>{state.search=event.target.value;state.collapsedInFilter.clear();renderTable();});
+$("sm-status").addEventListener("change",event=>{state.status=event.target.value;state.collapsedInFilter.clear();renderTable();});
+$("sm-type").addEventListener("change",event=>{state.type=event.target.value;state.collapsedInFilter.clear();renderTable();});
 $("sm-back").addEventListener("click",backToList);
+$("sm-expand-table").addEventListener("click",backToList);
+$("sm-expand-all").addEventListener("click",()=>{
+ const {rows,autoExpanded}=matchingResults(),eligibleIds=new Set(rows.map(({s})=>s.id));
+ const parents=allParentIds().filter(id=>eligibleIds.has(id));
+ if(parents.length&&parents.every(id=>isOpen(id,autoExpanded))){
+  for(const id of parents){state.expanded.delete(id);state.collapsedInFilter.add(id);}
+ }else{
+  for(const id of parents){state.expanded.add(id);state.collapsedInFilter.delete(id);}
+ }
+ renderTable();
+});
 $("sm-table-body").addEventListener("click",event=>{
+ const toggle=event.target.closest("[data-toggle-children]");
+ if(toggle){toggleChildren(toggle.dataset.toggleChildren);return;}
  const edit=event.target.closest("[data-edit-service]");
  if(edit){
   state.selected=edit.dataset.editService;
