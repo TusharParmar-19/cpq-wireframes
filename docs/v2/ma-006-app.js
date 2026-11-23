@@ -436,9 +436,12 @@ function boqBuilder(q,b){
  const lineTable=q.lines.length?table(["BOQ item / specification","Qty","Unit","Sample unit rate","Line total",""],
  q.lines.map(l=>'<tr><td><strong>'+esc(l.description)+'</strong><small>'+esc(lineConfig(l))+'</small>'+
  (l.pricingReview?'<small>Catalog rate requires approval</small>':'')+
- (l.technicalReview?'<small>Technical variation needs review</small>':'')+'</td>'+
+ (l.technicalReview?'<small>Technical variation needs review</small>':'')+
+ (l.includedInParent?'<small class="cpq-quote-service-included">Included in parent package (₹0 extra)</small>':'')+'</td>'+
  '<td><input class="ma6-qty" type="number" min="1" step="1" data-line-qty="'+esc(l.id)+'" value="'+esc(l.quantity)+'" aria-label="Quantity '+esc(l.description)+'"></td>'+
- '<td>'+esc(l.unit)+'</td><td class="ma6-money"><input class="ma6-rate" type="number" min="0" step="0.01" data-line-rate="'+esc(l.id)+'" value="'+esc(l.unitPrice)+'" aria-label="Sample selling rate '+esc(l.description)+'"></td>'+
+ '<td>'+esc(l.unit)+'</td><td class="ma6-money"><input class="ma6-rate" type="number" min="0" step="0.01" data-line-rate="'+esc(l.id)+'" value="'+esc(l.unitPrice)+'"'+
+ (l.includedInParent?' disabled title="Included in parent package; billed once on parent service"':'')+
+ ' aria-label="Sample selling rate '+esc(l.description)+'"></td>'+
  '<td class="ma6-money">'+money(extended(l))+'</td><td><button type="button" class="btn" data-remove-line="'+esc(l.id)+'" aria-label="Remove '+esc(l.description)+'">Remove</button></td></tr>')):
  blank("No BOQ items yet. Add a product or import a configuration.");
  return panel("2 · Products & BOQ",q.sourceConfigId?"Review imported configuration items and add any additional products.":"Select products directly from the catalog, then confirm quantities and sample rates.")+
