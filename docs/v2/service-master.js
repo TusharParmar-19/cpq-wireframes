@@ -83,8 +83,8 @@ function renderTable(){
    '<td><span class="sm-table-number">'+children+'</span></td>'+
    '<td><span class="sm-table-number">'+(s.productIds||[]).length+'</span></td>'+
    '<td><span class="'+safeStatus(s.status)+'">'+esc(s.status)+'</span></td>'+
-   '<td><div class="sm-row-actions"><button type="button" class="btn primary" data-view-service="'+esc(s.id)+'" aria-label="View details of '+esc(s.name)+'">View Details</button>'+
-   '<button type="button" class="btn" data-edit-service="'+esc(s.id)+'" aria-label="Edit '+esc(s.name)+'">Edit</button></div></td></tr>';
+   '<td><div class="sm-row-actions"><button type="button" class="sm-row-view" data-view-service="'+esc(s.id)+'" aria-label="View details of '+esc(s.name)+'">View Details</button>'+
+   '<button type="button" class="sm-row-edit" data-edit-service="'+esc(s.id)+'" aria-label="Edit '+esc(s.name)+'">Edit</button></div></td></tr>';
  }).join(""):'<tr><td colspan="8" class="sm-table-empty">No services match your filters. Try a different search or choose another status/type.</td></tr>';
 }
 function productText(id){
