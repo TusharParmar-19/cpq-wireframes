@@ -81,18 +81,22 @@
   }
   if(customers&&opps&&quotes&&Array.isArray(customers.related)){
    const others=customers.related.filter(r=>!["Opportunity","Quotation"].includes(r.type));
+   const serviceCatalog=window.CPQ_SERVICE_MASTER?.services||[];
+   const describeService=ids=>Array.isArray(ids)?ids.map(id=>serviceCatalog.find(x=>x.id===id)?.name).filter(Boolean).join(" · "):"";
    const rel=[];
    for(const o of opps.opportunities||[]){
     if(!customers.customers.some(c=>c.id===o.customerId))continue;
     rel.push({id:o.id,customerId:o.customerId,type:"Opportunity",status:o.stage,
-     companyId:o.companyId,branchId:o.branchId,customerCompanyId:o.buyerId});
+     companyId:o.companyId,branchId:o.branchId,customerCompanyId:o.buyerId,
+     serviceIds:o.serviceIds||[],serviceNames:describeService(o.serviceIds)});
    }
    for(const q of quotes.quotations||[]){
     if(!customers.customers.some(c=>c.id===q.customerId))continue;
     const outcome=q.demoDispatch?.response?.decision;
+    const ids=q.serviceIds||q.lines?.map(l=>l.serviceId).filter(Boolean)||[];
     rel.push({id:q.id,customerId:q.customerId,type:"Quotation",
      status:q.status+(outcome?" · "+outcome+" (demo)":""),companyId:q.companyId,
-     branchId:q.branchId,customerCompanyId:q.buyerId});
+     branchId:q.branchId,customerCompanyId:q.buyerId,serviceIds:ids,serviceNames:describeService(ids)});
    }
    customers.related=others.concat(rel);
   }
