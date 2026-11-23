@@ -40,20 +40,28 @@
    </div>
    <div class="info"><b>WIREFRAME ONLY · Fictional sample services.</b> Changes are saved only in this browser. There is no real authentication, approval, database, file storage or quotation update. Existing demo service lines inside Products / Quotations are preserved for compatibility until their migration is designed.</div>
    <div class="sm-summary" id="sm-summary" aria-label="Service summary"></div>
-   <div class="sm-workspace">
-    <section class="card sm-register" aria-label="Service register">
-     <div class="sm-head"><div><h2>Service Register</h2><p class="muted">Main services and nested sub-services</p></div><span class="chip" id="sm-count"></span></div>
-     <div class="sm-filter">
-      <div><label for="sm-search">Search services</label><input id="sm-search" type="search" placeholder="Name, code, work type..."></div>
-      <div><label for="sm-status">Status</label><select id="sm-status"><option value="all">All</option><option>Active</option><option>Draft</option><option>Inactive</option></select></div>
-     </div>
-     <div class="sm-tree" id="sm-tree" aria-live="polite"></div>
-     <p class="sm-status-note">A service may have no sub-services or products. Deactivate unused services instead of deleting history.</p>
-    </section>
-    <section class="card sm-detail" aria-label="Service details">
-     <div id="sm-detail" aria-live="polite"><div class="sm-empty">Choose a service to see its details.</div></div>
-    </section>
-   </div>
+   <section class="card sm-register" id="sm-register-view" aria-label="Service register">
+    <div class="sm-head">
+     <div><h2>Service Register</h2><p class="muted">Browse all main services and sub-services. Open details only when needed.</p></div>
+     <span class="chip" id="sm-count">0 shown</span>
+    </div>
+    <div class="sm-filter" role="search" aria-label="Filter services">
+     <div><label for="sm-search">Search services</label><input id="sm-search" type="search" placeholder="Search name, code, parent, work type..."></div>
+     <div><label for="sm-type">Service type</label><select id="sm-type"><option value="all">All services</option><option value="main">Main services</option><option value="sub">Sub-services</option></select></div>
+     <div><label for="sm-status">Status</label><select id="sm-status"><option value="all">All statuses</option><option>Active</option><option>Draft</option><option>Inactive</option></select></div>
+    </div>
+    <div class="sm-table-scroll">
+     <table class="sm-table" aria-label="All services and sub-services">
+      <thead><tr><th scope="col">Service / Sub-service</th><th scope="col">Code</th><th scope="col">Parent service</th><th scope="col">Domain / Work type</th><th scope="col">Sub-services</th><th scope="col">Products</th><th scope="col">Status</th><th scope="col">Actions</th></tr></thead>
+      <tbody id="sm-table-body" aria-live="polite"></tbody>
+     </table>
+    </div>
+    <div class="sm-table-footer"><span id="sm-result-summary"></span><span>Choose <b>View Details</b> for scope, deliverables, linked products and sub-services.</span></div>
+   </section>
+   <section class="card sm-detail" id="sm-detail-view" aria-label="Service details" hidden>
+    <div class="sm-detail-nav"><button type="button" class="btn" id="sm-back">← Back to Services</button><span>Service details</span></div>
+    <div id="sm-detail" aria-live="polite"></div>
+   </section>
    <section class="card sm-guide">
     <b>How this will connect to CPQ:</b> An employee selects one or more services/sub-services on MA-005 Enquiry. Product mapping suggests exact manufacturer/model/SKU variants; it does not insert or price them automatically. MA-006A configures physical products when required, and MA-006 owns quotation charges, packages and approved pricing. These cross-page changes are the next wireframe step.
    </section>
