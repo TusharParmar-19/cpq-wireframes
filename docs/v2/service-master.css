@@ -114,3 +114,10 @@
  .sm-filter>div:first-child{grid-column:auto}
  .sm-table-scroll{border-radius:7px}
 }
+
+/* Quiet row actions; the primary action remains Add Service at page level. */
+.sm-row-view,.sm-row-edit{background:none;border:0;border-radius:6px;padding:6px 5px;font:inherit;font-weight:800;font-size:12px;cursor:pointer}
+.sm-row-view{color:#175f90}
+.sm-row-edit{color:#607990}
+.sm-row-view:hover,.sm-row-edit:hover{background:#eaf4fb;text-decoration:underline}
+.sm-row-view:focus-visible,.sm-row-edit:focus-visible{outline:3px solid #78b6df;outline-offset:2px}
