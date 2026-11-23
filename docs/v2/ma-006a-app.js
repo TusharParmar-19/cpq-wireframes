@@ -312,10 +312,11 @@ function renderContext(c){
 function renderProduct(c,b){
  const p=itemProduct(b.productId)||itemProduct("VAR-009")||products[0];
  const catalogChoices=catalog().variants.filter(v=>v.status==="Active").map(v=>itemProduct(v.id));
+ const suggested=new Set(flow.normalized(c.serviceIds||[],true).flatMap(id=>flow.service(id)?.productIds||[]));
  const choices=[...catalogChoices.filter(p=>p?.type!=="service"),...products.filter(p=>p.type!=="service")];
  const filtered=choices.filter(x=>b.productGroup==="all"||(b.productGroup==="solar"&&x.variant&&x.solarKind!=="general")||
  (b.productGroup==="other"&&(!x.variant||x.solarKind==="general"))).filter(x=>
- !b.catalogSearch||[x.name,x.model,x.sku,x.manufacturer,x.capacity].join(" ").toLowerCase().includes(b.catalogSearch.toLowerCase()));
+ !b.catalogSearch||[x.name,x.model,x.sku,x.manufacturer,x.capacity].join(" ").toLowerCase().includes(b.catalogSearch.toLowerCase())).sort((a,b)=>Number(suggested.has(b.id))-Number(suggested.has(a.id)));
  const errors=lineErrors({productId:p.id,quantity:b.quantity,options:b.options}),v=p.variant,d=v?.dimensions||{};
  return panel("2 · Select Products & Models","Select an existing manufacturer model, specify quantity and add a project-specific note only when necessary.")+
  '<div class="ma6a-product-picker-toolbar"><div class="ma6-field"><label>Show product type</label><select data-product-group>'+
@@ -326,7 +327,7 @@ function renderProduct(c,b){
  '<button class="ma6-product-card'+(x.id===p.id?' selected':'')+'" type="button" data-product="'+esc(x.id)+'">'+
  '<div><span class="ma6-tag">'+esc(x.variant?catalogFamily(x.variant.familyId)?.name||"Catalog model":typeLabel(x.type))+'</span>'+
  '<strong>'+esc(x.variant?x.model:x.name)+'</strong><small>'+
- esc(x.variant?[x.manufacturer,x.capacity,x.sku].filter(Boolean).join(" · "):x.id+" · "+x.unit)+'</small></div>'+
+ esc(x.variant?[x.manufacturer,x.capacity,x.sku].filter(Boolean).join(" · "):x.id+" · "+x.unit)+(suggested.has(x.id)?' · Suggested for service':'')+'</small></div>'+
  '<span class="ma6-tag">Select</span></button>').join(""):
  '<div class="ma6a-empty-note">No approved matching models. Draft products must pass review before use.</div>')+'</div></div>'+
  '<div class="ma6a-spec-editor"><h3>'+esc(v?p.model:p.name)+'</h3>'+
