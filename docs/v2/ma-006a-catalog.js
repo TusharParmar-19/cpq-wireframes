@@ -495,14 +495,16 @@ function getVariantForm(f,familyType,existing=null,solarKind="general",category=
   }
   if(solarKind==="battery"&&solar.usableKwh!==undefined&&solar.nominalKwh!==undefined&&solar.usableKwh>solar.nominalKwh)
    throw Error("Usable battery energy cannot exceed nominal energy.");
+ const categorySpecs=pim.readCategory(f,{category,solarKind},existing?.categorySpecs||{});
+ const warranty=pim.readWarranty(f,existing?.warranty||{});
  const from=trim(f,"priceFrom"),to=trim(f,"priceTo");
  if(from&&to&&to<from)throw Error("Price effective-until cannot precede the effective-from date.");
  return {sku:sku.slice(0,80),manufacturerId,model:model.slice(0,120),variant:trim(f,"variantName")||model,
   status:trim(f,"variantStatus")||"Draft",capacity:trim(f,"capacity"),voltage:trim(f,"voltage"),
   mounting:trim(f,"mounting"),material:trim(f,"material"),enclosure:trim(f,"enclosure"),
   dimensions:dims,technical:techParse(trim(f,"technical")),solar,components,
-  categorySpecs:pim.readCategory(f,{category,solarKind},existing?.categorySpecs||{}),
-  warranty:pim.readWarranty(f,existing?.warranty||{}),
+  ...(Object.keys(categorySpecs).length||existing?.categorySpecs?{categorySpecs}:{}),
+  ...(Object.keys(warranty).length||existing?.warranty?{warranty}:{}),
   price:{currency:trim(f,"currency")||"INR",list:trim(f,"priceList")||"Demo Base Price List",
    cost:cost===""?0:cost,sell:sell===""?0:sell,from,to,
    availability:trim(f,"availability")||"Unknown",supplierRef:trim(f,"supplierRef"),
