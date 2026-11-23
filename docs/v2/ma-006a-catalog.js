@@ -607,6 +607,29 @@ $("catalog-editor-form").addEventListener("change",e=>{
  state.editor.solarKind=e.target.value;
  const target=$("catalog-solar-fields");if(target)target.innerHTML=solarFields(e.target.value,{});
 });
+/* Document picker stores safe metadata only. File bytes never enter localStorage. */
+$("catalog-family-body").addEventListener("submit",event=>{
+ const form=event.target.closest("#catalog-document-form");
+ if(!form)return;
+ event.preventDefault();
+ const v=variant(state.variant),error=form.querySelector("#catalog-document-error");
+ if(!v)return;
+ try{
+  pim.addDocuments(v,form);
+  state.tab="documents";renderCatalog();
+ }catch(err){
+  if(error){error.hidden=false;error.textContent=err.message||"Unable to record document metadata.";}
+ }
+});
+$("catalog-family-body").addEventListener("click",event=>{
+ const target=event.target.closest("[data-product-doc-archive]");
+ if(!target)return;
+ const v=variant(state.variant);if(!v)return;
+ if(!window.confirm("Archive this document reference? Earlier metadata and versions will be retained."))return;
+ try{
+  pim.archiveDocument(v,target.dataset.productDocArchive);state.tab="documents";renderCatalog();
+ }catch(err){window.alert(err.message||"Unable to archive this document reference.");}
+});
 $("catalog-editor-form").addEventListener("submit",saveEditor);
 $("catalog-editor-cancel").addEventListener("click",closeEditor);
 $("catalog-editor-close").addEventListener("click",closeEditor);
