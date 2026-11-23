@@ -465,6 +465,16 @@ function openConfigurationHandoff(raw,fromSaved=false){
     if(old?.productId===v.id&&old.modelSnapshot?.id===v.id){
      line.modelSnapshot=copy(old.modelSnapshot);
      line.documentRefCount=line.modelSnapshot.documentRefs?.length||0;
+     const snap=line.modelSnapshot,d=snap.dimensions||{};
+     line.description=(snap.family||fam.name)+" — "+snap.model;
+     line.catalogSpec=[snap.sku,snap.manufacturer,snap.capacity,
+      d.width&&d.height&&d.depth?[d.width,d.height,d.depth].join(" × ")+" "+(d.unit||"mm"):""].filter(Boolean).join(" · ");
+     const now=flow.modelSnapshot(v.id);
+     if(now&&JSON.stringify([now.sku,now.model,now.capacity,now.dimensions,now.solar,now.categorySpecs,now.documentRefs])!==
+      JSON.stringify([snap.sku,snap.model,snap.capacity,snap.dimensions,snap.solar,snap.categorySpecs,snap.documentRefs])){
+      line.technicalReview=true;
+      line.catalogSpec+=" · Catalog model changed after saved configuration: technical re-review required";
+     }
     }else flow.attachModel(line,v.id);
     continue;
    }
