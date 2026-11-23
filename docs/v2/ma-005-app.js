@@ -85,6 +85,8 @@ function overview(o){
  kv("Priority",o.priority)+kv("Owner",employee(o.ownerId)?.name)+kv("Enquiry received",o.received)+kv("Customer required-by date",o.needBy)+
  kv("Expected decision date",o.expectedClose)+kv("Next follow-up",o.nextFollowUp)+
  kv("Next action",o.nextAction)+kv("Last updated",o.lastUpdated)+'</div>'+
+ '<div class="cpq-scope-panel"><h4>Selected services &amp; sub-services</h4>'+window.CPQ_FLOW.summary(o.serviceIds||[])+
+ '<p>Enquiry scope selections only; billable rates are finalized in the quotation.</p></div>'+
  (o.demoQuoteOutcome?note('<b>Quotation outcome (demo only):</b> '+esc(o.demoQuoteOutcome.decision)+' for <a href="ma-006-quotations.html?quote='+encodeURIComponent(o.demoQuoteOutcome.quoteId)+'">'+esc(o.demoQuoteOutcome.quoteId)+'</a>. This is a shared browser simulation, not verified customer acceptance or an order.'):"")+
  (o.stage==="Lost"?note('<b>Lost reason:</b> '+text(o.lostReason),true):"")+
  note('The next follow-up and expected decision are planning fields. No automatic notifications, commitments or SLA rules are active in this wireframe.');
@@ -92,6 +94,7 @@ function overview(o){
 function requirements(o){
  return panel("Customer requirements","Capture intent and key inputs without building the BOQ here.","edit","Edit enquiry")+
  '<div class="ma5-summary">'+text(o.summary)+'</div>'+
+ '<div class="cpq-scope-panel"><h4>Requested services &amp; sub-services</h4>'+window.CPQ_FLOW.summary(o.serviceIds||[])+'</div>'+
  '<div class="ma5-subhead"><h4>Requirement checklist / line items (initial)</h4></div>'+
  (o.requirements.length?'<ul class="ma5-req-list">'+o.requirements.map(r=>'<li>◇ &nbsp; '+esc(r)+'</li>').join("")+'</ul>':'<div class="ma5-empty">No requirements captured yet.</div>')+
  '<div class="ma5-subhead"><h4>Internal context / qualification notes</h4></div><div class="ma5-summary">'+text(o.remarks,"No notes recorded")+'</div>'+
@@ -118,13 +121,17 @@ function followups(o){
  note('No emails, messages, calls or reminders are actually sent. Production should record action type, responsible user, time, next due date and audit history.');
 }
 function quotations(o){
- const qs=o.linkedQuotes.map(id=>{const r=quoteData.find(q=>q[0]===id);return {id,status:r?.[4]||"Unverified",revision:r?.[5]||"Not supplied"}});
+ const qs=o.linkedQuotes.map(id=>{
+  const live=window.CPQ_MA006_DATA?.quotations?.find(q=>q.id===id);
+  const fallback=quoteData.find(q=>q[0]===id);
+  return {id,status:live?.status||fallback?.[4]||"Unverified",revision:live?.rev||fallback?.[5]||"Not supplied",serviceIds:live?.serviceIds||[]};
+ });
  const files=db.documents.filter(f=>f.opportunityId===o.id);
  return panel("Linked quotations and evidence","Quotation drafts saved in this browser are linked automatically; PDF issue and verified acceptance are separate.","prepare","Prepare quotation")+
  (o.demoQuoteOutcome?note('<b>Most recent simulated response:</b> '+esc(o.demoQuoteOutcome.decision)+' for '+esc(o.demoQuoteOutcome.quoteId)+'. No official status change or order is created by the demo.'):"")+
  '<div class="ma5-subhead"><h4>Quotation references ('+qs.length+')</h4></div>'+
  (qs.length?'<div class="ma5-table-wrap"><table class="ma5-table"><thead><tr><th>Quotation</th><th>Status</th><th>Revision</th><th>Action</th></tr></thead><tbody>'+qs.map(q=>
- '<tr><td><strong>'+esc(q.id)+'</strong></td><td>'+esc(q.status)+'</td><td>'+esc(q.revision)+'</td><td><a class="btn" href="ma-006-quotations.html?quote='+encodeURIComponent(q.id)+'">View MA-006</a></td></tr>').join("")+'</tbody></table></div>':
+ '<tr><td><strong>'+esc(q.id)+'</strong><small>'+window.CPQ_FLOW.summary(q.serviceIds,2)+'</small></td><td>'+esc(q.status)+'</td><td>'+esc(q.revision)+'</td><td><a class="btn" href="ma-006-quotations.html?quote='+encodeURIComponent(q.id)+'">View MA-006</a></td></tr>').join("")+'</tbody></table></div>':
  '<div class="ma5-empty">No quotation has been specifically linked to this opportunity.</div>')+
  '<div class="ma5-subhead"><h4>Requirement documents / source evidence ('+files.length+')</h4><button class="btn" type="button" data-action="files">Document workflow</button></div>'+
  (files.length?'<div class="ma5-cards">'+files.map(f=>
