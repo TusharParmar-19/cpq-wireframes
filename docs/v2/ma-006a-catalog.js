@@ -7,6 +7,7 @@ const $=id=>document.getElementById(id);
 const esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const clone=x=>JSON.parse(JSON.stringify(x));
 const db=clone(window.CPQ_MA006A_CATALOG);
+const pim=window.CPQ_MA006A_PRODUCT_INFO;
 const state={hub:"products",family:"FAM-005",variant:"VAR-009",tab:"variants",category:"all",manufacturer:"all",status:"all",search:"",editor:null};
 const family=id=>db.families.find(x=>x.id===id);
 const variant=id=>db.variants.find(x=>x.id===id);
@@ -175,6 +176,7 @@ function selectedVariant(v){
  return '<div class="ma6a-selected-variant"><div class="ma6a-selected-variant-head"><div><h4>'+esc(v.model)+' · '+esc(v.variant)+'</h4>'+
  '<p>'+esc(v.sku)+' · '+esc(m?.name||"Service — no manufacturer")+'</p><div class="ma6a-variant-badges">'+modelBadge(v)+'</div></div>'+
  '<div class="ma6-detail-actions"><button type="button" class="btn" data-catalog-tab="more">View Full Details</button>'+
+ '<button type="button" class="btn" data-catalog-tab="documents">Documents &amp; Warranty</button>'+
  '<button type="button" class="btn primary" data-catalog-action="edit-variant">Edit Model</button></div></div>'+
  '<div class="ma6-kvs">'+kv("Manufacturer",m?.brand||m?.name||"Not applicable")+
  kv("Capacity / Rating",v.capacity)+kv("Dimensions",dimension(d))+
@@ -237,7 +239,10 @@ function renderDetails(){
  for(const btn of $("catalog-detail-tabs").querySelectorAll("[data-catalog-tab]")){
   const active=btn.dataset.catalogTab===state.tab;btn.classList.toggle("active",active);btn.setAttribute("aria-selected",String(active));
  }
- if(state.tab==="more"){
+ if(state.tab==="documents"){
+  $("catalog-family-body").innerHTML=panel("Product Documents & Warranty","Model-specific documents, warranties and edit history.")+
+   pim.renderDocuments(v,window.CPQ_SERVICE_MASTER?.services||[]);
+ }else if(state.tab==="more"){
   const schema=solarKindSchema(f.solarKind||"general");
   const val=v?.solar||{},all=(schema&&f.solarKind!=="general")?[...schema.essential,...schema.advanced]:[];
   const entered=all.filter(([key])=>val[key]!==undefined&&val[key]!==null&&String(val[key]).trim()!=="");
@@ -250,9 +255,14 @@ function renderDetails(){
     '<div class="ma6a-list-inline">'+missing.map(([,label])=>'<span class="ma6a-flag">'+esc(label)+'</span>').join("")+'</div></details>':"")+'</div>':"";
   $("catalog-family-body").innerHTML=panel("Product Details","Only information needed for this product is shown. Other technical and commercial sections stay available.")+
    (all.length?'<details class="ma6a-view-details"><summary>Technical specifications · '+entered.length+' values entered</summary>'+solarInfo+'</details>':"")+
+   (pim.categorySummary(f,v)?'<details class="ma6a-view-details"><summary>Category-specific technical specifications</summary>'+
+    '<div class="ma6a-pim-summary"><h4>Model-specific values</h4>'+pim.categorySummary(f,v)+'</div></details>':"")+
    '<details class="ma6a-view-details"><summary>Dimensions & model comparison</summary>'+renderSpecs(f,v)+'</details>'+
    '<details class="ma6a-view-details"><summary>Parts & accessories</summary>'+renderParts(f,v)+'</details>'+
-   '<details class="ma6a-view-details"><summary>Pricing, documents & warranty</summary>'+renderPrices(f,v)+'</details>'+modelReviewPanel(v);
+   '<details class="ma6a-view-details"><summary>Pricing and legacy document references</summary>'+renderPrices(f,v)+'</details>'+
+   '<details class="ma6a-view-details"><summary>Warranty &amp; guarantee</summary>'+pim.warrantySummary(v)+'</details>'+
+   '<div class="ma6a-pim-summary"><b>Documents and version history</b><p class="muted">Open Documents &amp; Warranty to record file metadata and versions. Actual files are not stored in this wireframe.</p>'+
+   '<button type="button" class="btn" data-catalog-tab="documents">Manage Documents &amp; Warranty</button></div>'+modelReviewPanel(v);
  }else{
   $("catalog-family-body").innerHTML=renderVariants(f,v);
  }
@@ -352,6 +362,7 @@ function variantFields(v={},f={}){
  textField("capacity","Capacity / Main Rating",v.capacity||"")+
  selectField("variantStatus","Model Status",statuses.map(x=>[x,x]),v.status||"Draft"))+
  '<div id="catalog-solar-fields">'+solarFields(kind,v.solar||{})+'</div>'+
+ '<div id="catalog-category-spec-fields">'+pim.categoryFields(f,v)+'</div>'+
  details("Physical dimensions, weight & mounting",
  group(selectField("dimensionUnit","Dimensions Unit",[["mm","mm"],["cm","cm"],["m","m"],["in","in"]],d.unit||"mm")+
  numberField("dimLength","Length",d.length)+numberField("dimWidth","Width",d.width)+
@@ -382,7 +393,8 @@ function variantFields(v={},f={}){
  textField("drawing","Drawing / Diagram Reference",v.drawing||"")+
  areaField("technical","Other technical attributes (Label: Value)",techToText(v.technical))+
  areaField("variantNotes","Internal Model Notes",v.notes||"")))+
- '<div class="ma6a-editor-section-note">Customer-specific size or technical changes belong in a project configuration, not a silent change to this shared master product.</div>';
+ pim.warrantyFields(v)+
+ '<div class="ma6a-editor-section-note">Document files can be recorded under Documents &amp; Warranty after saving the model. Customer-specific technical changes belong in a configuration, not a silent edit of the shared product.</div>';
 }
 function manufacturerFields(m={}){
  return section("Manufacturer & Brand","Separate from our internal legal entity (MA-002) and from the eventual purchasing supplier.")+
