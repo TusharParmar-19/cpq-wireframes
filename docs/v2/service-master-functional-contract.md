@@ -16,7 +16,7 @@
 
 ## Current wireframe screens
 
-- **Service Management** — `service-master.html` (independent Service Master; **full-width table is the default**, with an optional full-page detail view)
+- **Service Management** — `service-master.html` (independent Service Master; **main-service table is the default with sub-services collapsed**. Expand a row to reveal children. **View Details** shrinks the table to the left and shows the detail panel on the right; **Expand Table** restores full width.)
 - **Product Catalog & Configuration** — `ma-006a-configuration.html` (unchanged product group/model behavior)
 - **MA-005 Opportunities & Enquiries** — existing; service selection wiring is **next**
 - **MA-006 Quotations & BOQ** — existing; mixed service/product BOQ and packages will be wired **after enquiry selection**
@@ -38,9 +38,16 @@ The new `services` module is registered in `cpq-demo-store.js` and uses the exis
 ## Manual acceptance checks
 
 1. Open `service-master.html` from MA-001, MA-003, MA-005 and MA-006A navigation.
-   - Confirm the full-width register table is shown first (not the old split-pane tree + details).
-   - Search and filter by main/sub-service and status; confirm counts match visible rows.
-   - Click **View Details** and **Back to Services**; editing a row should keep the register open.
+   - On first load, confirm only seven main-service rows are visible; their sub-services are collapsed behind accessible expand arrows.
+   - Expand Residential Solar and confirm its four children appear directly below. Collapse it and confirm they are hidden again.
+   - Expand All and Collapse All should work for the visible hierarchy; nested children can be expanded individually.
+   - Search for a sub-service in a collapsed group; the matched child and its ancestor service should become visible.
+   - Search and filter by main/sub-service and status; compare counts with the visible table rows.
+   - Click **View Details**: the table should remain on the left in a compact layout, and the selected service's full details appear on the right.
+   - Select a different service from the compact table without leaving the detail view.
+   - Click **Expand Table** (from table header or details); full-width table returns with prior expanded rows preserved.
+   - Edit from the full-width table and from details; confirm data changes persist and existing product links are not removed.
+   - On narrower devices, the list and details stack and tables remain horizontally scrollable rather than overflowing.
 2. Verify seven main service offerings, plus nested sub-services, appear separately from Products.
 3. Create a main service as Draft with a unique code; select it and edit its details.
 4. Add a sub-service under the selected main service; confirm parent label and child list.
