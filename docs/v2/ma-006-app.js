@@ -4,6 +4,7 @@
 const $=id=>document.getElementById(id);
 const esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const db=JSON.parse(JSON.stringify(window.CPQ_MA006_DATA));
+const flow=window.CPQ_FLOW;
 const master=window.CPQ_MA004_DATA, org=window.CPQ_MA002_DATA, staff=window.CPQ_MA003_USERS, enquiries=window.CPQ_MA005_DATA.opportunities;
 const state={selected:"QT-2026-014",tab:"summary",mode:"register",company:"all",branch:"all",status:"all",owner:"all",search:"",listExpanded:false,builder:null,history:[]};
 const quote=id=>db.quotations.find(q=>q.id===id);
@@ -18,6 +19,9 @@ const branch=id=>org.flatMap(x=>x.branches.map(b=>({...b,companyId:x.id}))).find
 const opportunity=id=>enquiries.find(x=>x.id===id);
 const product=id=>{
  const old=db.products.find(x=>x.id===id);if(old)return old;
+ const service=flow.service(id);
+ if(service)return {id:service.id,name:service.name,unit:service.unit||"Job",type:"service",
+  basePrice:0,status:service.status,serviceId:service.id,catalogSpec:[service.workType,service.scope].filter(Boolean).join(" · ")};
  const cat=window.CPQ_MA006A_CATALOG,v=cat?.variants.find(x=>x.id===id);
  if(!v)return null;
  const fam=cat.families.find(f=>f.id===v.familyId),maker=cat.manufacturers.find(m=>m.id===v.manufacturerId);
@@ -56,7 +60,7 @@ function configUnit(prod,selected){
  }
  return v;
 }
-const extended=line=>numeric(line.quantity)*numeric(line.unitPrice);
+const extended=line=>line.includedInParent?0:numeric(line.quantity)*numeric(line.unitPrice);
 function totals(q){
  const subtotal=(q.lines||[]).reduce((sum,l)=>sum+extended(l),0);
  const discount=Math.min(subtotal,subtotal*numeric(q.discount)/100);
@@ -65,6 +69,12 @@ function totals(q){
  return {subtotal,discount,taxable,tax,total:taxable+tax};
 }
 function lineConfig(line){
+ if(line.serviceSnapshot)return [line.serviceSnapshot.workType,line.serviceSnapshot.scope].filter(Boolean).join(" · ")||"Service scope referenced in master";
+ if(line.modelSnapshot){
+  const snap=line.modelSnapshot,d=snap.dimensions||{};
+  return [snap.manufacturer,snap.sku,snap.capacity,
+   d.width&&d.height&&d.depth?[d.width,d.height,d.depth].join(" × ")+" "+(d.unit||"mm"):""].filter(Boolean).join(" · ");
+ }
  if(line.catalogSpec)return line.catalogSpec;
  const p=product(line.productId);
  if(line.type!=="config"||!p)return "No option configuration";
@@ -158,6 +168,8 @@ function summary(q){
  kv("Customer account",customer(q.customerId)?.name)+kv("Buyer / bill-to",buyer(q.buyerId)?.name)+
  kv("Our selling legal entity",entity(q.companyId)?.name)+kv("Our branch",branch(q.branchId)?.name)+
  kv("Quotation date",q.date)+kv("Valid until",q.validUntil)+'</div>'+
+ '<div class="cpq-scope-panel"><h4>Services &amp; sub-services</h4>'+flow.summary(flow.quotedServiceIds(q))+
+ '<p>Service references and BOQ lines remain independent of future master edits.</p></div>'+
  '<div class="ma6-section-sub"><h4>Customer master</h4><a class="btn" href="ma-004-customers.html?customer='+encodeURIComponent(q.customerId)+'">View customer (MA-004)</a></div>'+
  '<details class="ma6a-quote-more"><summary>More customer, project & record details</summary><div class="ma6-kvs">'+
  kv("Customer contact",contact(q.contactId)?.name)+kv("Customer site",site(q.siteId)?.name)+
@@ -177,10 +189,22 @@ function items(q){
   q.status==="Draft"?"edit-builder":"","Continue Editing")+
  (q.sourceConfigId?'<div class="ma6a-quote-source"><b>Imported from:</b> '+esc(q.sourceConfigName||q.sourceConfigId)+
  ' · '+esc(q.sourceConfigId)+' / '+esc(q.sourceConfigRevision||"C0")+'</div>':'')+
- (q.lines.length?table(["Product / Model","Technical specification / scope","Qty","Unit","Selling rate (demo)","Line total"],
+ (q.lines.length?table(["Product / Service / Model","Technical specification / scope","Qty","Unit","Selling rate (demo)","Line total"],
  q.lines.map(l=>'<tr><td><strong>'+esc(l.description)+'</strong><small>'+esc(l.productId)+' · '+esc(l.type)+'</small></td>'+
- '<td>'+text(lineConfig(l))+(l.technicalReview?'<small>Project technical changes need review</small>':'')+'</td><td>'+esc(l.quantity)+'</td>'+
+ '<td>'+text(lineConfig(l))+(l.technicalReview?'<small>Project technical changes need review</small>':'')+
+ (l.includedInParent?'<small class="cpq-quote-service-included">Included in parent package — not billed separately</small>':'')+
+ (l.modelSnapshot?.documentRefs?.length?'<small>'+l.modelSnapshot.documentRefs.length+' captured document reference(s) · metadata only</small>':'')+'</td><td>'+esc(l.quantity)+'</td>'+
  '<td>'+esc(l.unit)+'</td><td class="ma6-money">'+money(l.unitPrice)+'</td><td class="ma6-money">'+money(extended(l))+'</td></tr>')):blank("No BOQ lines yet. Continue Editing to add catalog equipment or services."))+
+ '<div class="cpq-model-snapshot"><h4>Captured product specifications and document references</h4>'+
+ (q.lines.some(l=>l.modelSnapshot)?q.lines.filter(l=>l.modelSnapshot).map(l=>{
+  const m=l.modelSnapshot,docs=m.documentRefs||[],w=m.warranty||{};
+  return '<details><summary>'+esc(l.description)+' · '+esc(m.sku)+' ('+docs.length+' document references)</summary>'+
+   '<p>'+esc([m.manufacturer,m.model,m.capacity].filter(Boolean).join(" · "))+'</p>'+
+   (w.months!==undefined?'<p>Product warranty recorded: '+esc(w.months)+' months</p>':'')+
+   (docs.length?'<ul>'+docs.map(d=>'<li>'+esc(d.name)+' · '+esc(d.type)+' · v'+esc(d.version)+
+    ' ('+esc(d.visibility)+')</li>').join("")+'</ul>':'<p>No current document references captured.</p>')+
+   '<small>Captured model metadata; document contents are not attached or downloadable in this wireframe.</small></details>';
+ }).join(""):'<p>No model-specific document references on the current BOQ.</p>')+'</div>'+
  '<div class="ma6a-boq-total"><span>'+q.lines.length+' BOQ item'+(q.lines.length===1?'':'s')+' · Sample subtotal</span><strong>'+money(totals(q).subtotal)+'</strong></div>'+
  note('The BOQ stores selected models, quantities and their offered technical scope. Engineering compatibility, manufacturer data, actual rates and generated BOM require separate approved services.');
 }
@@ -219,7 +243,9 @@ function reviewChecks(q){
  ["Pricing/discount policy",false,"Real tax, pricing and approvals are not evaluated in this demo"],
  ["Imported catalog prices",!q.lines.some(l=>l.pricingReview),"Seeded rates are illustration-only. Validate manufacturer/SKU, costs, selling price and exceptions."],
  ["Demo-only model verification",!q.lines.some(l=>l.technicalReview||l.unverified),"Demo-enabled catalog models and incomplete technical data are not production-approved"],
- ["Issuance permission",false,"Requires authorized approval, locked revision and audit in production"]
+ ["Issuance permission",false,"Requires authorized approval, locked revision and audit in production"],
+  ["No double-charge of included sub-services",!q.lines.some(l=>l.includedInParent&&Number(l.unitPrice)>0),
+   "Child services bundled under a parent package are not billed separately"]
  ];
 }
 function demoReadiness(q){
@@ -229,7 +255,8 @@ function demoReadiness(q){
  if(!co||!br||br.companyId!==q.companyId||!c?.links?.some(x=>x.companyId===q.companyId&&x.branchId===q.branchId))missing.push("Valid selling company and branch");
  if(!own||own.status!=="Active"||!(own.assignments||[]).some(x=>x.companyId===q.companyId&&(x.branches||[]).includes(q.branchId)))missing.push("Responsible employee assigned to this branch");
  if(!q.lines?.length||q.lines.some(l=>!Number.isInteger(Number(l.quantity))||Number(l.quantity)<=0||!Number.isFinite(Number(l.unitPrice))||Number(l.unitPrice)<0))missing.push("Valid BOQ products, quantities and sample rates");
- if(q.lines?.some(l=>!(Number(l.unitPrice)>0)))missing.push("Enter a positive fictional sample selling rate for each BOQ line; ₹0 means unpriced");
+ if(q.lines?.some(l=>!l.includedInParent&&!(Number(l.unitPrice)>0)))
+  missing.push("Enter a positive fictional sample selling rate for each billable line; included sub-services remain ₹0");
  if(!reviewChecks(q)[2][1])missing.push("Complete product option selections");
  if(!reviewChecks(q)[3][1])missing.push("Validity, payment and delivery terms");
  return missing;
@@ -369,9 +396,10 @@ function contextBuilder(q){
 }
 function catalogPicker(q,b){
  const source=window.CPQ_MA006A_CATALOG;
- const catalog=(source?.variants||[]).filter(v=>v.status==="Active").map(v=>product(v.id)).filter(Boolean);
- const builtins=db.products.filter(p=>!q.projectTechnical||p.type==="service");
- const all=[...catalog,...builtins];
+ const catalog=(source?.variants||[]).filter(v=>v.status==="Active").map(v=>product(v.id)).filter(p=>p&&p.type!=="service");
+ const builtins=db.products.filter(p=>!q.projectTechnical&&p.type!=="service");
+ const serviceChoices=flow.services().filter(s=>s.status==="Active").map(s=>product(s.id));
+ const all=[...catalog,...builtins,...serviceChoices];
  const search=String(b.catalogSearch||"").trim().toLowerCase();
  const searchText=p=>[p.name,p.id,p.sku,p.model,p.manufacturer,p.rating,p.catalogSpec].filter(Boolean).join(" ").toLowerCase();
  const matches=all.filter(p=>!search||searchText(p).includes(search));
@@ -390,7 +418,7 @@ function catalogPicker(q,b){
  '<button class="btn primary" type="button" data-action="add-config-item">+ Add to BOQ</button>':
  '<h3>Select a product</h3><p class="ma6a-quote-select-help">Search by name, model or SKU, then click <b>Select</b> on the correct product before entering its quantity.</p>';
  return '<div class="ma6a-product-picker-toolbar"><div class="ma6-field">'+
- '<label for="quote-add-search">Find a model or service</label><input type="search" id="quote-add-search" data-catalog-search value="'+esc(b.catalogSearch||"")+'" placeholder="Search ST-PV-550, inverter, manufacturer, SKU..." autocomplete="off">'+
+ '<label for="quote-add-search">Find a product model or service</label><input type="search" id="quote-add-search" data-catalog-search value="'+esc(b.catalogSearch||"")+'" placeholder="Search ST-PV-550, inverter, manufacturer, SKU..." autocomplete="off">'+
  '<p class="ma6a-picker-results-count" id="quote-add-result-count" role="status" aria-live="polite">'+matches.length+' matching product(s)</p></div></div>'+
  '<div class="ma6-config-grid"><div><div class="ma6-product-cards" id="quote-add-results">'+
  matches.map(p=>'<button type="button" data-product="'+esc(p.id)+'" data-search="'+esc(searchText(p))+'" class="ma6-product-card'+(p.id===choice?.id?' selected':'')+'">'+
@@ -508,6 +536,6 @@ function render(){
  $("quote-list-subtitle").textContent=expanded?"Full-width list · select View Details to open a quotation":"Select a quotation to inspect";
  renderRegister();
 }
-window.CPQ_MA006={ $,esc,db,master,org,staff,enquiries,state,quote,customer,buyer,contact,site,project,employee,entity,branch,opportunity,product,opts,text,money,numeric,configCheck,configUnit,extended,totals,lineConfig,visible,render,renderBuilder,financialRows,paper,note,blank,table,reviewChecks,demoReadiness };
+window.CPQ_MA006={ $,esc,db,flow,master,org,staff,enquiries,state,quote,customer,buyer,contact,site,project,employee,entity,branch,opportunity,product,opts,text,money,numeric,configCheck,configUnit,extended,totals,lineConfig,visible,render,renderBuilder,financialRows,paper,note,blank,table,reviewChecks,demoReadiness };
 render();
 })();
