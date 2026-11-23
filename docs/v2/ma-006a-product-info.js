@@ -88,19 +88,33 @@ function warrantySummary(v={}){
 }
 const allowExtension=/\.(pdf|png|jpe?g|webp|dwg|dxf|docx?|xlsx?)$/i;
 const maxBytes=15*1024*1024;
-function addDocuments(variant,form){
- const input=form.querySelector('[name="docFiles"]');
+function wizardDocumentFields(v={}){
+ const options=docTypes.map(x=>'<option value="'+E(x)+'">'+E(x)+'</option>').join("");
+ const visibility=visibilities.map(x=>'<option value="'+E(x)+'">'+E(x)+'</option>').join("");
+ return '<details class="ma6a-editor-details" data-product-documents><summary>Attach product documents — optional</summary>'+
+  '<div class="ma6a-editor-section-note"><b>Choose documents while adding or editing this model.</b> In the static demo only filenames, type, version and notes will be saved; actual file contents are never uploaded or stored. Use fictional test files.</div>'+
+  '<div class="ma6-field-grid">'+
+  '<div class="ma6-field full"><label for="cat-wizard-docs">Choose document file(s)</label><input type="file" id="cat-wizard-docs" name="wizardDocFiles" multiple accept=".pdf,.png,.jpg,.jpeg,.webp,.dwg,.dxf,.doc,.docx,.xls,.xlsx"><small>Up to 8 files, 15 MB per file. Only metadata is saved.</small></div>'+
+  '<div class="ma6-field"><label for="cat-wizard-doc-type">Document type</label><select name="wizardDocType" id="cat-wizard-doc-type">'+options+'</select></div>'+
+  '<div class="ma6-field"><label for="cat-wizard-doc-version">Document version</label><input id="cat-wizard-doc-version" name="wizardDocVersion" value="1.0" maxlength="30"></div>'+
+  '<div class="ma6-field"><label for="cat-wizard-doc-visibility">Visibility (future permission)</label><select name="wizardDocVisibility" id="cat-wizard-doc-visibility">'+visibility+'</select></div>'+
+  '<div class="ma6-field"><label for="cat-wizard-doc-replaces">Replace a previous version (optional)</label><select name="wizardDocSupersedes" id="cat-wizard-doc-replaces">'+docSelect(v.documents||[])+'</select></div>'+
+  '<div class="ma6-field full"><label for="cat-wizard-doc-desc">Document notes</label><textarea id="cat-wizard-doc-desc" rows="2" name="wizardDocDescription" maxlength="500"></textarea></div>'+
+  '</div></details>';
+}
+function addDocuments(variant,form,prefix="doc"){
+ const input=form.querySelector('[name="'+prefix+'Files"]');
  const files=Array.from(input?.files||[]);
  if(!files.length)throw Error("Choose at least one document to record.");
  if(files.length>8)throw Error("Select no more than eight files at a time.");
- const fd=new FormData(form),type=String(fd.get("docType")||"Other");
+ const fd=new FormData(form),type=String(fd.get(prefix+"Type")||"Other");
  if(!docTypes.includes(type))throw Error("Choose a valid document category.");
- const version=String(fd.get("docVersion")||"1.0").trim().slice(0,30);
+ const version=String(fd.get(prefix+"Version")||"1.0").trim().slice(0,30);
  if(!version||!/^[A-Za-z0-9._-]+$/.test(version))throw Error("Document version may contain letters, numbers, dots, underscores and hyphens.");
- const visibility=String(fd.get("docVisibility")||"Internal Only");
+ const visibility=String(fd.get(prefix+"Visibility")||"Internal Only");
  if(!visibilities.includes(visibility))throw Error("Choose a valid document visibility.");
- const description=String(fd.get("docDescription")||"").trim().slice(0,500);
- const replaceId=String(fd.get("docSupersedes")||"");
+ const description=String(fd.get(prefix+"Description")||"").trim().slice(0,500);
+ const replaceId=String(fd.get(prefix+"Supersedes")||"");
  if(replaceId&&files.length!==1)throw Error("Select one file at a time when replacing a document version.");
  const before=(variant.documents||[]),replacing=replaceId?before.find(d=>d.id===replaceId&&d.status!=="Archived"&&d.status!=="Superseded"):null;
  if(replaceId&&!replacing)throw Error("Selected previous document is no longer current.");
@@ -179,5 +193,5 @@ function recordModelChange(orig,prior,input){
  return true;
 }
 window.CPQ_MA006A_PRODUCT_INFO={categoryFields,readCategory,categorySummary,warrantyFields,readWarranty,
- warrantySummary,renderDocuments,addDocuments,archiveDocument,recordModelChange,docTypes};
+ warrantySummary,wizardDocumentFields,renderDocuments,addDocuments,archiveDocument,recordModelChange,docTypes};
 })();
