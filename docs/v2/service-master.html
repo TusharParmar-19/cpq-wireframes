@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Service Management | CPQ V2 Wireframe</title>
+<link rel="stylesheet" href="ma-001.css">
+<link rel="stylesheet" href="service-master.css">
+</head>
+<body>
+<div class="layout">
+ <aside class="sidebar">
+  <div class="logo"><span>CP</span><div>CPQ Platform<small>Master Admin Workspace</small></div></div>
+  <nav class="nav" aria-label="CPQ navigation">
+   <div class="nav-title">Workspace</div>
+   <a class="nav-link" href="ma-001-dashboard.html">▦ &nbsp; Dashboard</a>
+   <div class="nav-title">Organization &amp; People</div>
+   <a class="nav-link" href="ma-002-organization.html">▤ &nbsp; Companies &amp; Branches</a>
+   <a class="nav-link" href="ma-003-users-roles.html">♙ &nbsp; Users, Roles &amp; Access</a>
+   <div class="nav-title">Business Records</div>
+   <a class="nav-link" href="ma-004-customers.html">◉ &nbsp; Customers <small>MA-004</small></a>
+   <a class="nav-link" href="ma-005-opportunities.html">◇ &nbsp; Opportunities <small>MA-005</small></a>
+   <a class="nav-link active" href="service-master.html" aria-current="page">▤ &nbsp; Service Management <small>Master</small></a>
+   <a class="nav-link" href="ma-006a-configuration.html">⚙ &nbsp; Products &amp; Configuration <small>MA-006A</small></a>
+   <a class="nav-link" href="ma-006-quotations.html">▣ &nbsp; Quotations <small>MA-006</small></a>
+   <button type="button" class="nav-link" data-planned="Vendor RFQs">⇄ &nbsp; Vendor RFQs</button>
+   <button type="button" class="nav-link" data-planned="Orders">☷ &nbsp; Orders</button>
+   <div class="nav-title">Controls</div>
+   <button type="button" class="nav-link" data-planned="Approval Policies">✓ &nbsp; Approval Policies</button>
+   <button type="button" class="nav-link" data-planned="Commercial Settings">⚙ &nbsp; Commercial Settings</button>
+   <button type="button" class="nav-link" data-planned="Reports">▥ &nbsp; Reports</button>
+  </nav>
+  <div class="sidebar-foot"><b>Separate Service Master · Demo</b><p>Service and sub-service records are independent of the Product Catalog. Product links only suggest relevant SKUs; no quotation is changed automatically.</p></div>
+ </aside>
+ <div class="app">
+  <header class="top"><div>CPQ Workspace / <b>Service Management</b></div><span class="avatar">MA</span></header>
+  <main class="page sm-page">
+   <div class="hero">
+    <div><div class="overline">MASTER ADMIN / SERVICE MASTER</div><h1>Services &amp; Sub-services</h1><p class="muted">Manage business services separately from products. Add sub-services and link exact product models only when useful.</p></div>
+    <div class="actions"><a class="btn" href="ma-006a-configuration.html">Open Product Catalog</a><button type="button" class="btn primary" id="sm-add">+ Add Service</button></div>
+   </div>
+   <div class="info"><b>WIREFRAME ONLY · Fictional sample services.</b> Changes are saved only in this browser. There is no real authentication, approval, database, file storage or quotation update. Existing demo service lines inside Products / Quotations are preserved for compatibility until their migration is designed.</div>
+   <div class="sm-summary" id="sm-summary" aria-label="Service summary"></div>
+   <div class="sm-workspace">
+    <section class="card sm-register" aria-label="Service register">
+     <div class="sm-head"><div><h2>Service Register</h2><p class="muted">Main services and nested sub-services</p></div><span class="chip" id="sm-count"></span></div>
+     <div class="sm-filter">
+      <div><label for="sm-search">Search services</label><input id="sm-search" type="search" placeholder="Name, code, work type..."></div>
+      <div><label for="sm-status">Status</label><select id="sm-status"><option value="all">All</option><option>Active</option><option>Draft</option><option>Inactive</option></select></div>
+     </div>
+     <div class="sm-tree" id="sm-tree" aria-live="polite"></div>
+     <p class="sm-status-note">A service may have no sub-services or products. Deactivate unused services instead of deleting history.</p>
+    </section>
+    <section class="card sm-detail" aria-label="Service details">
+     <div id="sm-detail" aria-live="polite"><div class="sm-empty">Choose a service to see its details.</div></div>
+    </section>
+   </div>
+   <section class="card sm-guide">
+    <b>How this will connect to CPQ:</b> An employee selects one or more services/sub-services on MA-005 Enquiry. Product mapping suggests exact manufacturer/model/SKU variants; it does not insert or price them automatically. MA-006A configures physical products when required, and MA-006 owns quotation charges, packages and approved pricing. These cross-page changes are the next wireframe step.
+   </section>
+   <footer class="footer">CPQ · Separate Service Master · Wireframe only · No production backend</footer>
+  </main>
+ </div>
+</div>
+<div class="overlay" id="sm-overlay" aria-hidden="true">
+ <div class="dialog sm-editor" role="dialog" aria-modal="true" aria-labelledby="sm-dialog-title">
+  <div class="sm-head"><div><h2 id="sm-dialog-title">Add Service</h2><p class="muted">Keep it simple. Only name and code are essential for a draft.</p></div><button type="button" class="btn" id="sm-close" aria-label="Close dialog">×</button></div>
+  <form id="sm-form" novalidate>
+   <div id="sm-fields" class="sm-fields"></div>
+   <div class="sm-error" id="sm-error" role="alert" hidden></div>
+   <div class="sm-form-actions"><button type="button" class="btn" id="sm-cancel">Cancel</button><button type="submit" class="btn primary">Save Demo Service</button></div>
+  </form>
+ </div>
+</div>
+<div id="sm-toast" class="sm-alert" role="status" hidden></div>
+<script src="ma-006a-catalog-data.js"></script>
+<script src="service-master-data.js"></script>
+<script src="cpq-demo-store.js"></script>
+<script src="service-master.js"></script>
+</body>
+</html>
