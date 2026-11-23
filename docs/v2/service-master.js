@@ -7,7 +7,7 @@ const copy=v=>JSON.parse(JSON.stringify(v));
 let db=copy(window.CPQ_SERVICE_MASTER||{services:[]});
 if(!Array.isArray(db.services))db.services=[];
 const catalog=window.CPQ_MA006A_CATALOG||{variants:[],manufacturers:[],families:[]};
-const state={selected:db.services[0]?.id||"",search:"",status:"all",editing:null,focus:null};
+const state={selected:db.services[0]?.id||"",search:"",status:"all",type:"all",view:"list",editing:null,focus:null};
 const item=id=>db.services.find(s=>s.id===id);
 const family=id=>(catalog.families||[]).find(f=>f.id===id);
 const manufacturer=id=>(catalog.manufacturers||[]).find(m=>m.id===id);
@@ -44,35 +44,48 @@ function stats(){
   ["Main services",parents],["Sub-services",all.length-parents],["Active services",active],["Optional product links",links]
  ].map(v=>'<div class="card sm-stat"><span>'+esc(v[0])+'</span><strong>'+v[1]+'</strong></div>').join("");
 }
-function visibleSet(){
- const set=new Set(),needle=state.search.toLowerCase().trim();
- for(const s of db.services){
-  const hay=[s.name,s.code,s.domain,s.workType,s.description].join(" ").toLowerCase();
-  const matches=(!needle||hay.includes(needle))&&(state.status==="all"||s.status===state.status);
-  if(!matches)continue;
-  let current=s;
-  const visited=new Set();
-  while(current&&!visited.has(current.id)){
-   set.add(current.id);visited.add(current.id);current=item(current.parentId);
-  }
+/* Preserve the hierarchy in data, but show one full-width register table by default. */
+function orderedServices(){
+ const rows=[],seen=new Set();
+ function walk(s,depth){
+  if(seen.has(s.id))return;
+  seen.add(s.id);rows.push({s,depth});
+  db.services.filter(x=>x.parentId===s.id).sort((a,b)=>a.name.localeCompare(b.name)).forEach(x=>walk(x,depth+1));
  }
- return set;
+ db.services.filter(s=>!s.parentId||!item(s.parentId)).sort((a,b)=>a.name.localeCompare(b.name)).forEach(s=>walk(s,0));
+ db.services.forEach(s=>{if(!seen.has(s.id))walk(s,0);});
+ return rows;
 }
-function renderTree(){
- const visible=visibleSet(),nodes=db.services,visited=new Set();
- $("sm-count").textContent=visible.size+" shown";
- function draw(s,depth){
-  if(!visible.has(s.id)||visited.has(s.id))return "";
-  visited.add(s.id);
-  const n=subs(s.id).length,indent=Math.min(depth,8)*15+12;
-  const row='<button type="button" class="sm-tree-row'+(state.selected===s.id?' active':'')+'" data-select="'+esc(s.id)+'" style="padding-left:'+indent+'px" aria-current="'+(state.selected===s.id?'true':'false')+'"><strong>'+
-   (depth?'<span class="sm-indent" aria-hidden="true">↳</span>':"")+esc(s.name)+'</strong><span>'+esc(s.code)+' · '+esc(s.status)+(n?" · "+n+" sub-service(s)":"")+'</span></button>';
-  return row+nodes.filter(x=>x.parentId===s.id).sort((a,b)=>a.name.localeCompare(b.name)).map(x=>draw(x,depth+1)).join("");
- }
- const roots=nodes.filter(s=>!s.parentId||!item(s.parentId)).sort((a,b)=>a.name.localeCompare(b.name));
- let html=roots.map(s=>draw(s,0)).join("");
- for(const s of nodes)if(visible.has(s.id)&&!visited.has(s.id))html+=draw(s,0);
- $("sm-tree").innerHTML=html||'<div class="sm-empty">No services match these filters. Clear the filters or add a service.</div>';
+function filteredRows(){
+ const needle=state.search.toLowerCase().trim();
+ return orderedServices().filter(({s})=>{
+  if(state.status!=="all"&&s.status!==state.status)return false;
+  if(state.type==="main"&&s.parentId)return false;
+  if(state.type==="sub"&&!s.parentId)return false;
+  const parent=item(s.parentId);
+  return !needle||[s.name,s.code,s.domain,s.workType,s.description,parent?.name||"",lineage(s).join(" / ")].join(" ").toLowerCase().includes(needle);
+ });
+}
+function renderTable(){
+ const rows=filteredRows();
+ $("sm-count").textContent=rows.length+" shown";
+ $("sm-result-summary").textContent="Showing "+rows.length+" of "+db.services.length+" services";
+ $("sm-table-body").innerHTML=rows.length?rows.map(({s,depth})=>{
+  const parent=item(s.parentId),children=subs(s.id).length,pad=8+Math.min(depth,5)*12;
+  return '<tr data-service-row="'+esc(s.id)+'">'+
+   '<td><div class="sm-table-name" style="padding-left:'+pad+'px">'+
+   (depth?'<span class="sm-tree-hint" aria-hidden="true">↳</span>':"")+
+   '<span class="sm-table-name-cell"><button type="button" class="sm-open-link" data-view-service="'+esc(s.id)+'">'+esc(s.name)+'</button>'+
+   '<small class="sm-row-kind">'+esc(s.parentId?"Sub-service":"Main service")+'</small></span></div></td>'+
+   '<td><span class="sm-table-code">'+esc(s.code)+'</span></td>'+
+   '<td>'+esc(parent?.name||"—")+'</td>'+
+   '<td><strong>'+esc(s.domain||"—")+'</strong><span class="sm-table-secondary">'+esc(s.workType||"Not set")+'</span></td>'+
+   '<td><span class="sm-table-number">'+children+'</span></td>'+
+   '<td><span class="sm-table-number">'+(s.productIds||[]).length+'</span></td>'+
+   '<td><span class="'+safeStatus(s.status)+'">'+esc(s.status)+'</span></td>'+
+   '<td><div class="sm-row-actions"><button type="button" class="sm-row-view" data-view-service="'+esc(s.id)+'" aria-label="View details of '+esc(s.name)+'">View Details</button>'+
+   '<button type="button" class="sm-row-edit" data-edit-service="'+esc(s.id)+'" aria-label="Edit '+esc(s.name)+'">Edit</button></div></td></tr>';
+ }).join(""):'<tr><td colspan="8" class="sm-table-empty">No services match your filters. Try a different search or choose another status/type.</td></tr>';
 }
 function productText(id){
  const v=variant(id),f=family(v?.familyId),m=manufacturer(v?.manufacturerId);
@@ -106,8 +119,21 @@ function renderDetail(){
   (history.length?'<details class="sm-box"><summary><b>Demo change history ('+(s.history||[]).length+')</b></summary><ul>'+history.map(h=>'<li>'+esc(h.at+" — "+h.action)+'</li>').join("")+'</ul></details>':"")+
   '<p class="sm-status-note">Changes are recorded in this browser only. Production will enforce MA-003 permissions and immutable quotation snapshots.</p>';
 }
-function render(){stats();renderTree();renderDetail();}
-function choose(id){if(!item(id))return;state.selected=id;renderTree();renderDetail();}
+function syncView(){
+ const listing=state.view!=="detail";
+ $("sm-register-view").hidden=!listing;
+ $("sm-detail-view").hidden=listing;
+}
+function render(){stats();renderTable();renderDetail();syncView();}
+function choose(id){
+ if(!item(id))return;
+ state.selected=id;state.view="detail";renderDetail();syncView();
+ $("sm-detail-view").scrollIntoView({block:"start"});
+}
+function backToList(){
+ state.view="list";syncView();
+ $("sm-register-view").scrollIntoView({block:"start"});
+}
 function parentOptions(editId,current){
  const blocked=editId?descendantIds(editId):new Set();
  const candidates=db.services.filter(s=>!blocked.has(s.id)).sort((a,b)=>lineage(a).join("/").localeCompare(lineage(b).join("/")));
@@ -217,9 +243,20 @@ $("sm-cancel").addEventListener("click",closeEditor);
 $("sm-overlay").addEventListener("click",event=>{if(event.target===$("sm-overlay"))closeEditor();});
 document.addEventListener("keydown",event=>{if(event.key==="Escape"&&$("sm-overlay").classList.contains("open"))closeEditor();});
 $("sm-form").addEventListener("submit",saveEditor);
-$("sm-search").addEventListener("input",event=>{state.search=event.target.value;renderTree();});
-$("sm-status").addEventListener("change",event=>{state.status=event.target.value;renderTree();});
-$("sm-tree").addEventListener("click",event=>{const b=event.target.closest("[data-select]");if(b)choose(b.dataset.select);});
+$("sm-search").addEventListener("input",event=>{state.search=event.target.value;renderTable();});
+$("sm-status").addEventListener("change",event=>{state.status=event.target.value;renderTable();});
+$("sm-type").addEventListener("change",event=>{state.type=event.target.value;renderTable();});
+$("sm-back").addEventListener("click",backToList);
+$("sm-table-body").addEventListener("click",event=>{
+ const edit=event.target.closest("[data-edit-service]");
+ if(edit){
+  state.selected=edit.dataset.editService;
+  openEditor("edit","");
+  return;
+ }
+ const view=event.target.closest("[data-view-service]");
+ if(view)choose(view.dataset.viewService);
+});
 $("sm-detail").addEventListener("click",event=>{
  const select=event.target.closest("[data-select]");
  if(select){choose(select.dataset.select);return;}

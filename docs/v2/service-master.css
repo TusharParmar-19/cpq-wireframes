@@ -60,3 +60,64 @@
 .sm-detail-actions{display:flex;gap:8px;flex-wrap:wrap}
 @media(max-width:1150px){.sm-workspace{grid-template-columns:1fr}.sm-tree{max-height:330px}}
 @media(max-width:700px){.sm-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.sm-filter,.sm-form-grid,.sm-product-choices,.sm-kv{grid-template-columns:1fr}.sm-detail-head{flex-direction:column}.sm-head{flex-wrap:wrap}}
+
+
+/* Table-first Service Register */
+.sm-register[hidden],.sm-detail[hidden]{display:none!important}
+.sm-register{padding:20px 20px 16px}
+.sm-register .sm-head{align-items:center;margin-bottom:20px}
+.sm-filter{display:grid;grid-template-columns:minmax(230px,1fr) minmax(145px,195px) minmax(145px,195px);gap:12px;align-items:end;margin-bottom:16px}
+.sm-filter>div{min-width:0}
+.sm-filter label{font-size:12px}
+.sm-table-scroll{max-width:100%;overflow-x:auto;border:1px solid #e1e9f1;border-radius:10px}
+.sm-table{width:100%;min-width:1060px;border-collapse:collapse;font-size:13px}
+.sm-table thead th{background:#f5f8fb;color:#526d83;font-size:11px;letter-spacing:.02em;text-transform:none;font-weight:800;white-space:nowrap;border-bottom:1px solid #dbe7f0;padding:13px 11px;text-align:left}
+.sm-table tbody tr{transition:background-color .12s}
+.sm-table tbody tr:hover{background:#f8fbff}
+.sm-table tbody tr:last-child td{border-bottom:0}
+.sm-table td{padding:14px 11px;vertical-align:middle;font-size:12px;line-height:1.5;color:#365168;border-bottom:1px solid #edf1f5}
+.sm-table th:nth-child(1){width:24%}
+.sm-table th:nth-child(2){width:12%}
+.sm-table th:nth-child(3){width:15%}
+.sm-table th:nth-child(4){width:17%}
+.sm-table th:nth-child(5),.sm-table th:nth-child(6){width:7%}
+.sm-table th:nth-child(7){width:7%}
+.sm-table th:nth-child(8){width:11%}
+.sm-table-name{display:flex;align-items:start;gap:8px;min-width:160px}
+.sm-tree-hint{font-size:18px;color:#85a7bd;line-height:1.15;padding-top:1px}
+.sm-table-name-cell{display:flex;flex-direction:column;gap:4px;min-width:0}
+.sm-open-link{padding:0;border:0;background:none;color:#155782;text-align:left;font:inherit;font-size:13px;font-weight:800;line-height:1.45;cursor:pointer}
+.sm-open-link:hover{text-decoration:underline;color:#0a426d}
+.sm-row-kind{font-size:11px;color:#8194a5}
+.sm-table-code{font-weight:700;color:#4c6c84;font-size:12px}
+.sm-table-secondary{display:block;font-size:11px;color:#8193a3;margin-top:4px}
+.sm-table-number{font-weight:700;font-size:13px;color:#385772}
+.sm-row-actions{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.sm-table .sm-row-actions .btn{padding:7px 10px;font-size:11px;font-weight:800}
+.sm-table-empty{padding:30px 12px!important;text-align:center;color:#718596!important}
+.sm-table-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:14px;font-size:11px;line-height:1.6;color:#6e8193}
+.sm-table-footer b{color:#4e6579}
+.sm-detail{padding:23px 26px}
+.sm-detail-nav{display:flex;align-items:center;gap:15px;flex-wrap:wrap;padding-bottom:18px;margin-bottom:18px;border-bottom:1px solid #e6edf3}
+.sm-detail-nav span{color:#708699;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em}
+.sm-detail #sm-detail{max-width:1100px}
+.sm-table .sm-tag{white-space:nowrap}
+.sm-table button:focus-visible,.sm-detail button:focus-visible,.sm-filter input:focus-visible,.sm-filter select:focus-visible{outline:3px solid #78b6df;outline-offset:2px}
+@media(max-width:800px){
+ .sm-filter{grid-template-columns:1fr 1fr}
+ .sm-filter>div:first-child{grid-column:1/-1}
+ .sm-register{padding:15px}
+ .sm-detail{padding:16px}
+}
+@media(max-width:520px){
+ .sm-filter{grid-template-columns:1fr}
+ .sm-filter>div:first-child{grid-column:auto}
+ .sm-table-scroll{border-radius:7px}
+}
+
+/* Quiet row actions; the primary action remains Add Service at page level. */
+.sm-row-view,.sm-row-edit{background:none;border:0;border-radius:6px;padding:6px 5px;font:inherit;font-weight:800;font-size:12px;cursor:pointer}
+.sm-row-view{color:#175f90}
+.sm-row-edit{color:#607990}
+.sm-row-view:hover,.sm-row-edit:hover{background:#eaf4fb;text-decoration:underline}
+.sm-row-view:focus-visible,.sm-row-edit:focus-visible{outline:3px solid #78b6df;outline-offset:2px}
