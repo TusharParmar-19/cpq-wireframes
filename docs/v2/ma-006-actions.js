@@ -5,6 +5,7 @@ const a=window.CPQ_MA006;
 const {$,esc,db,master,org,staff,enquiries,state,quote,customer,buyer,contact,site,project,employee,entity,branch,opportunity,product,configCheck,configUnit,numeric,render,renderBuilder,paper,note}=a;
 let toastTimer=null,priorFocus=null;
 const copy=x=>JSON.parse(JSON.stringify(x));
+const flow=window.CPQ_FLOW;
 const demoDate=()=>new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"});
 const statusDraft="Draft";
 const toISO=v=>{
@@ -31,7 +32,7 @@ function closeModal(){
 function explain(title,body){modal(title,"MA-006 · Wireframe only",'<div class="ma6-note">'+body+'</div>');}
 function makeBlank(){
  return {
-  id:"",rev:"R0",status:statusDraft,title:"",customerId:"",buyerId:"",contactId:"",siteId:"",projectId:"",opportunityId:"",
+  id:"",rev:"R0",status:statusDraft,title:"",customerId:"",buyerId:"",contactId:"",siteId:"",projectId:"",opportunityId:"",serviceIds:[],enquiryServiceIds:[],
   companyId:"",branchId:"",ownerId:"",date:demoDate(),validUntil:"",currency:"INR",
   discount:0,taxRate:18,payment:"To be agreed",delivery:"To be confirmed",warranty:"Subject to approved product terms",
   exclusions:"",notes:"",lines:[],review:"Not submitted",response:"Not issued",responseNote:"",lastUpdated:demoDate()+" (demo)",versionNotes:"New unissued draft"
@@ -48,6 +49,9 @@ function newBuilder(sourceId=""){
   q.customerId=src.customerId;q.buyerId=src.buyerId;q.contactId=src.contactId;q.siteId=src.siteId;
   q.projectId=src.projectId;q.companyId=src.companyId;q.branchId=src.branchId;q.ownerId=src.ownerId;
   q.opportunityId=src.id;q.title="Quotation — "+src.title;q.notes="Source enquiry: "+src.summary;
+   q.enquiryServiceIds=flow.normalized(src.serviceIds||[],true);
+   q.lines=flow.serviceLines(q.enquiryServiceIds,1,src.id);
+   q.serviceIds=q.lines.map(l=>l.serviceId);
  }
  const b={quote:q,isNew:true,step:0,productId:"",options:{},quantity:1,addPickerOpen:true,catalogSearch:""};
  state.mode="builder";state.builder=b;renderBuilder();
@@ -100,6 +104,7 @@ function saveBuilder(){
  else if(!percentOK)error="Sample discount and tax percentages must be between 0 and 100.";
  else if(q.validUntil&&!toISO(q.validUntil))error="Choose a valid calendar date or leave validity blank until review.";
  if(error){explain("Please correct the saved data",esc(error)+"<p>Incomplete quotation details and unconfirmed terms are allowed in Draft. Invalid relationships or numbers are not.</p>");return;}
+ syncPackageBilling(q);
  if(b.isNew){
   const max=Math.max(20,...db.quotations.map(x=>Number(x.id.split("-").at(-1))||0));
   q.id="QT-2026-"+String(max+1).padStart(3,"0");q.rev="R0";db.quotations.unshift(copy(q));
@@ -121,6 +126,17 @@ function saveBuilder(){
  render();toast("Draft quotation "+q.id+" saved in demo browser state");
  $("quote-register").scrollIntoView({block:"start",behavior:"auto"});
 }
+function syncPackageBilling(q){
+ const selections=(q.lines||[]).filter(l=>l.serviceId).map(l=>l.serviceId);
+ for(const line of q.lines||[]){
+  if(!line.serviceId)continue;
+  const ancestor=flow.hasSelectedAncestor(line.serviceId,selections);
+  line.includedInParent=!!ancestor;
+  line.includedInServiceId=ancestor?.id||"";
+  if(ancestor)line.unitPrice=0;
+ }
+ q.serviceIds=flow.normalized(selections,true);
+}
 function addSelectedProduct(){
  const b=state.builder;if(!b)return;const q=b.quote,p=product(b.productId);
  if(!p)return;
@@ -130,11 +146,19 @@ function addSelectedProduct(){
  const qty=Number(b.quantity);
  if(!Number.isInteger(qty)||qty<=0||qty>100000){explain("Quantity required","Enter a whole number between 1 and 100,000.");return;}
  const index=Math.max(0,...q.lines.map(x=>Number(x.id.replace(/[^0-9]/g,""))||0))+1;
+ if(p.serviceId&&q.lines.some(l=>l.serviceId===p.id)){
+  explain("Service already selected","This service is already in the BOQ. Edit its existing line rather than adding a duplicate.");return;
+ }
  const line={id:"L"+String(index).padStart(2,"0"),productId:p.id,type:p.type,description:p.name,
   quantity:qty,unit:p.unit,unitPrice:configUnit(p,b.options),options:p.type==="config"?{...b.options}:{},
   catalogSpec:p.catalogSpec||"",sourceVariantId:p.sourceVariantId||"",pricingReview:!!p.sourceVariantId,technicalReview:!!p.demoOnly,unverified:!!p.demoOnly||(!!p.sourceVariantId&&!(Number(p.basePrice)>0))};
- q.lines.push(line);
- renderBuilder();toast("Sample product added to BOQ");
+ if(p.serviceId){
+  const selected=[...q.lines.filter(l=>l.serviceId).map(l=>l.serviceId),p.id];
+  Object.assign(line,flow.lineFor(p.id,index,selected,""));
+ }
+ if(p.sourceVariantId)flow.attachModel(line,p.sourceVariantId);
+ q.lines.push(line);syncPackageBilling(q);
+ renderBuilder();toast(p.serviceId?"Service added as an unpriced BOQ line":"Sample product added to BOQ");
 }
 function updateBuilderField(field,value){
  const b=state.builder;if(!b)return;const q=b.quote;
@@ -143,10 +167,12 @@ function updateBuilderField(field,value){
  }
  if(field==="customerId"){
   q.customerId=value;q.buyerId="";q.contactId="";q.siteId="";q.projectId="";q.opportunityId="";
+  q.lines=q.lines.filter(l=>!l.importedFromOpportunity);q.enquiryServiceIds=[];syncPackageBilling(q);
   q.companyId="";q.branchId="";q.ownerId="";renderBuilder();return;
  }
  if(field==="buyerId"){
   q.buyerId=value;q.contactId="";q.siteId="";q.projectId="";q.opportunityId="";
+  q.lines=q.lines.filter(l=>!l.importedFromOpportunity);q.enquiryServiceIds=[];syncPackageBilling(q);
   renderBuilder();return;
  }
  if(field==="companyId"){
@@ -157,10 +183,16 @@ function updateBuilderField(field,value){
  }
  if(field==="opportunityId"){
   q.opportunityId=value;const src=opportunity(value);
+  q.lines=q.lines.filter(l=>!l.importedFromOpportunity);
+  q.enquiryServiceIds=[];
   if(src&&src.customerId===q.customerId&&src.buyerId===q.buyerId){
    q.contactId=src.contactId||"";q.siteId=src.siteId||"";q.projectId=src.projectId||"";
    if(!q.title)q.title="Quotation — "+src.title;
+   q.enquiryServiceIds=flow.normalized(src.serviceIds||[],true);
+   const next=Math.max(0,...q.lines.map(l=>Number(String(l.id).replace(/\D/g,""))||0))+1;
+   q.lines.push(...flow.serviceLines(q.enquiryServiceIds,next,src.id));
   }
+  syncPackageBilling(q);
   renderBuilder();return;
  }
  if(["discount","taxRate"].includes(field)){
@@ -324,7 +356,7 @@ document.addEventListener("click",e=>{
  if(d.tab){state.tab=d.tab;render();return;}
  if(d.step!==undefined){const i=Number(d.step);if(state.builder&&Number.isInteger(i)&&i>=0&&i<4){state.builder.step=i;renderBuilder();}return;}
  if(d.product){if(state.builder){setProduct(state.builder,d.product);renderBuilder();}return;}
- if(d.removeLine){if(state.builder){state.builder.quote.lines=state.builder.quote.lines.filter(l=>l.id!==d.removeLine);renderBuilder();}return;}
+ if(d.removeLine){if(state.builder){const q=state.builder.quote;q.lines=q.lines.filter(l=>l.id!==d.removeLine);syncPackageBilling(q);renderBuilder();}return;}
  if(d.action){handleAction(d.action,t);return;}
  if(d.planned){explain(esc(d.planned)+" (planned)","This is a future administration or business workflow. MA-006 only represents where it connects to quotation configuration and issuance.");return;}
 });
@@ -340,7 +372,7 @@ function changedInput(e,commit=true){
  }
  if(t.dataset.catalogSearch!==undefined){b.catalogSearch=t.value;return;}
   if(t.dataset.lineRate!==undefined){
-  const l=q.lines.find(x=>x.id===t.dataset.lineRate);if(l){l.unitPrice=Math.max(0,Number(t.value)||0);if(commit)renderBuilder();}return;
+  const l=q.lines.find(x=>x.id===t.dataset.lineRate);if(l&&!l.includedInParent){l.unitPrice=Math.max(0,Number(t.value)||0);if(commit)renderBuilder();}return;
  }
 }
 $("builder-body").addEventListener("change",e=>changedInput(e,true));
@@ -404,12 +436,15 @@ $("modal-ok").addEventListener("click",closeModal);
 $("overlay").addEventListener("click",e=>{if(e.target===$("overlay"))closeModal();});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("overlay").classList.contains("open"))closeModal();});
 /* Import only sample configuration choices; never accept user-supplied rates or approval status. */
-function openConfigurationHandoff(raw){
- if(!raw||raw.length>28000)return false;
+function openConfigurationHandoff(raw,fromSaved=false){
+ if(!raw||raw.length>(fromSaved?200000:28000))return false;
  let c;try{c=JSON.parse(raw);}catch(_){return false;}
  if(c?.v!==1||typeof c.configId!=="string"||!/^CF-20\d{2}-\d{3,5}$/.test(c.configId)||
  typeof c.name!=="string"||!Array.isArray(c.items)||c.items.length<1||c.items.length>25)return false;
  const lines=[],catalog=window.CPQ_MA006A_CATALOG;
+ const storedConfig=window.CPQ_MA006A_DATA?.configurations?.find(x=>x.id===c.configId&&x.revision===c.revision);
+ const quotedServices=flow.normalized(storedConfig?.serviceIds||c.serviceIds||[],false);
+ if(c.serviceIds&&(!Array.isArray(c.serviceIds)||quotedServices.length!==c.serviceIds.length))return false;
  for(let i=0;i<c.items.length;i++){
   const value=c.items[i],qty=Number(value?.quantity);
   if(!value||typeof value.productId!=="string"||!Number.isInteger(qty)||qty<1||qty>100000)return false;
@@ -426,6 +461,21 @@ function openConfigurationHandoff(raw){
     lines.push({id:"L"+String(i+1).padStart(2,"0"),productId:v.id,type:"standard",description:fam.name+" — "+v.model,
      quantity:qty,unit:fam.unit||"Nos",unitPrice:Math.max(0,Number(v.price?.sell)||0),options:{},catalogSpec:spec+(demoModel?" · DEMO-ENABLED ONLY: technical and selling-price verification pending":"")+(value.customSpec?" · Custom project specification requires review: "+String(value.customSpec).slice(0,250):""),
      sourceVariantId:v.id,pricingReview:true,technicalReview:demoModel||!!value.customSpec,unverified:demoModel||!(Number(v.price?.sell)>0)});
+    const line=lines[lines.length-1],old=storedConfig?.items?.[i];
+    if(old?.productId===v.id&&old.modelSnapshot?.id===v.id){
+     line.modelSnapshot=copy(old.modelSnapshot);
+     line.documentRefCount=line.modelSnapshot.documentRefs?.length||0;
+     const snap=line.modelSnapshot,d=snap.dimensions||{};
+     line.description=(snap.family||fam.name)+" — "+snap.model;
+     line.catalogSpec=[snap.sku,snap.manufacturer,snap.capacity,
+      d.width&&d.height&&d.depth?[d.width,d.height,d.depth].join(" × ")+" "+(d.unit||"mm"):""].filter(Boolean).join(" · ");
+     const now=flow.modelSnapshot(v.id);
+     if(now&&JSON.stringify([now.sku,now.model,now.capacity,now.dimensions,now.solar,now.categorySpecs,now.documentRefs])!==
+      JSON.stringify([snap.sku,snap.model,snap.capacity,snap.dimensions,snap.solar,snap.categorySpecs,snap.documentRefs])){
+      line.technicalReview=true;
+      line.catalogSpec+=" · Catalog model changed after saved configuration: technical re-review required";
+     }
+    }else flow.attachModel(line,v.id);
     continue;
    }
    const snap=value.model;
@@ -474,8 +524,10 @@ function openConfigurationHandoff(raw){
  q.title="Quotation — "+c.name.slice(0,140);
   q.sourceConfigId=c.configId;q.sourceConfigName=c.name.slice(0,160);
   q.sourceConfigRevision=typeof c.revision==="string"?c.revision.slice(0,16):"C0";
- q.lines=lines;
-  state.builder.addPickerOpen=false;
+ q.lines=[...lines,...flow.serviceLines(quotedServices,lines.length+1,c.opportunityId||"")];
+ q.enquiryServiceIds=flow.normalized(src?.serviceIds||[],true);
+ syncPackageBilling(q);
+ state.builder.addPickerOpen=false;
   state.builder.productId="";
  q.projectTechnical=c.solutionType==="solar"&&c.solar&&typeof c.solar==="object"?{
   systemType:String(c.solar.systemType||"").slice(0,100),
@@ -490,9 +542,32 @@ function openConfigurationHandoff(raw){
  toast("Technical configuration imported into an unissued quotation draft (demo)");
  return true;
 }
+function payloadFromStored(ref){
+ const c=window.CPQ_MA006A_DATA?.configurations?.find(x=>x.id===ref);
+ if(!c)return "";
+ return JSON.stringify({
+  v:1,configId:c.id,name:c.name,revision:c.revision||"C0",customerId:c.customerId||"",
+  buyerId:c.buyerId||"",contactId:c.contactId||"",siteId:c.siteId||"",projectId:c.projectId||"",
+  companyId:c.companyId||"",branchId:c.branchId||"",ownerId:c.ownerId||"",opportunityId:c.opportunityId||"",
+  solutionType:c.solutionType||"general",solar:c.solutionType==="solar"?c.solar||{}:{},
+  serviceIds:flow.normalized(c.serviceIds||[],true),
+  items:(c.items||[]).map(l=>({
+   productId:l.productId,variantId:l.variantId||"",quantity:l.quantity,options:l.options||{},
+   note:l.note||"",customSpec:l.customSpec||"",model:l.modelSnapshot?{
+    sku:l.modelSnapshot.sku,model:l.modelSnapshot.model,name:l.modelSnapshot.family,
+    manufacturer:l.modelSnapshot.manufacturer,unit:"Nos"}:null
+  }))
+ });
+}
 const params=new URLSearchParams(window.location.search);
-const quoteRef=params.get("quote"),opRef=params.get("opportunity"),configData=params.get("configData");
-if(configData){
+const quoteRef=params.get("quote"),opRef=params.get("opportunity"),configData=params.get("configData"),configRef=params.get("configuration");
+if(configRef){
+ const data=payloadFromStored(configRef);
+ if(!openConfigurationHandoff(data,true)){
+  newBuilder();
+  explain("Configuration handoff unavailable","This configuration was not found or its product/service references could not be validated. Return to MA-006A and review the saved configuration.");
+ }
+}else if(configData){
  if(!openConfigurationHandoff(configData)){
   newBuilder();
   explain("Configuration handoff unavailable","This demonstration cannot validate the supplied configuration data. Please use the Product Configuration page to select a sample solution, or start a new draft quotation.");

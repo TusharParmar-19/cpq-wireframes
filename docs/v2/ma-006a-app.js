@@ -6,6 +6,7 @@ const $=id=>document.getElementById(id);
 const esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const clone=x=>JSON.parse(JSON.stringify(x));
 const records=clone(window.CPQ_MA006A_DATA.configurations);
+const flow=window.CPQ_FLOW;
 const products=window.CPQ_MA006_DATA.products,org=window.CPQ_MA002_DATA,staff=window.CPQ_MA003_USERS,master=window.CPQ_MA004_DATA,opps=window.CPQ_MA005_DATA.opportunities;
 const state={selected:"CF-2026-003",tab:"overview",mode:"register",company:"all",branch:"all",search:"",status:"all",builder:null};
 const catalog=()=>window.CPQ_MA006A_CATALOG_UI?.db||window.CPQ_MA006A_CATALOG;
@@ -16,7 +17,7 @@ function itemProduct(id){
  const old=products.find(p=>p.id===id);if(old)return old;
  const v=catalogVariant(id);if(!v)return null;
  const f=catalogFamily(v.familyId),m=catalogMaker(v.manufacturerId);
- return {id:v.id,name:(f?.name||"Catalog item")+" — "+v.model,type:"standard",unit:f?.unit||"Nos",
+ return {id:v.id,name:(f?.name||"Catalog item")+" — "+v.model,type:f?.type==="service"?"service":"standard",unit:f?.unit||"Nos",
  model:v.model,sku:v.sku,manufacturer:m?.brand||m?.name||"Service",capacity:v.capacity,solarKind:f?.solarKind||"general",variant:v};
 }
 const record=id=>records.find(c=>c.id===id);
@@ -150,14 +151,16 @@ function renderList(items){
 function payload(c){
  return {v:1,configId:c.id,name:c.name,revision:c.revision||"C0",customerId:c.customerId||"",buyerId:c.buyerId||"",contactId:c.contactId||"",siteId:c.siteId||"",projectId:c.projectId||"",companyId:c.companyId||"",branchId:c.branchId||"",ownerId:c.ownerId||"",opportunityId:c.opportunityId||"",
   solutionType:c.solutionType||"general",solar:c.solutionType==="solar"?c.solar||{}:{},
+  serviceIds:flow.normalized(c.serviceIds||[],true),
   items:c.items.map(l=>{
    const v=catalogVariant(l.productId),f=v?catalogFamily(v.familyId):null;
    return {productId:l.productId,variantId:v?.id||"",quantity:l.quantity,options:l.options||{},note:l.note||"",customSpec:l.customSpec||"",
-   model:v?{sku:v.sku,model:v.model,manufacturer:catalogMaker(v.manufacturerId)?.brand||"",unit:f?.unit||"Nos",name:f?.name||"",solarKind:f?.solarKind||"general"}:null};
+   model:v?{sku:v.sku,model:v.model,manufacturer:catalogMaker(v.manufacturerId)?.brand||"",unit:f?.unit||"Nos",name:f?.name||"",solarKind:f?.solarKind||"general"}:null,
+   modelSnapshot:l.modelSnapshot||flow.modelSnapshot(l.productId)};
   })};
 }
 function quotationLink(c){
- return 'ma-006-quotations.html?configData='+encodeURIComponent(JSON.stringify(payload(c)));
+ return 'ma-006-quotations.html?configuration='+encodeURIComponent(c.id);
 }
 function renderHead(c){
  $("configuration-header").innerHTML='<div class="ma6-detail-top"><div><small>'+esc(c.id)+' / '+esc(c.revision)+' · '+esc(c.kind)+'</small><h2>'+esc(c.name)+'</h2><p>'+esc(customer(c.customerId)?.name||"Reusable configuration without a customer")+' · '+esc(owner(c.ownerId)?.name||"Unassigned owner")+'</p></div>'+
@@ -178,7 +181,9 @@ function overview(c){
  kv("Internal selling company",entity(c.companyId)?.name)+kv("Branch",branch(c.branchId)?.name)+
  kv("Owner",owner(c.ownerId)?.name)+kv("Selected items",String(c.items.length))+
  kv("Basic sample check",status(c))+kv("Updated",c.updated)+'</div>'+
- (c.solutionType==="solar"?solarOverview(c):"")+
+ '<div class="cpq-scope-panel"><h4>Selected services &amp; sub-services</h4>'+flow.summary(c.serviceIds||[])+
+  '<p>References from Service Master. Charges are created only in the quotation.</p></div>'+
+  (c.solutionType==="solar"?solarOverview(c):"")+
  '<details class="ma6a-builder-details"><summary>Project notes and linked quotation</summary><p>'+esc(c.notes||"No notes")+'</p>'+
  '<p>Quotation: '+esc(c.quoteId||"Not linked")+'</p></details>'+
  '<details class="ma6a-builder-details"><summary>Previous versions ('+(c.history?.length||0)+')</summary>'+
@@ -193,7 +198,9 @@ function items(c){
   const p=itemProduct(l.productId),issues=lineErrors(l);
   return '<div class="ma6a-config-item"><div class="ma6a-config-item-head"><div><strong>'+(i+1)+'. '+esc(p?.name||l.productId)+'</strong><small>'+esc(l.productId)+' · '+esc(typeLabel(p?.type))+'</small></div>'+
   '<span class="ma6-tag">'+esc(l.quantity)+' '+esc(p?.unit||"unit")+'</span></div>'+
-  '<div class="ma6a-config-options"><span>'+esc(optionText(l))+'</span></div>'+
+  '<div class="ma6a-config-options"><span>'+esc(l.modelSnapshot?
+ [l.modelSnapshot.manufacturer,l.modelSnapshot.model,l.modelSnapshot.sku,l.customSpec].filter(Boolean).join(" · "):optionText(l))+'</span></div>'+
+ (l.modelSnapshot?.documentRefs?.length?'<p class="cpq-scope-caption">'+l.modelSnapshot.documentRefs.length+' product document reference(s) captured when this line was added.</p>':"")+
   (l.note?'<p class="ma6a-table-foot">'+esc(l.note)+'</p>':'')+
   (issues.length?'<div class="ma6-validation">'+issues.map(esc).join("; ")+'</div>':'')+'</div>';
  }).join(""):empty("No selected items. Open the builder to add products."))+
@@ -233,7 +240,7 @@ const area=(id,label,value="")=>'<div class="ma6-field full"><label for="c-'+esc
 const select=(id,label,values,current,placeholder="Select...")=>
  '<div class="ma6-field"><label for="c-'+esc(id)+'">'+esc(label)+'</label><select id="c-'+esc(id)+'" data-c-field="'+esc(id)+'"><option value="">'+esc(placeholder)+'</option>'+opts(values,current)+'</select></div>';
 const steps=["Project Details","Choose Equipment","Review & Save"];
-const emptyConfig=()=>({id:"",name:"",kind:"Customer configuration",solutionType:"solar",solar:{systemType:"On-grid Rooftop"},customerId:"",buyerId:"",contactId:"",siteId:"",projectId:"",opportunityId:"",companyId:"",branchId:"",ownerId:"",quoteId:"",notes:"",updated:"Not saved",revision:"C0",items:[]});
+const emptyConfig=()=>({id:"",name:"",kind:"Customer configuration",solutionType:"solar",solar:{systemType:"On-grid Rooftop"},customerId:"",buyerId:"",contactId:"",siteId:"",projectId:"",opportunityId:"",serviceIds:[],companyId:"",branchId:"",ownerId:"",quoteId:"",notes:"",updated:"Not saved",revision:"C0",items:[]});
 function setProduct(b,id){
  const p=itemProduct(id);
  if(!p)return;b.productId=id;b.quantity=1;b.itemNote="";b.options=p.type==="config"?{...p.defaults}:{};
@@ -280,6 +287,9 @@ function renderContext(c){
  select("solutionType","What are you configuring?",[["solar","Solar System / Project"],["general","Single Product / Other"]],c.solutionType||"general")+
  select("kind","Purpose",[["Customer configuration","Customer project"],["Reusable template","Reusable template"]],c.kind)+
  select("customerId","Customer",customers,c.customerId,"Select later if reusable")+'</div>'+
+ '<div class="cpq-scope-panel"><h4>Services &amp; sub-services (optional)</h4>'+
+   flow.selector(c.serviceIds||[],"configServiceIds")+
+   '<p>Select products in the next step only if technical configuration is required.</p></div>'+
  (c.solutionType==="solar"?
  '<div class="ma6a-quick-fields"><h3>Solar project essentials</h3><p>Target capacity, installation and roof information.</p>'+
  projectFields("essential",c)+'</div>'+
@@ -302,10 +312,11 @@ function renderContext(c){
 function renderProduct(c,b){
  const p=itemProduct(b.productId)||itemProduct("VAR-009")||products[0];
  const catalogChoices=catalog().variants.filter(v=>v.status==="Active").map(v=>itemProduct(v.id));
- const choices=[...catalogChoices,...products];
+ const suggested=new Set(flow.normalized(c.serviceIds||[],true).flatMap(id=>flow.service(id)?.productIds||[]));
+ const choices=[...catalogChoices.filter(p=>p?.type!=="service"),...products.filter(p=>p.type!=="service")];
  const filtered=choices.filter(x=>b.productGroup==="all"||(b.productGroup==="solar"&&x.variant&&x.solarKind!=="general")||
  (b.productGroup==="other"&&(!x.variant||x.solarKind==="general"))).filter(x=>
- !b.catalogSearch||[x.name,x.model,x.sku,x.manufacturer,x.capacity].join(" ").toLowerCase().includes(b.catalogSearch.toLowerCase()));
+ !b.catalogSearch||[x.name,x.model,x.sku,x.manufacturer,x.capacity].join(" ").toLowerCase().includes(b.catalogSearch.toLowerCase())).sort((a,b)=>Number(suggested.has(b.id))-Number(suggested.has(a.id)));
  const errors=lineErrors({productId:p.id,quantity:b.quantity,options:b.options}),v=p.variant,d=v?.dimensions||{};
  return panel("2 · Select Products & Models","Select an existing manufacturer model, specify quantity and add a project-specific note only when necessary.")+
  '<div class="ma6a-product-picker-toolbar"><div class="ma6-field"><label>Show product type</label><select data-product-group>'+
@@ -316,7 +327,7 @@ function renderProduct(c,b){
  '<button class="ma6-product-card'+(x.id===p.id?' selected':'')+'" type="button" data-product="'+esc(x.id)+'">'+
  '<div><span class="ma6-tag">'+esc(x.variant?catalogFamily(x.variant.familyId)?.name||"Catalog model":typeLabel(x.type))+'</span>'+
  '<strong>'+esc(x.variant?x.model:x.name)+'</strong><small>'+
- esc(x.variant?[x.manufacturer,x.capacity,x.sku].filter(Boolean).join(" · "):x.id+" · "+x.unit)+'</small></div>'+
+ esc(x.variant?[x.manufacturer,x.capacity,x.sku].filter(Boolean).join(" · "):x.id+" · "+x.unit)+(suggested.has(x.id)?' · Suggested for service':'')+'</small></div>'+
  '<span class="ma6-tag">Select</span></button>').join(""):
  '<div class="ma6a-empty-note">No approved matching models. Draft products must pass review before use.</div>')+'</div></div>'+
  '<div class="ma6a-spec-editor"><h3>'+esc(v?p.model:p.name)+'</h3>'+
@@ -326,6 +337,17 @@ function renderProduct(c,b){
  p.type==="config"?'<div class="ma6-field-grid">'+Object.entries(p.options).map(([key,spec])=>
  select("opt-"+key,spec.label,spec.choices.map(([value])=>[value,value]),b.options[key],"Choose option")).join("")+'</div>':
  '<div class="ma6a-quiet-box">Standard item or service: enter quantity. No product attributes to configure.</div>')+
+ (v?'<details class="ma6a-builder-details"><summary>Model technical data, warranty &amp; document references</summary>'+
+  '<div class="ma6-kvs">'+
+  Object.entries(v.categorySpecs||{}).slice(0,20).map(([key,val])=>kv(key,String(val))).join("")+
+  Object.entries(v.solar||{}).slice(0,20).map(([key,val])=>kv(key,String(val))).join("")+
+  kv("Product warranty",v.warranty?.months!==undefined?v.warranty.months+" months":"Not specified")+
+  kv("Guarantee",v.warranty?.guaranteeMonths!==undefined?v.warranty.guaranteeMonths+" months":"Not specified")+
+  '</div>'+
+  ((v.documents||[]).some(d=>d.status==="Current")?'<div class="cpq-model-snapshot"><h4>Documents (references only)</h4><ul>'+
+   v.documents.filter(d=>d.status==="Current").slice(0,20).map(d=>'<li>'+esc(d.name)+' · v'+esc(d.version)+' · '+esc(d.type)+'</li>').join("")+'</ul></div>':
+   '<p class="cpq-scope-caption">No current product document references recorded.</p>')+
+  '<p class="cpq-scope-caption">Model metadata is captured when added to configuration. No file contents are stored in this demo.</p></details>':"")+
  '<div class="ma6a-field-inline"><div class="ma6-field"><label for="config-add-qty">Quantity *</label>'+
  '<input id="config-add-qty" type="number" min="1" step="1" data-add-qty value="'+esc(b.quantity)+'"></div><span>'+esc(p.unit||"Nos")+'</span></div>'+
  '<details class="ma6a-builder-details"><summary>Project-specific changes & technical notes</summary>'+
@@ -356,7 +378,7 @@ function renderReview(c){
  return panel("3 · Review & Save","Check the product list and save this draft. Pricing follows in Quotations.")+
  '<div class="ma6-kvs">'+kv("Configuration name",c.name||"Required")+
  kv("Customer",customer(c.customerId)?.name||"Reusable / not selected")+
- kv("Selected product lines",String(c.items.length))+
+ kv("Selected product lines",String(c.items.length))+kv("Selected services / sub-services",String((c.serviceIds||[]).length))+
  kv("Project type",c.solutionType==="solar"?"Solar system":"Single product / other")+
  (c.solutionType==="solar"?kv("Target DC",c.solar?.targetDcKwp?c.solar.targetDcKwp+" kWp":"Not entered")+
  kv("Proposed module DC",m.modules?m.dcKwp.toFixed(2)+" kWp":"Not calculated")+
@@ -431,7 +453,7 @@ function addItem(){
  const line={id:"I"+String(Math.max(0,...b.value.items.map(x=>Number(x.id.replace(/\D/g,""))||0))+1).padStart(2,"0"),
   productId:p.id,variantId:p.variant?.id||"",quantity:Number(b.quantity),
   options:p.type==="config"?{...b.options}:{},customSpec:String(b.customSpec||"").trim().slice(0,500),
-  note:String(b.itemNote||"").trim().slice(0,500)};
+  note:String(b.itemNote||"").trim().slice(0,500),modelSnapshot:flow.modelSnapshot(p.id)};
  const errors=lineErrors(line);
  if(errors.length){dialog("Product selection needs correction",errors.map(x=>esc(x)).join("<p>")+"</p>");return;}
  b.value.items.push(line);b.itemNote="";b.customSpec="";b.quantity=1;
@@ -445,7 +467,7 @@ function updateContext(field,value){
   renderBuilder();return;
  }
  if(field==="customerId"){
-  c.customerId=value;c.buyerId="";c.contactId="";c.siteId="";c.projectId="";c.opportunityId="";c.companyId="";c.branchId="";c.ownerId="";
+  c.customerId=value;c.buyerId="";c.contactId="";c.siteId="";c.projectId="";c.opportunityId="";c.serviceIds=[];c.companyId="";c.branchId="";c.ownerId="";
   const buyers=master.companies.filter(x=>x.customerId===value);
   if(buyers.length===1)c.buyerId=buyers[0].id;
   const links=customer(value)?.links||[],companies=[...new Set(links.map(x=>x.companyId))];
@@ -456,7 +478,14 @@ function updateContext(field,value){
   }
   renderBuilder();return;
  }
- if(field==="buyerId"){c.buyerId=value;c.contactId="";c.siteId="";c.projectId="";c.opportunityId="";renderBuilder();return;}
+ if(field==="buyerId"){c.buyerId=value;c.contactId="";c.siteId="";c.projectId="";c.opportunityId="";c.serviceIds=[];renderBuilder();return;}
+ if(field==="opportunityId"){
+  c.opportunityId=value;
+  const src=opportunity(value);
+  c.serviceIds=src&&src.customerId===c.customerId&&src.buyerId===c.buyerId?
+   flow.normalized(src.serviceIds||[],true):[];
+  renderBuilder();return;
+ }
  if(field==="kind"&&value==="Reusable template"){
   c.kind=value;c.customerId="";c.buyerId="";c.contactId="";c.siteId="";c.projectId="";c.opportunityId="";
   renderBuilder();return;
@@ -482,6 +511,11 @@ document.addEventListener("click",e=>{
 });
 $("config-builder-body").addEventListener("change",e=>{
  if(!state.builder)return;const t=e.target,b=state.builder;
+ if(t.name==="configServiceIds"){
+  const selected=new Set(flow.normalized(b.value.serviceIds||[],true));
+  if(t.checked)selected.add(t.value);else selected.delete(t.value);
+  b.value.serviceIds=flow.normalized([...selected],true);renderBuilder();return;
+ }
  if(t.dataset.cField){updateContext(t.dataset.cField,t.value);return;}
  if(t.dataset.solarField!==undefined){
   b.value.solar||={};const value=t.value;
@@ -535,7 +569,7 @@ else if(opRef&&opportunity(opRef)){
  const o=opportunity(opRef);
  newBuilder();
  const c=state.builder.value;
- Object.assign(c,{kind:"Customer configuration",customerId:o.customerId,buyerId:o.buyerId,opportunityId:o.id,companyId:o.companyId,branchId:o.branchId,ownerId:o.ownerId,name:"Configuration — "+o.title,notes:"From sample enquiry "+o.id+": "+o.summary});
+ Object.assign(c,{kind:"Customer configuration",customerId:o.customerId,buyerId:o.buyerId,opportunityId:o.id,serviceIds:flow.normalized(o.serviceIds||[],true),companyId:o.companyId,branchId:o.branchId,ownerId:o.ownerId,contactId:o.contactId||"",siteId:o.siteId||"",projectId:o.projectId||"",name:"Configuration — "+o.title,notes:"From sample enquiry "+o.id+": "+o.summary});
  renderBuilder();
 }else render();
 window.CPQ_MA006A={state,records,products,review,record,visible,quotationLink,payload,save,newBuilder,addItem};
