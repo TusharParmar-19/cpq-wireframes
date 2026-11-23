@@ -68,3 +68,9 @@ The new `services` module is registered in `cpq-demo-store.js` and uses the exis
 4. Expand Product Master fields, document-upload UX, metadata and versions without losing manufacturer-model variants.
 5. Reflect service and product permissions in MA-003 design.
 6. Freeze the approved wireframe and translate these relationships into Laravel/MySQL migrations, policies and tests.
+
+## Usability refinement — 23 November 2026
+
+- Use a single **Expand Table** control in the **right-side details header**; do not duplicate it in the compact left register.
+- When choosing a nested sub-service from the detail panel or table, reveal its ancestor chain, highlight the matching left-table row and scroll that row into view within the compact register.
+- The compact register gets its own height-limited scroll region with a sticky heading; no data or parent-child links are discarded.
