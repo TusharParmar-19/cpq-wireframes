@@ -16,7 +16,7 @@
 
 ## Current wireframe screens
 
-- **Service Management** — `service-master.html` (new independent Service Master)
+- **Service Management** — `service-master.html` (independent Service Master; **full-width table is the default**, with an optional full-page detail view)
 - **Product Catalog & Configuration** — `ma-006a-configuration.html` (unchanged product group/model behavior)
 - **MA-005 Opportunities & Enquiries** — existing; service selection wiring is **next**
 - **MA-006 Quotations & BOQ** — existing; mixed service/product BOQ and packages will be wired **after enquiry selection**
@@ -38,6 +38,9 @@ The new `services` module is registered in `cpq-demo-store.js` and uses the exis
 ## Manual acceptance checks
 
 1. Open `service-master.html` from MA-001, MA-003, MA-005 and MA-006A navigation.
+   - Confirm the full-width register table is shown first (not the old split-pane tree + details).
+   - Search and filter by main/sub-service and status; confirm counts match visible rows.
+   - Click **View Details** and **Back to Services**; editing a row should keep the register open.
 2. Verify seven main service offerings, plus nested sub-services, appear separately from Products.
 3. Create a main service as Draft with a unique code; select it and edit its details.
 4. Add a sub-service under the selected main service; confirm parent label and child list.
