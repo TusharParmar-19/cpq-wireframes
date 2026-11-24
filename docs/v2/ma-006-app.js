@@ -486,7 +486,7 @@ function finalQuotationBuilder(q){
  formArea("warranty","Warranty / support",q.warranty)+formArea("exclusions","Exclusions",q.exclusions)+
  formArea("notes","Internal notes (not on PDF)",q.notes)+'</div></details>'+
  '<div class="cpq-quote-customer-layout"><div class="ma6-section-sub"><h4>Customer quotation preview</h4><button type="button" class="btn" data-action="preview-builder">Expand preview</button></div>'+
- '<p class="muted">The expanded preview uses the latest entered terms and offered prices. No internal costs, commission, markup or margin are printed.</p>'+paper(q)+'</div>'+
+ '<p class="muted">Review the latest entered terms and offered prices. No internal costs, commission, markup or margin are printed.</p><div id="cpq-final-customer-paper">'+paper(q)+'</div></div>'+
  note('These are demo values. Real HSN/SAC, applicable GST, customer jurisdiction, freight, price list and discount approvals must come from server-controlled commercial rules.',true);
 }
 function reviewBuilder(q){
