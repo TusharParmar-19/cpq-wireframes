@@ -91,6 +91,7 @@ window.CPQ_MA003_PAGE_CATALOG=[
  {id:"configuration-workspace",name:"Product & Solution Configuration",section:"Configurations",code:"MA-006A",stage:"Available",actions:["configurations.view","configurations.create","configurations.edit","configurations.handoff"]},
  {id:"quote-register",name:"Quotation Register",section:"Quotations",code:"MA-006",stage:"Available",actions:["quotes.view","quotes.duplicate"]},
  {id:"quote-builder",name:"Quotation Builder & BOQ",section:"Quotations",code:"MA-006",stage:"Available",actions:["quotes.view","quotes.create","quotes.edit","selling.view","cost.view","margin.view"]},
+ {id:"pricing-workspace",name:"Pricing & Costing",section:"Quotations",code:"MA-006",stage:"Available",actions:["pricing.view","pricing.override","pricing.costs.edit","pricing.markup.apply","selling.view","cost.view","margin.view"]},
  {id:"quote-revisions",name:"Quotation Versions & History",section:"Quotations",code:"MA-006",stage:"Available",actions:["quotes.view"]},
  {id:"quote-pdf",name:"Quotation PDF & Issue",section:"Quotations",code:"MA-006",stage:"Available",actions:["quotes.view","quotes.pdf","quotes.issue","documents.download"]},
  {id:"quote-dispatch",name:"Quotation Dispatch & Response",section:"Quotations",code:"MA-006",stage:"Available",actions:["quotes.view","quotes.dispatch","quotes.response"]},
@@ -139,6 +140,10 @@ window.CPQ_MA003_PERMISSIONS.push(
  {id:"orders.edit",name:"Edit permitted draft order",group:"Orders & records"},
  {id:"approvals.view",name:"View assigned approval queue",group:"Sensitive & approvals"},
  {id:"approvals.decide",name:"Approve/reject under explicit policy",group:"Sensitive & approvals",sensitive:true},
+ {id:"pricing.view",name:"Access quote-specific pricing workspace",group:"Pricing & costing"},
+ {id:"pricing.override",name:"Change offered selling rates with reason",group:"Pricing & costing",sensitive:true},
+ {id:"pricing.costs.edit",name:"Estimate and edit permitted internal quotation costs (cost access also required)",group:"Pricing & costing",sensitive:true},
+ {id:"pricing.markup.apply",name:"Apply cost-plus pricing target (cost and margin access also required)",group:"Pricing & costing",sensitive:true},
  {id:"selling.view",name:"View customer-facing selling prices",group:"Sensitive & approvals"},
  {id:"bank.view",name:"View verified unmasked bank details",group:"Sensitive & approvals",sensitive:true},
  {id:"commercial.view",name:"View standard commercial settings",group:"Administration"},
@@ -148,23 +153,23 @@ window.CPQ_MA003_PERMISSIONS.push(
  {id:"users.invite",name:"Prepare secure employee invitation",group:"Administration"}
 );
 window.CPQ_MA003_ROLE_PAGE_DEFAULTS={
- master:["dashboard","organization","users","customers","opportunities","service-master","product-catalog","product-documents","configuration-workspace","quote-register","quote-builder","quote-revisions","quote-pdf","quote-dispatch","vendor-rfqs","documents","orders","approvals","commercial","reports","audit"],
- owner:["staff-dashboard","customers","opportunities","service-master","product-catalog","product-documents","configuration-workspace","quote-register","quote-revisions","quote-pdf","quote-dispatch","documents","orders","approvals","reports","audit"],
- manager:["staff-dashboard","customers","opportunities","service-master","product-catalog","product-documents","configuration-workspace","quote-register","quote-builder","quote-revisions","quote-pdf","quote-dispatch","documents","orders","approvals","reports"],
- sales:["staff-dashboard","customers","opportunities","service-master","product-catalog","product-documents","configuration-workspace","quote-register","quote-builder","quote-revisions","quote-pdf","quote-dispatch","documents"],
+ master:["dashboard","organization","users","customers","opportunities","service-master","product-catalog","product-documents","configuration-workspace","quote-register","pricing-workspace","quote-builder","quote-revisions","quote-pdf","quote-dispatch","vendor-rfqs","documents","orders","approvals","commercial","reports","audit"],
+ owner:["staff-dashboard","customers","opportunities","service-master","product-catalog","product-documents","configuration-workspace","quote-register","pricing-workspace","quote-revisions","quote-pdf","quote-dispatch","documents","orders","approvals","reports","audit"],
+ manager:["staff-dashboard","customers","opportunities","service-master","product-catalog","product-documents","configuration-workspace","quote-register","pricing-workspace","quote-builder","quote-revisions","quote-pdf","quote-dispatch","documents","orders","approvals","reports"],
+ sales:["staff-dashboard","customers","opportunities","service-master","product-catalog","product-documents","configuration-workspace","quote-register","pricing-workspace","quote-builder","quote-revisions","quote-pdf","quote-dispatch","documents"],
  technical:["staff-dashboard","opportunities","service-master","product-catalog","product-documents","configuration-workspace","quote-register","quote-builder","vendor-rfqs","documents"],
  purchase:["staff-dashboard","service-master","product-catalog","product-documents","configuration-workspace","quote-register","vendor-rfqs","documents"],
- finance:["staff-dashboard","service-master","product-catalog","product-documents","configuration-workspace","quote-register","quote-builder","quote-revisions","quote-pdf","orders","approvals","commercial","reports"],
+ finance:["staff-dashboard","service-master","product-catalog","product-documents","configuration-workspace","quote-register","pricing-workspace","quote-builder","quote-revisions","quote-pdf","orders","approvals","commercial","reports"],
  read:["staff-dashboard","customers","opportunities","service-master","product-catalog","product-documents","configuration-workspace","quote-register","quote-revisions","documents","orders"]
 };
 window.CPQ_MA003_ROLE_EXTRA_GRANTS={
- master:["catalog.view","services.view","services.create","services.edit","services.manage","services.link_products","product.specs.edit","product.warranty.edit","product.documents.view","product.documents.upload","product.documents.archive","catalog.manage","catalog.manufacturers.manage","catalog.parts.manage","configurations.view","configurations.create","configurations.edit","configurations.handoff","customers.edit","customers.archive","opportunities.edit","opportunities.close","quotes.duplicate","quotes.issue","quotes.dispatch","quotes.response","rfq.send","rfq.compare","documents.download","orders.edit","approvals.view","selling.view","commercial.view","commercial.manage","reports.export","audit.view","users.invite"],
- owner:["catalog.view","services.view","product.documents.view","configurations.view","approvals.view","selling.view","commercial.view","audit.view","documents.download"],
- manager:["catalog.view","services.view","services.create","services.edit","services.link_products","product.documents.view","configurations.view","configurations.create","configurations.edit","configurations.handoff","customers.edit","opportunities.edit","opportunities.close","quotes.duplicate","quotes.dispatch","quotes.response","orders.edit","approvals.view","selling.view","documents.download"],
- sales:["catalog.view","services.view","services.create","product.documents.view","configurations.view","configurations.create","configurations.edit","configurations.handoff","customers.edit","opportunities.edit","opportunities.close","quotes.duplicate","quotes.dispatch","quotes.response","selling.view","documents.download"],
+ master:["catalog.view","pricing.view","pricing.override","pricing.costs.edit","pricing.markup.apply","services.view","services.create","services.edit","services.manage","services.link_products","product.specs.edit","product.warranty.edit","product.documents.view","product.documents.upload","product.documents.archive","catalog.manage","catalog.manufacturers.manage","catalog.parts.manage","configurations.view","configurations.create","configurations.edit","configurations.handoff","customers.edit","customers.archive","opportunities.edit","opportunities.close","quotes.duplicate","quotes.issue","quotes.dispatch","quotes.response","rfq.send","rfq.compare","documents.download","orders.edit","approvals.view","selling.view","commercial.view","commercial.manage","reports.export","audit.view","users.invite"],
+ owner:["catalog.view","pricing.view","services.view","product.documents.view","configurations.view","approvals.view","selling.view","commercial.view","audit.view","documents.download"],
+ manager:["catalog.view","pricing.view","pricing.override","services.view","services.create","services.edit","services.link_products","product.documents.view","configurations.view","configurations.create","configurations.edit","configurations.handoff","customers.edit","opportunities.edit","opportunities.close","quotes.duplicate","quotes.dispatch","quotes.response","orders.edit","approvals.view","selling.view","documents.download"],
+ sales:["catalog.view","pricing.view","pricing.override","services.view","services.create","product.documents.view","configurations.view","configurations.create","configurations.edit","configurations.handoff","customers.edit","opportunities.edit","opportunities.close","quotes.duplicate","quotes.dispatch","quotes.response","selling.view","documents.download"],
  technical:["catalog.view","services.view","services.create","services.edit","services.link_products","product.specs.edit","product.warranty.edit","product.documents.view","product.documents.upload","catalog.manage","catalog.parts.manage","configurations.view","configurations.create","configurations.edit","configurations.handoff","opportunities.edit","rfq.compare","documents.download"],
  purchase:["catalog.view","services.view","services.link_products","product.documents.view","product.documents.upload","configurations.view","rfq.send","rfq.compare","documents.download"],
- finance:["catalog.view","services.view","product.documents.view","catalog.prices.manage","configurations.view","approvals.view","selling.view","commercial.view","reports.export","documents.download"],
+ finance:["catalog.view","pricing.view","pricing.override","pricing.costs.edit","pricing.markup.apply","services.view","product.documents.view","catalog.prices.manage","configurations.view","approvals.view","selling.view","commercial.view","reports.export","documents.download"],
  read:["catalog.view","services.view","product.documents.view","configurations.view"]
 };
 window.CPQ_MA003_ROLES.forEach(r=>{
