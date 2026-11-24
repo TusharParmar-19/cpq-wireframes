@@ -134,9 +134,22 @@ function updateCost(q,id,field,value){
  }
 }
 function removeCost(q,id){const p=prepare(q);p.costs=p.costs.filter(c=>c.id!==id);}
+function applyVendorRate(q,l,key){
+ prepare(q);
+ if(!window.CPQ_VENDOR_QUOTE)throw Error("Vendor quotations are unavailable.");
+ const s=window.CPQ_VENDOR_QUOTE.snapshot(q,l,key),before=l.pricing.unitCost,old=l.pricing.vendorRate||null;
+ l.pricing.unitCost=round(s.rate);l.pricing.vendorRate=s;
+ (q.pricing.vendorHistory??=[]).push({at:new Date().toISOString(),lineId:l.id,item:l.description,action:"Supplier rate applied",before,after:l.pricing.unitCost,previous:old,source:s});
+}
+function clearVendorRate(q,l,newCost=null){
+ prepare(q);const old=l.pricing.vendorRate;
+ if(old)(q.pricing.vendorHistory??=[]).push({at:new Date().toISOString(),lineId:l.id,item:l.description,action:"Supplier source cleared / manual costing",before:l.pricing.unitCost,after:newCost,previous:old});
+ delete l.pricing.vendorRate;l.pricing.unitCost=newCost;
+}
+function supplierIssues(q,review=false){return (q.lines||[]).map(l=>window.CPQ_VENDOR_QUOTE?.snapshotIssues(q,l,review)||"").filter(Boolean);}
 function errors(q){
  if(!q.pricing)return [];
- const p=q.pricing,err=[];
+ const p=q.pricing,err=supplierIssues(q);
  if(q.currency!=="INR")err.push("This pricing wireframe uses INR only; no currency conversion is available.");
  if(!["standard","cost-plus"].includes(p.method)||!validNumber(p.markup)||n(p.markup)>500)err.push("Choose a valid pricing method and markup between 0 and 500%.");
  for(const l of q.lines||[]){
@@ -187,6 +200,25 @@ function history(q){
  '<div class="cpq-price-scroll"><table><thead><tr><th>Item</th><th>Previous rate</th><th>New rate</th><th>Reason</th><th>Recorded</th></tr></thead><tbody>'+
  [...rows].reverse().map(h=>'<tr><td>'+esc(h.item)+'</td><td>'+fmt(h.before)+'</td><td>'+fmt(h.after)+'</td><td>'+esc(h.reason)+'</td><td>'+esc(h.actor)+'<small>'+esc(String(h.at||"").replace("T"," ").slice(0,19))+'</small></td></tr>').join("")+'</tbody></table></div></details>';
 }
+function offerLink(q,l){
+ const id=l.serviceId||l.sourceVariantId||l.modelSnapshot?.variantId||"";
+ if(!id||!q.companyId)return "vendor-quotations.html";
+ const p=new URLSearchParams({action:"new",company:q.companyId,branch:q.branchId||"",enquiry:q.opportunityId||"",kind:l.serviceId?"service":"product",item:id,quantity:String(l.quantity||1)});
+ return "vendor-quotations.html?"+p.toString();
+}
+function vendorRatePicker(q,l){
+ const s=l.pricing?.vendorRate,choices=window.CPQ_VENDOR_QUOTE?.choices(q,l)||[],issue=window.CPQ_VENDOR_QUOTE?.snapshotIssues(q,l,true)||"";
+ if(l.includedInParent&&!s)return "";
+ return '<details class="cpq-vendor-rate"'+(s||choices.length?' open':'')+'><summary>Supplier rate'+(s?' · captured':choices.length?' · available':'')+'</summary>'+(s?'<small><b>Supplier source:</b> '+esc(s.vendorName)+" · "+esc(s.reference)+'<br>Valid until '+esc(s.validUntil)+' · '+fmt(s.rate)+' before GST</small>'+(issue?'<small class="cpq-price-warning">'+esc(issue)+'</small>':"")+'<button type="button" class="btn cpq-price-small" data-action="price-clear-vendor" data-price-line="'+esc(l.id)+'">Clear supplier source</button>':"")+
+ (choices.length?'<select data-vendor-rate-select aria-label="Verified supplier rate for '+esc(l.description)+'"><option value="">Select verified supplier rate</option>'+choices.map(c=>'<option value="'+esc(c.key)+'">'+esc(c.offer.vendorName+" · "+c.offer.reference+" · "+fmt(c.line.rate))+'</option>').join("")+'</select><button type="button" class="btn cpq-price-small" data-action="price-apply-vendor" data-price-line="'+esc(l.id)+'">Use supplier rate</button>':'<small>No eligible verified offer for this company, item, unit and quantity.</small>')+
+ '<small><a href="'+esc(offerLink(q,l))+'" target="_blank" rel="noopener">+ Record supplier offer ↗</a> · <button class="btn cpq-price-small" type="button" data-action="price-refresh-vendor">Refresh rates</button></small></details>';
+}
+function supplierSummary(q){
+ const xs=(q.lines||[]).filter(l=>l.pricing?.vendorRate),hs=q.pricing?.vendorHistory||[];
+ if(!xs.length&&!hs.length)return "";
+ return '<details class="cpq-price-history"><summary>Internal supplier cost sources ('+xs.length+') &amp; changes ('+hs.length+')</summary>'+xs.map(l=>{const s=l.pricing.vendorRate;return '<p><b>'+esc(l.description)+'</b> · '+esc(s.vendorName)+' · '+esc(s.reference)+' / '+esc(s.offerId)+' · '+fmt(s.rate)+' before GST · valid until '+esc(s.validUntil)+'</p>';}).join("")+
+ hs.slice().reverse().map(h=>'<p><small>'+esc(h.at)+' · '+esc(h.action)+' · '+esc(h.item)+' · '+esc((h.source||h.previous)?.reference||"")+'</small></p>').join("")+'<p class="cpq-price-help">Internal only. Freight and tax are not copied into unit cost. Review separate expenses and tax treatment.</p></details>';
+}
 function pricingView(q,financialRows){
  const p=prepare(q),t=calculate(q);
  const defaultRows=(q.lines||[]).map(l=>{
@@ -198,7 +230,7 @@ function pricingView(q,financialRows){
    '<small>'+esc(x.source)+'</small>'+
    (x.effectiveFrom?'<small>List dates: '+esc(x.effectiveFrom)+(x.effectiveTo?' to '+esc(x.effectiveTo):' onward')+'</small>':'')+'</td>'+
    '<td>'+input(attr+'data-price-field="cost" aria-label="Estimated unit cost '+esc(l.description)+'" placeholder="Unknown"',x.unitCost??"")+
-   '<small class="cpq-price-warning" data-cost-missing="'+esc(l.id)+'"'+(x.unitCost==null?'':' hidden')+'>Cost not entered</small></td>'+
+   '<small class="cpq-price-warning" data-cost-missing="'+esc(l.id)+'"'+(x.unitCost==null?'':' hidden')+'>Cost not entered</small>'+vendorRatePicker(q,l)+'</td>'+
    '<td>'+input(attr+'data-price-field="rate" aria-label="Offered selling rate '+esc(l.description)+'"'+(included?' disabled':''),l.unitPrice)+
    '<small class="cpq-price-warning" data-rate-changed="'+esc(l.id)+'"'+(changed?'':' hidden')+'>Quote-specific override</small></td>'+
    '<td><strong data-offered-total="'+esc(l.id)+'">'+fmt(lineTotal(l))+'</strong></td>'+
@@ -273,7 +305,7 @@ function internalSummary(q){
  metrics(q)+
  ((q.pricing.costs||[]).length?'<details class="cpq-price-history"><summary>Additional internal expenses ('+q.pricing.costs.length+')</summary><div class="cpq-price-scroll"><table><thead><tr><th>Cost</th><th>Method</th><th>Calculated cost</th><th>Separate customer charge</th></tr></thead><tbody>'+
  q.pricing.costs.map(c=>'<tr><td>'+esc(c.name)+'</td><td>'+esc(methods.find(m=>m[0]===c.method)?.[1]||c.method)+'</td><td>'+fmt(costAmount(c,calculate(q).directCost,calculate(q).taxable))+'</td><td>'+(c.separate&&!privateKinds.has(c.kind)?fmt(c.chargeAmount):'Internal / included')+'</td></tr>').join("")+
- '</tbody></table></div></details>':'')+history(q)+'</section>';
+ '</tbody></table></div></details>':'')+history(q)+supplierSummary(q)+'</section>';
 }
-window.CPQ_PRICING={prepare,captureLine,lineTotal,publicCharges,calculate,requiresReason,setRate,setReason,addCost,updateCost,removeCost,errors,applyTarget,pricingView,refresh,internalSummary,validNumber};
+window.CPQ_PRICING={prepare,captureLine,lineTotal,publicCharges,calculate,requiresReason,setRate,setReason,addCost,updateCost,removeCost,errors,applyTarget,pricingView,refresh,internalSummary,validNumber,applyVendorRate,clearVendorRate,supplierIssues};
 })();
