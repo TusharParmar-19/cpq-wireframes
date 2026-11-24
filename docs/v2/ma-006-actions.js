@@ -510,7 +510,7 @@ function openConfigurationHandoff(raw,fromSaved=false){
     const dims=v.dimensions||{},spec=[v.sku,m?.brand||m?.name,v.capacity,
       dims.width&&dims.height&&dims.depth?dims.width+" × "+dims.height+" × "+dims.depth+" "+(dims.unit||"mm"):""].filter(Boolean).join(" · ");
     const demoModel=v.demoReview?.state==="Enabled for demo";
-    lines.push({id:"L"+String(i+1).padStart(2,"0"),productId:v.id,type:"standard",description:fam.name+" — "+v.model,
+    lines.push({id:"L"+String(i+1).padStart(2,"0"),productId:v.id,type:"standard",description:flow.productName(fam,v),
      quantity:qty,unit:fam.unit||"Nos",unitPrice:Math.max(0,Number(v.price?.sell)||0),options:{},catalogSpec:spec+(demoModel?" · DEMO-ENABLED ONLY: technical and selling-price verification pending":"")+(value.customSpec?" · Custom project specification requires review: "+String(value.customSpec).slice(0,250):""),
      sourceVariantId:v.id,pricingReview:true,technicalReview:demoModel||!!value.customSpec,unverified:demoModel||!(Number(v.price?.sell)>0)});
     const line=lines[lines.length-1],old=storedConfig?.items?.[i];
@@ -518,12 +518,12 @@ function openConfigurationHandoff(raw,fromSaved=false){
      line.modelSnapshot=copy(old.modelSnapshot);
      line.documentRefCount=line.modelSnapshot.documentRefs?.length||0;
      const snap=line.modelSnapshot,d=snap.dimensions||{};
-     line.description=(snap.family||fam.name)+" — "+snap.model;
+     line.description=[snap.family||fam.name,snap.model||snap.variantLabel||snap.variant||snap.capacity||snap.sku].filter(Boolean).join(" — ");
      line.catalogSpec=[snap.sku,snap.manufacturer,snap.capacity,
       d.width&&d.height&&d.depth?[d.width,d.height,d.depth].join(" × ")+" "+(d.unit||"mm"):""].filter(Boolean).join(" · ");
      const now=flow.modelSnapshot(v.id);
-     if(now&&JSON.stringify([now.sku,now.model,now.capacity,now.dimensions,now.solar,now.categorySpecs,now.documentRefs])!==
-      JSON.stringify([snap.sku,snap.model,snap.capacity,snap.dimensions,snap.solar,snap.categorySpecs,snap.documentRefs])){
+     if(now&&JSON.stringify([now.sku,now.model,now.capacity,now.dimensions,now.solar,now.categorySpecs,now.documentRefs,now.specTemplate,now.components,now.manufacturerPartNo])!==
+      JSON.stringify([snap.sku,snap.model,snap.capacity,snap.dimensions,snap.solar,snap.categorySpecs,snap.documentRefs,snap.specTemplate,snap.components,snap.manufacturerPartNo])){
       line.technicalReview=true;
       line.catalogSpec+=" · Catalog model changed after saved configuration: technical re-review required";
      }
@@ -533,7 +533,7 @@ function openConfigurationHandoff(raw,fromSaved=false){
    const snap=value.model;
    if(!snap||typeof snap!=="object"||typeof snap.sku!=="string"||typeof snap.model!=="string"||
       snap.sku.length>80||snap.model.length>120||String(snap.name||"").length>150)return false;
-   const name=[String(snap.name||"Unverified catalog item"),snap.model].join(" — ");
+   const name=[String(snap.name||"Unverified catalog item"),snap.model||snap.sku].filter(Boolean).join(" — ");
    lines.push({id:"L"+String(i+1).padStart(2,"0"),productId:variantId,type:"standard",description:name,
     quantity:qty,unit:String(snap.unit||"Nos").slice(0,15),unitPrice:0,options:{},
     catalogSpec:"Unverified new model: "+snap.sku+" · Price and specification approval required",

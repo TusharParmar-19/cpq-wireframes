@@ -151,7 +151,7 @@ function renderTable(){
 }
 function productText(id){
  const v=variant(id),f=family(v?.familyId),m=manufacturer(v?.manufacturerId);
- return v?{name:(f?.name||"Product")+" — "+v.model,meta:v.sku+" · "+(m?.brand||m?.name||"Manufacturer not specified")+" · "+v.status}:{name:"Unlisted product",meta:id+" · Link requires review"};
+ return v?{name:(f?.name||"Product")+" — "+(v.model||v.variant||v.capacity||v.sku),meta:v.sku+" · "+(m?.brand||m?.name||"Manufacturer not specified")+" · "+v.status}:{name:"Unlisted product",meta:id+" · Link requires review"};
 }
 function renderDetail(){
  const s=item(state.selected),el=$("sm-detail");

@@ -78,6 +78,9 @@ function serviceLines(ids=[],startingAt=1,fromEnquiry=""){
  const clean=normalized(ids,false);
  return clean.map((id,i)=>lineFor(id,startingAt+i,clean,fromEnquiry)).filter(Boolean);
 }
+function variantLabel(v={}){return String(v.model||v.variant||v.capacity||v.sku||"Product variant");}
+function manufacturerLabel(v={},m){return m?.brand||m?.name||({generic:"Unbranded / Generic",inhouse:"In-house assembled",unknown:"Manufacturer not yet known",service:"Service"})[v.manufacturerSource]||"Manufacturer not supplied";}
+function productName(f,v){return [f?.name||"Catalog item",variantLabel(v)].filter(Boolean).join(" — ");}
 function modelSnapshot(id){
  const catalog=window.CPQ_MA006A_CATALOG,variant=catalog?.variants?.find(x=>x.id===id);
  if(!variant)return null;
@@ -91,7 +94,8 @@ function modelSnapshot(id){
  }));
  return {
   id:variant.id,sku:variant.sku||"",model:variant.model||"",family:family?.name||"",
-  manufacturer:m?.brand||m?.name||"",capacity:variant.capacity||"",
+  manufacturer:manufacturerLabel(variant,m),manufacturerId:variant.manufacturerId||"",manufacturerSource:variant.manufacturerSource||"",manufacturerPartNo:variant.manufacturerPartNo||"",variantLabel:variantLabel(variant),variant:variant.variant||"",capacity:variant.capacity||"",
+  specTemplate:clone(variant.specTemplate||null),components:(variant.components||[]).map(c=>{const p=catalog.parts?.find(x=>x.id===c.partId);return {...clone(c),name:p?.name||c.partId,code:p?.code||"",unit:p?.unit||"Nos"};}),
   revisionCount:(variant.revisionHistory||[]).length,
   dimensions:clone(variant.dimensions||{}),solar:clone(variant.solar||{}),
   categorySpecs:clone(variant.categorySpecs||{}),technical:clone(variant.technical||[]),
@@ -110,5 +114,5 @@ function attachModel(line,id){
 function quotedServiceIds(q){
  return normalized([...new Set([...(q.serviceIds||[]),...(q.lines||[]).map(l=>l.serviceId||"").filter(Boolean)])],true);
 }
-window.CPQ_FLOW={services,service,ancestry,normalized,ordered,selector,summary,snapshot,hasSelectedAncestor,lineFor,serviceLines,modelSnapshot,attachModel,quotedServiceIds};
+window.CPQ_FLOW={variantLabel,manufacturerLabel,productName,services,service,ancestry,normalized,ordered,selector,summary,snapshot,hasSelectedAncestor,lineFor,serviceLines,modelSnapshot,attachModel,quotedServiceIds};
 })();

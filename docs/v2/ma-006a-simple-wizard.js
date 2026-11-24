@@ -26,15 +26,17 @@ function updateCategory(form,kind){
  const cat=form.querySelector('[name="familyCategory"]'),
  typ=form.querySelector('[name="familyType"]'),
  unit=form.querySelector('[name="familyUnit"]');
- if(cat)cat.value=kind==="service"?"Services & EPC":kind==="general"?"Other":kind==="cable"?"Cables & Conductors":"Solar Equipment";
- if(typ)typ.value=kind==="service"?"service":"standard";
- if(unit)unit.value=kind==="service"?"Job":kind==="cable"?"m":kind==="mounting"?"Set":"Nos";
+ const t=window.CPQ_PRODUCT_TEMPLATES.get(kind,db);
+ if(cat)cat.value=t?.category||"Other";
+ if(typ)typ.value="standard";
+ if(unit)unit.value=t?.unit||"Nos";
+ const model=form.querySelector('[name="model"]');if(model){model.required=!!t?.modelRequired;const l=model.closest(".ma6-field")?.querySelector("label");if(l)l.textContent="Manufacturer Model Number"+(t?.modelRequired?" *":" (optional)");}
  const typeLabel=window.CPQ_MA006A_SOLAR_FIELDS?.templates?.[kind]?.label||"General Product";
  const hint=$("catalog-wizard-autofill");
  if(hint)hint.innerHTML='The catalog will use <b>'+E(typeLabel)+'</b> specifications and set the internal classification automatically.';
 }
 
-function groupsFor(kind){return db.families.filter(f=>(f.solarKind||"general")===kind&&f.status!=="Discontinued").sort((a,b)=>a.name.localeCompare(b.name));}
+function groupsFor(kind){return db.families.filter(f=>(f.solarKind||"general")===kind&&f.status!=="Discontinued"&&f.type!=="service").sort((a,b)=>a.name.localeCompare(b.name));}
 function selectedGroup(form){const id=form.querySelector('[name="wizardFamilyId"]')?.value;return id&&id!=="__new__"?db.families.find(f=>f.id===id):null;}
 function refreshCategoryFields(form){
  const target=form.querySelector("#catalog-category-spec-fields");
@@ -69,17 +71,20 @@ function checkBasics(){
  if(!current)return false;
  const form=$("catalog-editor-form");
  const existing=current.mode==="product-new"&&!!selectedGroup(form);
- const fields=[...(current.mode==="product-new"&&!existing?[["familyName","New Product Group Name"]]:[]),["model","Manufacturer Model Number"],["sku","Unique SKU"]];
+ const selectedKind=form.querySelector('[name="solarKind"]')?.value;
+ if(current.mode==="product-new"&&(!selectedKind||selectedKind==="service"||!window.CPQ_PRODUCT_TEMPLATES.get(selectedKind,db)))return status("Choose a product specification template before continuing.");
+ const kind=selectedGroup(form)?.solarKind||selectedKind||db.families.find(f=>f.id===current.familyId)?.solarKind||"general";
+ const fields=[...(current.mode==="product-new"&&!existing?[["familyName","New Product Group Name"]]:[]),...(window.CPQ_PRODUCT_TEMPLATES.get(kind,db)?.modelRequired?[["model","Manufacturer Model Number"]]:[])];
  for(const [name,label] of fields){
   const input=form.querySelector('[name="'+name+'"]');
   if(input&&!String(input.value||"").trim()){status("Enter "+label+" before continuing.");input.focus();return false;}
  }
  const sku=String(form.querySelector('[name="sku"]')?.value||"").trim();
- if(db?.variants.some(v=>v.sku.toLowerCase()===sku.toLowerCase()&&v.id!==current.variantId))
+ if(sku&&db?.variants.some(v=>String(v.sku||"").trim().toLowerCase()===sku.toLowerCase()&&v.id!==current.variantId))
   return status("This SKU already exists. Enter a unique stock code.");
  const type=selectedGroup(form)?.type||form.querySelector('[name="familyType"]')?.value||current.productType;
  if(type!=="service"&&!form.querySelector('[name="manufacturerId"]')?.value)
-  return status("Select a manufacturer, or use + Add New Manufacturer in the dropdown.");
+  return status("Select a manufacturer or choose Unbranded, In-house assembled or Manufacturer not yet known.");
  return true;
 }
 function updateReview(){
@@ -89,7 +94,7 @@ function updateReview(){
  const fields=schema?.essential||[];
  const entered=fields.filter(([key])=>String(form.querySelector('[name="solar_'+key+'"]')?.value??"").trim()!=="").length;
  target.innerHTML='<b>Draft summary</b>'+
-  '<p><strong>'+E(form.querySelector('[name="model"]')?.value||"Model not provided")+'</strong> · '+E(form.querySelector('[name="sku"]')?.value||"SKU missing")+
+  '<p><strong>'+E(form.querySelector('[name="model"]')?.value||"Model not provided")+'</strong> · '+E(form.querySelector('[name="sku"]')?.value||"Auto-generated on save")+
   '</p><p>'+ (fields.length?'Technical values entered: '+entered+' of '+fields.length+'. ':'')+
   'Missing specifications or documents can be completed during review.</p>';
 }
@@ -121,7 +126,7 @@ function mount(editor,database){
  const basicGrid=group();
  if(editor.mode==="product-new"){
   const kind=formField(form,"solarKind");if(kind){
-   const label=kind.querySelector("label");if(label)label.textContent="What are you adding? *";
+   const label=kind.querySelector("label");if(label)label.textContent="Product Specification Template *";
    basicGrid.appendChild(kind);
    const hint=node("div","ma6a-wizard-autofill");hint.id="catalog-wizard-autofill";basic.appendChild(hint);
   }
@@ -132,7 +137,7 @@ function mount(editor,database){
    '<small id="catalog-wizard-group-help" class="ma6a-group-help"></small>');
    basicGrid.appendChild(chooser);
   }
-  move(form,["familyName","model","sku","capacity","variantName","manufacturerId"],basicGrid);
+  move(form,["familyName","model","manufacturerPartNo","sku","capacity","variantName","manufacturerId"],basicGrid);
  basic.appendChild(basicGrid);
  if(editor.mode!=="product-new")basic.appendChild(node("div","ma6a-wizard-tip",
   'Adding or updating a manufacturer model inside <b>'+E(db.families.find(f=>f.id===editor.familyId)?.name||"the selected family")+'</b>.'));
@@ -213,7 +218,7 @@ function mount(editor,database){
  const manufacturer=form.querySelector('[name="manufacturerId"]');
  if(manufacturer&&manufacturer.closest(".ma6-field")){
   const label=manufacturer.closest(".ma6-field").querySelector("label");
-  if(label)label.textContent="Manufacturer / Brand *";
+  if(label)label.textContent="Manufacturer / Brand / Source *";
  }
  const statusField=form.querySelector('[name="familyStatus"]');
  if(statusField&&editor.mode==="product-new")statusField.value="Draft";
