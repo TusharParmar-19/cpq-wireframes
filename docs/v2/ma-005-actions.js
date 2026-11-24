@@ -207,7 +207,7 @@ function handoff(){
  '<p><b>Requirement:</b> '+esc(o.summary)+'</p>'+
  '<div class="cpq-scope-panel"><h4>Selected services & sub-services</h4>'+window.CPQ_FLOW.summary(o.serviceIds||[])+'</div>'+
  '<p><b>Next step:</b> For product-only or combined work, configure manufacturer models in MA-006A. For service-only or straightforward supply, go directly to MA-006. The selected services are carried into the draft as unpriced lines; there is no automatic charge.</p>'+
- '<b>No quotation is created or changed by this button.</b><p><a class="btn primary" href="ma-006a-configuration.html?opportunity='+encodeURIComponent(o.id)+'">Configure Products First (MA-006A)</a> <a class="btn" href="ma-006-quotations.html?opportunity='+encodeURIComponent(o.id)+'">Direct Quotation (MA-006)</a></p><p>Saved enquiries, including new ones, are shared across these CPQ pages in this browser. Save your changes before navigating.</p>';
+ '<b>No quotation is created or changed by this button.</b><p><a class="btn primary" href="ma-006a-configuration.html?opportunity='+encodeURIComponent(o.id)+'">Configure Products First (MA-006A)</a> <a class="btn" href="ma-006-quotations.html?opportunity='+encodeURIComponent(o.id)+'">Direct Pricing / Quotation (MA-006)</a></p><p>Saved enquiries, including new ones, are shared across these CPQ pages in this browser. Save your changes before navigating.</p>';
  help(title,description);
 }
 function handleAction(name){

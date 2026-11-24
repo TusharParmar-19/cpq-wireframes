@@ -167,7 +167,7 @@ function renderHead(c){
  '<div class="ma6-detail-actions">'+badge(c)+
  '<button type="button" class="btn" data-action="edit">Edit Configuration</button>'+
  '<button type="button" class="btn" data-action="duplicate">Copy</button>'+
- (review(c).ok?'<a class="btn primary" href="'+quotationLink(c)+'">Use in Quotation</a>':'<button type="button" class="btn" disabled title="Correct the sample rule before handoff">Resolve checks first</button>')+
+ (review(c).ok?'<a class="btn primary" href="'+quotationLink(c)+'">Continue to Pricing</a>':'<button type="button" class="btn" disabled title="Correct the sample rule before handoff">Resolve checks first</button>')+
  '</div></div>'+
  '<div class="ma6-quote-meta"><span class="ma6-tag">'+c.items.length+' selected item(s)</span><span class="ma6-tag">Updated '+esc(c.updated)+'</span><span class="ma6-tag">Technical approval: pending</span></div>'+
  '<div class="ma6-banner"><b>Configuration before quotation:</b> These records store product choices, options, technical notes and quantity. They do not store approved rates, discounts, taxes or customer-issued offers.</div>';
@@ -216,13 +216,13 @@ function checks(c){
 }
 function handoff(c){
  const valid=review(c).ok;
- return panel("Use this configuration in a quotation","Pass selected items and reference context into MA-006 for pricing and commercial terms.")+
+ return panel("Continue from configuration to Pricing & Costing","Import selected products, services, quantities and customer context into the pricing stage of MA-006.")+
  '<div class="ma6a-handoff"><h4>'+(valid?"Ready for a demo handoff":"Correct the technical selection first")+'</h4>'+
- '<p>'+esc(valid?"Selected products, quantities and options can be carried to a new quotation draft. The quotation builder will determine illustrative selling rates and require customer/buyer and selling-company details.":"One or more sample technical checks failed. Open Edit Configuration and correct the item(s) before handoff.")+'</p>'+
- (valid?'<a class="btn primary" href="'+quotationLink(c)+'">Use in Quotation Builder</a>':'<button class="btn" type="button" data-action="edit">Edit configuration</button>')+'</div>'+
+ '<p>'+esc(valid?"Selected products, quantities and services will open a new Pricing & Costing stage, with automatic sample catalog rates and editable offered prices. Review labour, commission and other costs before preparing the customer quotation.":"One or more sample technical checks failed. Open Edit Configuration and correct the item(s) before handoff.")+'</p>'+
+ (valid?'<a class="btn primary" href="'+quotationLink(c)+'">Continue to Pricing &amp; Costing</a>':'<button class="btn" type="button" data-action="edit">Edit configuration</button>')+'</div>'+
  '<div class="ma6-section-sub"><h4>Existing quotation link</h4></div>'+
  (c.quoteId?'<a class="btn" href="ma-006-quotations.html?quote='+encodeURIComponent(c.quoteId)+'">View sample '+esc(c.quoteId)+'</a>':empty("This configuration has no previously linked quotation."))+
- note('Handoff creates a new browser-only draft; it does not modify an existing issued quotation. Configuration context travels in the URL for demonstration only and contains fictional non-sensitive data. Never enter real customer, technical or confidential information in this public page.');
+ note('Handoff creates a new browser-only draft; it does not modify an existing issued quotation. The saved configuration ID is passed to MA-006; the source configuration and Product Master are not changed by quote-specific pricing. Never enter real customer, technical or confidential information in this public page.');
 }
 const renderTab={overview,items,validation:checks,handoff};
 function renderDetail(){

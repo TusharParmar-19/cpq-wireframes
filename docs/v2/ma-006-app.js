@@ -5,6 +5,7 @@ const $=id=>document.getElementById(id);
 const esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const db=JSON.parse(JSON.stringify(window.CPQ_MA006_DATA));
 const flow=window.CPQ_FLOW;
+const pricing=window.CPQ_PRICING;
 const master=window.CPQ_MA004_DATA, org=window.CPQ_MA002_DATA, staff=window.CPQ_MA003_USERS, enquiries=window.CPQ_MA005_DATA.opportunities;
 const state={selected:"QT-2026-014",tab:"summary",mode:"register",company:"all",branch:"all",status:"all",owner:"all",search:"",listExpanded:false,builder:null,history:[]};
 const quote=id=>db.quotations.find(q=>q.id===id);
@@ -60,14 +61,8 @@ function configUnit(prod,selected){
  }
  return v;
 }
-const extended=line=>line.includedInParent?0:numeric(line.quantity)*numeric(line.unitPrice);
-function totals(q){
- const subtotal=(q.lines||[]).reduce((sum,l)=>sum+extended(l),0);
- const discount=Math.min(subtotal,subtotal*numeric(q.discount)/100);
- const taxable=Math.max(0,subtotal-discount);
- const tax=taxable*numeric(q.taxRate)/100;
- return {subtotal,discount,taxable,tax,total:taxable+tax};
-}
+const extended=line=>pricing.lineTotal(line);
+function totals(q){return pricing.calculate(q);}
 function lineConfig(line){
  if(line.serviceSnapshot)return [line.serviceSnapshot.workType,line.serviceSnapshot.scope].filter(Boolean).join(" · ")||"Service scope referenced in master";
  if(line.modelSnapshot){
@@ -205,13 +200,15 @@ function items(q){
     ' ('+esc(d.visibility)+')</li>').join("")+'</ul>':'<p>No current document references captured.</p>')+
    '<small>Captured model metadata; document contents are not attached or downloadable in this wireframe.</small></details>';
  }).join(""):'<p>No model-specific document references on the current BOQ.</p>')+'</div>'+
- '<div class="ma6a-boq-total"><span>'+q.lines.length+' BOQ item'+(q.lines.length===1?'':'s')+' · Sample subtotal</span><strong>'+money(totals(q).subtotal)+'</strong></div>'+
+ '<div class="ma6a-boq-total"><span>'+q.lines.length+' BOQ item'+(q.lines.length===1?'':'s')+' · Sample BOQ subtotal</span><strong>'+money(totals(q).boqSubtotal)+'</strong></div>'+
  note('The BOQ stores selected models, quantities and their offered technical scope. Engineering compatibility, manufacturer data, actual rates and generated BOM require separate approved services.');
 }
 function financialRows(q){
  const t=totals(q);
  return '<div class="ma6-pricing-summary">'+
- '<div class="ma6-price-row"><span>BOQ subtotal</span><strong>'+money(t.subtotal)+'</strong></div>'+
+ '<div class="ma6-price-row"><span>BOQ subtotal</span><strong>'+money(t.boqSubtotal)+'</strong></div>'+
+ (t.charges?'<div class="ma6-price-row"><span>Separate customer charges</span><strong>'+money(t.charges)+'</strong></div>':'')+
+ '<div class="ma6-price-row"><span>Offer subtotal before discount</span><strong>'+money(t.subtotal)+'</strong></div>'+
  '<div class="ma6-price-row"><span>Sample discount ('+esc(q.discount)+'%)</span><strong>− '+money(t.discount)+'</strong></div>'+
  '<div class="ma6-price-row"><span>Illustrative taxable base</span><strong>'+money(t.taxable)+'</strong></div>'+
  '<div class="ma6-price-row"><span>Illustrative tax ('+esc(q.taxRate)+'%)</span><strong>'+money(t.tax)+'</strong></div>'+
@@ -222,8 +219,9 @@ function commercial(q){
  return panel("Commercial summary","Sample calculations and the conditions intended for the customer")+
  '<div class="ma6a-commercial-top"><div class="ma6a-commercial-aside"><h4>Pricing review</h4><p>Figures are illustrative. Confirm SKU rates, tax treatment, discounts and any price exceptions before submitting for approval.</p>'+
  '<div class="ma6a-commercial-badges"><span class="ma6-tag">Discount: '+esc(q.discount)+'%</span><span class="ma6-tag">Tax assumption: '+esc(q.taxRate)+'%</span></div>'+
- (q.status==="Draft"?'<button type="button" class="btn" data-action="edit-builder">Edit Price & Terms</button>':'')+
+ (q.status==="Draft"?'<button type="button" class="btn" data-action="edit-pricing">Edit Pricing &amp; Costing</button>':'')+
  '</div>'+financialRows(q)+'</div>'+
+ pricing.internalSummary(q)+
  (q.status==="Draft"&&p.length?'<div class="ma6a-draft-alert"><div><strong>Customer-facing terms are incomplete</strong><p>'+esc(p.join(" · "))+'</p></div>'+
  '<button type="button" class="btn" data-action="edit-builder">Complete Terms</button></div>':'')+
  '<div class="ma6-section-sub"><h4>Customer-facing conditions</h4></div>'+
@@ -245,7 +243,9 @@ function reviewChecks(q){
  ["Demo-only model verification",!q.lines.some(l=>l.technicalReview||l.unverified),"Demo-enabled catalog models and incomplete technical data are not production-approved"],
  ["Issuance permission",false,"Requires authorized approval, locked revision and audit in production"],
   ["No double-charge of included sub-services",!q.lines.some(l=>l.includedInParent&&Number(l.unitPrice)>0),
-   "Child services bundled under a parent package are not billed separately"]
+   "Child services bundled under a parent package are not billed separately"],
+  ["Pricing data and override reasons",pricing.errors(q).length===0&&(!q.pricing||!q.lines.some(l=>pricing.requiresReason(l)&&!String(l.pricing?.overrideReason||"").trim())),"Changes to captured or missing list rates need an explanation before review"],
+  ["Cost and margin estimate",!!q.pricing&&totals(q).missing===0,"Internal costs and profitability remain estimated; actual commercial approval is separate"]
  ];
 }
 function demoReadiness(q){
@@ -259,6 +259,11 @@ function demoReadiness(q){
   missing.push("Enter a positive fictional sample selling rate for each billable line; included sub-services remain ₹0");
  if(!reviewChecks(q)[2][1])missing.push("Complete product option selections");
  if(!reviewChecks(q)[3][1])missing.push("Validity, payment and delivery terms");
+ if(q.pricing){
+  missing.push(...pricing.errors(q));
+  if(q.lines.some(l=>pricing.requiresReason(l)&&!String(l.pricing?.overrideReason||"").trim()))
+   missing.push("Enter a reason for each manual or changed offered rate in Pricing & Costing.");
+ }
  return missing;
 }
 function approvals(q){
@@ -310,9 +315,14 @@ function paper(q){
  const t=totals(q);
  return '<div class="ma6-paper"><div class="ma6-paper-head"><div><strong>'+text(entity(q.companyId)?.name)+'</strong><p>Customer quotation preview · fictional information</p></div><span>'+esc(q.id)+' / '+esc(q.rev)+'</span></div>'+
  '<p><b>To:</b> '+text(buyer(q.buyerId)?.name)+'<br><b>Reference:</b> '+esc(q.title)+'<br><b>Valid until:</b> '+text(q.validUntil)+'</p>'+
- '<table><thead><tr><th>Particulars</th><th>Qty</th><th>Unit</th><th>Amount</th></tr></thead><tbody>'+
- q.lines.map(l=>'<tr><td>'+esc(l.description)+'</td><td>'+esc(l.quantity)+'</td><td>'+esc(l.unit)+'</td><td class="ma6-money">'+money(extended(l))+'</td></tr>').join("")+
- '</tbody></table><p><b>Illustrative total:</b> '+money(t.total)+' (including sample discount / tax inputs)</p>'+
+ '<table><thead><tr><th>Particulars</th><th>Qty</th><th>Unit</th><th>Offered rate</th><th>Amount</th></tr></thead><tbody>'+
+ q.lines.map(l=>'<tr><td>'+esc(l.description)+(l.includedInParent?' <small>(included in package)</small>':'')+'</td><td>'+esc(l.quantity)+'</td><td>'+esc(l.unit)+'</td><td class="ma6-money">'+(l.includedInParent?"Included":money(l.unitPrice))+'</td><td class="ma6-money">'+money(extended(l))+'</td></tr>').join("")+
+ t.publicRows.map(c=>'<tr><td>'+esc(c.label)+'</td><td>1</td><td>Job</td><td class="ma6-money">'+money(c.amount)+'</td><td class="ma6-money">'+money(c.amount)+'</td></tr>').join("")+
+ '</tbody></table><div class="cpq-customer-totals"><div><span>Offer subtotal</span><strong>'+money(t.subtotal)+'</strong></div>'+
+ '<div><span>Discount ('+esc(q.discount)+'%)</span><strong>− '+money(t.discount)+'</strong></div>'+
+ '<div><span>Net before tax</span><strong>'+money(t.taxable)+'</strong></div>'+
+ '<div><span>Illustrative tax ('+esc(q.taxRate)+'%)</span><strong>'+money(t.tax)+'</strong></div>'+
+ '<div class="final"><span>Illustrative quotation total</span><strong>'+money(t.total)+'</strong></div></div>'+
  '<p><b>Payment:</b> '+text(q.payment)+'<br><b>Delivery:</b> '+text(q.delivery)+'<br><b>Warranty:</b> '+text(q.warranty)+'</p>'+
  '<p><b>Exclusions:</b> '+text(q.exclusions)+'</p><p style="border-top:1px solid #e8edf2;padding-top:12px"><b>NOT AN ISSUED QUOTATION.</b> No company signature, approval, verified tax data or legally usable PDF is provided.</p></div>';
 }
@@ -364,7 +374,7 @@ function renderRegister(){
  if(!qs.some(q=>q.id===state.selected))state.selected=qs[0]?.id||"";
  renderList(qs);renderFullList(qs);detail();
 }
-const steps=[["Customer & Project","Customer and selling scope"],["Products & BOQ","Imported items and sample rates"],["Price & Terms","Totals and offer conditions"],["Review & Save","Draft checks and preview"]];
+const steps=[["Customer & Project","Customer and selling scope"],["Products & BOQ","Imported technical selections"],["Pricing & Costing","Internal costs and offered rates"],["Final Quotation","Customer offer and terms"],["Review & Save","Draft checks and preview"]];
 function formSelect(id,label,values,current,placeholder="Select...",required=false){
  return '<div class="ma6-field"><label for="b-'+esc(id)+'">'+esc(label)+(required?' *':'')+'</label><select id="b-'+esc(id)+'" data-field="'+esc(id)+'"><option value="">'+esc(placeholder)+'</option>'+opts(values,current)+'</select></div>';
 }
@@ -436,39 +446,36 @@ function boqBuilder(q,b){
  ' · '+esc(q.sourceConfigId)+' / '+esc(q.sourceConfigRevision||"C0")+
  '. These lines were already selected in MA-006A. Add or edit only what this quotation needs.</div>':
  '<div class="ma6-note">Add catalog models or services directly, or begin with a saved technical configuration from MA-006A.</div>';
- const lineTable=q.lines.length?table(["BOQ item / specification","Qty","Unit","Sample unit rate","Line total",""],
+ const lineTable=q.lines.length?table(["BOQ item / specification","Qty","Unit","Captured selling rate","Current offered amount",""],
  q.lines.map(l=>'<tr><td><strong>'+esc(l.description)+'</strong><small>'+esc(lineConfig(l))+'</small>'+
  (l.pricingReview?'<small>Catalog rate requires approval</small>':'')+
  (l.technicalReview?'<small>Technical variation needs review</small>':'')+
  (l.includedInParent?'<small class="cpq-quote-service-included">Included in parent package (₹0 extra)</small>':'')+'</td>'+
  '<td><input class="ma6-qty" type="number" min="1" step="1" data-line-qty="'+esc(l.id)+'" value="'+esc(l.quantity)+'" aria-label="Quantity '+esc(l.description)+'"></td>'+
- '<td>'+esc(l.unit)+'</td><td class="ma6-money"><input class="ma6-rate" type="number" min="0" step="0.01" data-line-rate="'+esc(l.id)+'" value="'+esc(l.unitPrice)+'"'+
- (l.includedInParent?' disabled title="Included in parent package; billed once on parent service"':'')+
- ' aria-label="Sample selling rate '+esc(l.description)+'"></td>'+
+ '<td>'+esc(l.unit)+'</td><td class="ma6-money">'+(l.includedInParent?"Included":l.pricing?.defaultRate==null?"Manual rate":money(l.pricing.defaultRate))+'</td>'+
  '<td class="ma6-money">'+money(extended(l))+'</td><td><button type="button" class="btn" data-remove-line="'+esc(l.id)+'" aria-label="Remove '+esc(l.description)+'">Remove</button></td></tr>')):
  blank("No BOQ items yet. Add a product or import a configuration.");
- return panel("2 · Products & BOQ",q.sourceConfigId?"Review imported configuration items and add any additional products.":"Select products directly from the catalog, then confirm quantities and sample rates.")+
+ return panel("2 · Products & BOQ",q.sourceConfigId?"Review imported configuration items and quantities. Pricing is handled separately.":"Select products and services, confirm quantities, then continue to Pricing & Costing.")+
  source+lineTable+
- '<div class="ma6-section-sub ma6a-quote-add"><h4>'+q.lines.length+' BOQ item(s) · Subtotal '+money(totals(q).subtotal)+'</h4>'+
+ '<div class="ma6-section-sub ma6a-quote-add"><h4>'+q.lines.length+' BOQ item(s) · Current offered BOQ '+money(totals(q).boqSubtotal)+'</h4>'+
  '<button type="button" class="btn'+(b.addPickerOpen?'':' primary')+'" data-action="toggle-add-product">'+
- (b.addPickerOpen?'Close Product Picker':'+ Add Catalog Product')+'</button></div>'+
+ (b.addPickerOpen?'Close Product / Service Picker':'+ Add Product or Service')+'</button></div>'+
  (b.addPickerOpen?'<div class="ma6a-quote-catalog-picker">'+catalogPicker(q,b)+'</div>':"")+
- note('Catalog prices and taxes are not authorized. Price and technical exceptions require approval; new project-specific specifications do not silently alter Product Catalog.');
+ note('Confirm technical scope here. Open the next Pricing &amp; Costing stage to change selling rates, add expenses, set profit and check totals. Product Master and saved source configurations remain unchanged.');
 }
 function isoDate(v){
  if(/^\d{4}-\d{2}-\d{2}$/.test(String(v||"")))return v;
  const date=new Date(v);return Number.isFinite(date.valueOf())?date.toISOString().slice(0,10):"";
 }
-function priceTermsBuilder(q){
- return panel("3 · Price & Terms","Apply sample commercial assumptions, then set the terms to be offered to the customer.")+
- '<div class="ma6a-pricing-layout"><div class="ma6a-pricing-inputs"><h4>Sample pricing adjustments</h4>'+
- '<div class="ma6-price-controls">'+formInput("discount","Sample discount %",q.discount,"number")+
- formInput("taxRate","Illustrative tax %",q.taxRate,"number")+'</div>'+
- '<p class="ma6a-pricing-help">Rates, discounts and tax are illustrative and require approval before a customer offer can be issued.</p></div>'+
- financialRows(q)+'</div>'+
+function pricingBuilder(q){return pricing.pricingView(q,financialRows);}
+function finalQuotationBuilder(q){
+ return panel("4 · Final Quotation","Review the customer-facing offer, add the commercial terms and preview the final quotation.")+
+ '<div class="ma6a-commercial-top"><div class="ma6a-commercial-aside"><h4>Offer prepared from Pricing &amp; Costing</h4>'+
+ '<p>Only offered rates, selected customer charges, discount, tax and customer terms appear here. Internal costs and margins stay in Pricing &amp; Costing.</p>'+
+ '<button type="button" class="btn" data-step="2">Edit Pricing &amp; Costing</button></div>'+financialRows(q)+'</div>'+
  '<div class="ma6-section-sub"><h4>Customer-facing terms</h4></div>'+
  '<div class="ma6-field-grid">'+formInput("validUntil","Valid until (required before issue)",isoDate(q.validUntil),"date")+
- formInput("currency","Currency",q.currency,"text")+
+ '<div class="ma6-field"><label>Currency (demo)</label><input value="'+esc(q.currency)+'" readonly></div>'+
  '<div class="ma6-field full"><label for="quote-payment-preset">Payment terms template (optional)</label>'+
  '<select id="quote-payment-preset" data-payment-preset><option value="">Select a sample template...</option>'+
  '<option value="50% advance; 50% before dispatch">50% advance / 50% before dispatch</option>'+
@@ -478,12 +485,14 @@ function priceTermsBuilder(q){
  '<details class="ma6a-quote-more"><summary>Warranty, exclusions & internal notes</summary><div class="ma6-field-grid">'+
  formArea("warranty","Warranty / support",q.warranty)+formArea("exclusions","Exclusions",q.exclusions)+
  formArea("notes","Internal notes (not on PDF)",q.notes)+'</div></details>'+
+ '<div class="cpq-quote-customer-layout"><div class="ma6-section-sub"><h4>Customer quotation preview</h4><button type="button" class="btn" data-action="preview-builder">Expand preview</button></div>'+
+ '<p class="muted">Review the latest entered terms and offered prices. No internal costs, commission, markup or margin are printed.</p><div id="cpq-final-customer-paper">'+paper(q)+'</div></div>'+
  note('These are demo values. Real HSN/SAC, applicable GST, customer jurisdiction, freight, price list and discount approvals must come from server-controlled commercial rules.',true);
 }
 function reviewBuilder(q){
  const rows=reviewChecks(q),ready=Boolean(q.customerId&&q.buyerId&&q.companyId&&q.branchId&&q.ownerId&&q.title&&q.lines.length>0&&q.lines.every(l=>numeric(l.quantity)>0&&numeric(l.unitPrice)>=0&&(l.type!=="config"||configCheck(product(l.productId),l.options).ok)));
  const termsFinalized=Boolean(isoDate(q.validUntil))&&!/^\s*(to be agreed|to be confirmed|tbd)\s*$/i.test(q.payment||"")&&!!String(q.payment||"").trim()&&!/^\s*(to be agreed|to be confirmed|tbd)\s*$/i.test(q.delivery||"");
- return panel("4 · Review & Save Draft","Saving a quote does not approve or send it to the customer.")+
+ return panel("5 · Review & Save Draft","Saving a quote does not approve or send it to the customer.")+
  '<div class="ma6-kvs">'+kv("Customer",customer(q.customerId)?.name)+kv("Buyer",buyer(q.buyerId)?.name)+
  kv("Selling company / branch",(entity(q.companyId)?.name||"Not selected")+" / "+(branch(q.branchId)?.name||"Not selected"))+
  kv("Source configuration",q.sourceConfigId?(q.sourceConfigId+" / "+(q.sourceConfigRevision||"C0")):"Direct quotation")+
@@ -505,10 +514,11 @@ function reviewBuilder(q){
  '<div class="ma6a-quote-draft-hint"><b>Save Draft is available with unfinished terms.</b> Leave validity or payment/delivery details incomplete while working; an authorized approval and issue workflow must block them later.</div>'+
  note('Production sequence: Save Draft → technical/pricing validation → policy approvals → freeze revision → issue PDF → dispatch → customer response. Order registration is separate.',true);
 }
-const stepContent=[contextBuilder,boqBuilder,priceTermsBuilder,reviewBuilder];
+const stepContent=[contextBuilder,boqBuilder,pricingBuilder,finalQuotationBuilder,reviewBuilder];
 function renderBuilder(){
  if(state.mode!=="builder"||!state.builder)return;
  const b=state.builder,q=b.quote;
+ pricing.prepare(q);
  if(!b.initialQuoteSnapshot)b.initialQuoteSnapshot=JSON.stringify(q);
  $("quote-register").hidden=true;$("quote-builder").hidden=false;
  $("quote-view-toggle").hidden=false;
@@ -522,7 +532,8 @@ function renderBuilder(){
  $("builder-prev").disabled=b.step===0;
  $("builder-next").hidden=b.step===steps.length-1;
  $("builder-save").hidden=b.step!==steps.length-1;
- $("builder-hint").textContent=b.step===1?"Review imported items · Catalog approval still pending":b.step===2?"All commercial values are fictional.":"Save Draft only · No customer issue or approval";
+ $("builder-next").textContent=b.step===1?"Continue to Pricing":b.step===2?"Prepare Final Quotation":b.step===3?"Review & Save":"Next step";
+ $("builder-hint").textContent=b.step===0?"Select customer and selling scope":b.step===1?"Confirm technical items before pricing":b.step===2?"Internal costs and offered rates · Fictional estimates":b.step===3?"Customer-facing offer and terms":"Save Draft only · No customer issue or approval";
 }
 function render(){
  if(state.mode==="builder"){renderBuilder();return;}
@@ -542,6 +553,6 @@ function render(){
  $("quote-list-subtitle").textContent=expanded?"Full-width list · select View Details to open a quotation":"Select a quotation to inspect";
  renderRegister();
 }
-window.CPQ_MA006={ $,esc,db,flow,master,org,staff,enquiries,state,quote,customer,buyer,contact,site,project,employee,entity,branch,opportunity,product,opts,text,money,numeric,configCheck,configUnit,extended,totals,lineConfig,visible,render,renderBuilder,financialRows,paper,note,blank,table,reviewChecks,demoReadiness };
+window.CPQ_MA006={ $,esc,db,flow,pricing,steps,master,org,staff,enquiries,state,quote,customer,buyer,contact,site,project,employee,entity,branch,opportunity,product,opts,text,money,numeric,configCheck,configUnit,extended,totals,lineConfig,visible,render,renderBuilder,financialRows,paper,note,blank,table,reviewChecks,demoReadiness };
 render();
 })();

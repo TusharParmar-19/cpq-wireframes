@@ -7,15 +7,15 @@
 **Source:** MA-004 Customer account / buyer / internal selling company and branch, with optional customer contact, site and project.
 
 ### A. Product-only
-MA-004 Customer → MA-005 Enquiry (zero Service Master selections allowed) → MA-006A Configuration (optional if an item has no complex configuration) → MA-006 Quotation → simulated technical/commercial review → simulated dispatch → recorded demo response.
+MA-004 Customer → MA-005 Enquiry (zero Service Master selections allowed) → MA-006A Configuration (optional if an item has no complex configuration) → MA-006 Pricing & Costing → Final Quotation → simulated technical/commercial review → simulated dispatch → recorded demo response.
 
 ### B. Service-only
-MA-004 Customer → MA-005 Enquiry (one or more Active services/sub-services) → **directly** MA-006 Quotation. MA-006A technical equipment configuration is **not mandatory**. Selected active services are imported as initially unpriced BOQ lines, with service IDs and compact service-scope snapshots. Set sample selling prices for billable lines, finalize terms and run the same simulated review/dispatch/response steps.
+MA-004 Customer → MA-005 Enquiry (one or more Active services/sub-services) → **directly** MA-006 Pricing & Costing → Final Quotation. MA-006A technical equipment configuration is **not mandatory**. Selected active services are imported as initially unpriced BOQ lines, with service IDs and compact service-scope snapshots. Set sample selling prices for billable lines, finalize terms and run the same simulated review/dispatch/response steps.
 
 ### C. Combined
-MA-004 Customer → MA-005 Enquiry (one or more services/sub-services) → MA-006A Configuration (optional products, manufacturer models, technical project requirements) → MA-006 Quotation (models plus selected services, and manually selected additional items) → simulated review/dispatch/response.
+MA-004 Customer → MA-005 Enquiry (one or more services/sub-services) → MA-006A Configuration (optional products, manufacturer models, technical project requirements) → MA-006 Pricing & Costing (models plus selected services and additional costs) → Final Quotation → simulated review/dispatch/response.
 
-**Navigation:** MA-005 `Prepare quotation` offers both `Configure Products First` and `Direct Quotation`. MA-006A uses a saved `?configuration=CF-...` identifier to open MA-006; a legacy `?configData=...` demo link remains supported.
+**Navigation:** MA-005 `Prepare quotation` offers both `Configure Products First` and `Direct Pricing / Quotation`. MA-006A **Continue to Pricing** uses a saved `?configuration=CF-...` identifier to open MA-006 directly at Pricing & Costing; a legacy `?configData=...` demo link remains supported.
 
 ## 2. Separate master records
 
@@ -111,3 +111,24 @@ These are a **permission matrix preview**, not enforced authentication/authoriza
 The production system needs a server-side authorization and company/branch scope model; separate `services`, `products`, `product_variants`, `service_products`, `enquiry_services`, `configuration_lines`, and `quotation_lines` relationships; private secured product file storage; secure upload validation and download; company-specific effective prices; pricing/tax calculations; service-package policy; signed technical/commercial decisions; immutable issued quote revisions; auditable dispatch/acceptance; and backup/restore. These are **not** implemented by the static wireframe.
 
 **Freeze criteria:** Run tests A–D and confirm that Sir approves the Service Master and Product Master data relationships before converting the behavior into Laravel migrations, policies, services and integration tests.
+
+
+## Pricing & Costing extension — November 2026
+
+The MA-006 quotation builder now contains five distinct stages: **Customer & Project → Products & BOQ → Pricing & Costing → Final Quotation → Review & Save**. Valid saved configuration handoffs enter stage 3 with their original context, services and exact model/SKU snapshots. Direct quotes remain supported and can select BOQ lines first. Go back to the BOQ or pricing stages without altering the source configuration or Product Master.
+
+- **Automatic price capture:** New catalog lines copy the sample list selling rate, list name, displayed effective dates, and available estimated purchase cost from the exact variant at draft entry. Unpriced services, unavailable rates and costs remain manual/unknown. The wireframe uses INR only; actual effective-date, company/branch-specific price lists, supplier offers, RFQ, currency, tax and access rules require backend validation. Older saved quotes are not silently repriced.
+- **Quotation override:** Retain captured default and editable offered selling rate separately; reset to the captured default, not to a refreshed catalog rate. Changes record previous rate, new rate, reason, timestamp and a fictional employee. Manual or modified positive rates require a reason before simulated review. No change is written back to the catalog.
+- **Additional cost rows:** Labour, installation, transportation, loading/unloading, engineering, survey, subcontractor, commission, administrative expenses, overhead, contingency and custom expenses. Methods are fixed amount, quantity × rate, % of direct BOQ cost, and % of net sale before tax (after discount). Internal costs reduce estimated profitability; optional separately offered customer charges are explicit editable amounts. Commission, overhead, administrative and contingency types stay internal. Avoid recording costs already included in direct unit costs.
+- **Profit and margin:** Standard/negotiated rates are the default. Cost-plus target is optional and explicitly applied; allocate the target to billable BOQ rates after subtracting separately offered charges. Percentage-of-sale costs are included in the target equation; impossible combinations or unknown unit costs block automatic target application. Actual profit after discounts is net sale excluding tax less estimated direct and additional costs; margin is profit / net sale, markup is profit / cost. No profit is invented for incomplete cost estimates. Unit-rate rounding can cause small target differences.
+- **Included services:** Parent-package child lines stay zero additional revenue. Enter their cost separately only when not already counted on the parent; use explicit zero if no additional cost.
+- **Final quotation:** Only offered product/service rates, explicitly separated customer charges, discount, illustrative tax, and customer-facing terms are included in the paper layout. Internal purchase cost, expenses, commission, target profit, margin and override history remain in the internal workspace. Final terms can be edited and the preview reflects them. Return to pricing before saving. Quote-specific pricing and original captured rate snapshots persist in the existing browser-only quotation record; no actual issue or dispatch is performed.
+- **Review & permissions:** Add MA-003 pricing-workspace action definitions (override rates, edit costs, apply target). Real users, cost/margin visibility, company/branch access, approval limits, effective rates, financial validation, immutable quote revisions and PDFs must be enforced in Laravel; this static demo does not enforce security. Editing a previously reviewed draft resets its sample approval where the material record (including pricing) changes.
+
+### Additional acceptance checks
+
+1. Open a saved valid configuration and click Continue to Pricing. Verify quantities, model snapshots and default rates.
+2. Change an offered rate, provide a reason, and verify the master price remains unchanged and Reset restores the captured default. Reopen the saved draft after changing the master catalog: captured rates must remain unchanged.
+3. Add labour (fixed), transportation (quantity × rate), and commission (% of net sale). Check internal costs, explicit public freight, tax/discount and margin. Confirm commission and internal-only expenses are not printed in the customer preview.
+4. With complete costs, choose cost-plus target, set a markup and apply it explicitly. Verify manual rate editing is still available; unknown costs prevent the target from being applied. Included package children must never add revenue.
+5. Continue to Final Quotation, edit terms, preview, Review & Save. Reopen the saved draft and verify retained cost rows, override reasons/history, customer total and public charges. Test product-only, service-only and combined paths; no real approval, issued PDF or actual sending occurs.
