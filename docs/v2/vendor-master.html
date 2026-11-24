@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Vendors / Suppliers · CPQ V2</title>
+<link rel="stylesheet" href="ma-001.css"><link rel="stylesheet" href="vendor-master.css"><link rel="stylesheet" href="cpq-quick-create.css"></head>
+<body><div class="layout"><aside class="sidebar">
+  <div class="logo"><span>CP</span><div>CPQ Platform<small>Master Admin Workspace</small></div></div>
+  <nav class="nav" aria-label="CPQ navigation">
+   <div class="nav-title">Workspace</div>
+   <a class="nav-link" href="ma-001-dashboard.html">▦ &nbsp; Dashboard</a>
+   <div class="nav-title">Organization &amp; People</div>
+   <a class="nav-link" href="ma-002-organization.html">▤ &nbsp; Companies &amp; Branches</a>
+   <a class="nav-link" href="ma-003-users-roles.html">♙ &nbsp; Users, Roles &amp; Access</a>
+   <div class="nav-title">Business Records</div>
+   <a class="nav-link" href="ma-004-customers.html">◉ &nbsp; Customers <small>MA-004</small></a>
+   <a class="nav-link" href="ma-005-opportunities.html">◇ &nbsp; Opportunities <small>MA-005</small></a>
+   <a class="nav-link active" href="vendor-master.html" aria-current="page">▤ &nbsp; Vendors / Suppliers</a>
+   <a class="nav-link" href="service-master.html">▤ &nbsp; Service Management <small>Master</small></a>
+   <a class="nav-link" href="ma-006a-configuration.html">⚙ &nbsp; Products &amp; Configuration <small>MA-006A</small></a>
+   <a class="nav-link" href="ma-006-quotations.html">▣ &nbsp; Quotations <small>MA-006</small></a>
+   <button type="button" class="nav-link" data-planned="Vendor RFQs">⇄ &nbsp; Vendor RFQs</button>
+   <button type="button" class="nav-link" data-planned="Orders">☷ &nbsp; Orders</button>
+   <div class="nav-title">Controls</div>
+   <button type="button" class="nav-link" data-planned="Approval Policies">✓ &nbsp; Approval Policies</button>
+   <button type="button" class="nav-link" data-planned="Commercial Settings">⚙ &nbsp; Commercial Settings</button>
+   <button type="button" class="nav-link" data-planned="Reports">▥ &nbsp; Reports</button>
+  </nav>
+  <div class="sidebar-foot"><b>Vendor Master · Demo</b><p>Supplier records are separate from manufacturers, customer records and our legal entities. Supplier rates are not approved here.</p></div>
+ </aside>
+<div class="app"><header class="top"><div>CPQ Workspace / <b>Vendors &amp; Suppliers</b></div><span class="avatar">MA</span></header>
+<main class="page vm-page">
+<div class="hero"><div><div class="overline">MASTER ADMIN / BUSINESS RECORDS</div><h1>Vendors / Suppliers</h1><p class="muted">Keep one supplier record and reuse it for the products and services you buy.</p></div><div class="actions"><button class="btn primary" id="vm-add" type="button">+ Add Vendor</button></div></div>
+<div class="info"><b>WIREFRAME ONLY · Fictional records.</b> Changes stay in this browser. Supplier information is not price verification, approval or purchasing authorization. Do not enter real business documents or sensitive information.</div>
+<div id="vm-summary" class="vm-summary" aria-label="Vendor summary"></div>
+<div class="vm-workspace" id="vm-workspace">
+<section class="card vm-register" aria-label="Vendor register"><div class="vm-heading"><div><h2>Vendor Register</h2><p class="muted">Find suppliers by name, contact, company or the items they provide.</p></div><span class="chip" id="vm-count"></span></div>
+<div class="vm-filters" role="search"><label>Search<input id="vm-search" type="search" placeholder="Name, code, contact, product..."></label><label>Our company<select id="vm-company-filter"></select></label><label>Status<select id="vm-status-filter"><option value="all">All statuses</option><option>Active</option><option>Inactive</option></select></label><label>Preference<select id="vm-preferred-filter"><option value="all">All vendors</option><option value="yes">Preferred</option></select></label><button class="btn" id="vm-reset" type="button">Clear filters</button></div>
+<div class="vm-table-wrap"><table class="vm-table"><thead><tr><th>Vendor</th><th>Contact</th><th>Supplies</th><th>Our companies</th><th>Status</th><th>Action</th></tr></thead><tbody id="vm-rows"></tbody></table></div><p class="muted vm-foot">Select a vendor to see full details. Inactive suppliers remain available in historical references.</p></section>
+<section class="card vm-detail" id="vm-detail" aria-label="Vendor details" hidden><div class="vm-heading"><button type="button" class="btn" id="vm-expand">⤢ Expand Table</button><span class="muted">Vendor details</span></div><div id="vm-detail-body"></div></section>
+</div><footer class="footer">CPQ · Vendor Master · V2 browser demonstration</footer></main></div></div>
+<div class="overlay vm-overlay" id="vm-overlay" aria-hidden="true"><section class="dialog vm-dialog" role="dialog" aria-modal="true" aria-labelledby="vm-dialog-title"><div class="vm-heading vm-editor-head"><div><h2 id="vm-dialog-title">Add Vendor</h2><p class="muted">Start with a name and select the company that can use this supplier. Everything else can be added later.</p></div><button class="btn" id="vm-close" aria-label="Close vendor form" type="button">×</button></div>
+<form id="vm-form" novalidate><div class="vm-form-body" id="vm-fields"></div><p id="vm-error" role="alert" hidden></p><div class="vm-form-actions"><button class="btn" type="button" id="vm-cancel">Cancel</button><button class="btn primary" type="submit">Save Vendor (demo)</button></div></form></section></div>
+<div id="vm-toast" role="status" hidden></div>
+<script src="ma-002-data.js"></script><script src="ma-006a-catalog-data.js"></script><script src="service-master-data.js"></script><script src="vendor-master-data.js"></script><script src="cpq-demo-store.js"></script><script src="vendor-master-ui.js"></script><script src="cpq-quick-create.js"></script></body></html>
