@@ -192,23 +192,23 @@ function pricingView(q,financialRows){
    '<small>'+esc(x.source)+'</small>'+
    (x.effectiveFrom?'<small>List dates: '+esc(x.effectiveFrom)+(x.effectiveTo?' to '+esc(x.effectiveTo):' onward')+'</small>':'')+'</td>'+
    '<td>'+input(attr+'data-price-field="cost" aria-label="Estimated unit cost '+esc(l.description)+'" placeholder="Unknown"',x.unitCost??"")+
-   (x.unitCost==null?'<small class="cpq-price-warning">Cost not entered</small>':'')+'</td>'+
+   '<small class="cpq-price-warning" data-cost-missing="'+esc(l.id)+'"'+(x.unitCost==null?'':' hidden')+'>Cost not entered</small></td>'+
    '<td>'+input(attr+'data-price-field="rate" aria-label="Offered selling rate '+esc(l.description)+'"'+(included?' disabled':''),l.unitPrice)+
-   (changed?'<small class="cpq-price-warning">Quote-specific override</small>':'')+'</td>'+
-   '<td><strong>'+fmt(lineTotal(l))+'</strong></td>'+
+   '<small class="cpq-price-warning" data-rate-changed="'+esc(l.id)+'"'+(changed?'':' hidden')+'>Quote-specific override</small></td>'+
+   '<td><strong data-offered-total="'+esc(l.id)+'">'+fmt(lineTotal(l))+'</strong></td>'+
    '<td>'+(!included?input(attr+'data-price-field="reason" aria-label="Price change reason '+esc(l.description)+'" placeholder="'+(changed?"Reason required before review":"Optional change reason")+'"',x.overrideReason,"text")+
     (x.defaultRate!=null?'<button type="button" class="btn cpq-price-small" data-action="price-reset" data-price-line="'+esc(l.id)+'">Reset to default</button>':'<small>Manual rate / RFQ if required</small>'):'<small>Price on parent only</small>')+'</td></tr>';
  }).join("");
  const rows=(p.costs||[]).map(c=>{
   const a='data-cost-id="'+esc(c.id)+'" ',priv=privateKinds.has(c.kind);
-  return '<section class="cpq-cost-row"><div class="cpq-cost-head"><strong>'+esc(c.name||"Additional cost")+'</strong><button type="button" class="btn cpq-price-small" data-action="price-remove-cost" data-cost-id="'+esc(c.id)+'">Remove</button></div>'+
+  return '<section class="cpq-cost-row"><div class="cpq-cost-head"><strong data-cost-title="'+esc(c.id)+'">'+esc(c.name||"Additional cost")+'</strong><button type="button" class="btn cpq-price-small" data-action="price-remove-cost" data-cost-id="'+esc(c.id)+'">Remove</button></div>'+
    '<div class="cpq-cost-grid"><label>Cost type'+select(a+'data-cost-field="kind"',kinds,c.kind)+'</label>'+
    '<label>Internal cost name'+input(a+'data-cost-field="name"',c.name,"text")+'</label>'+
    '<label>Calculation method'+select(a+'data-cost-field="method"',methods,c.method)+'</label>'+
    (c.method==="quantity"?'<label>Quantity'+input(a+'data-cost-field="quantity"',c.quantity)+'</label>':'')+
    '<label>'+(c.method.startsWith("percent")?"Percentage (%)":c.method==="quantity"?"Cost per unit (₹)":"Cost amount (₹)")+
    input(a+'data-cost-field="rate"'+(c.method.startsWith("percent")?' max="100"':''),c.rate)+'</label>'+
-   '<div class="cpq-cost-computed"><small>Calculated internal cost</small><strong>'+fmt(costAmount(c,t.directCost,t.taxable))+'</strong></div>'+
+   '<div class="cpq-cost-computed"><small>Calculated internal cost</small><strong data-cost-total="'+esc(c.id)+'">'+fmt(costAmount(c,t.directCost,t.taxable))+'</strong></div>'+
    '<label>Customer treatment'+select(a+'data-cost-field="separate"'+(priv?' disabled':''),[["no","Internal / included in offered rates"],["yes","Separate customer charge"]],c.separate?"yes":"no")+'</label>'+
    (c.separate&&!priv?'<label>Customer-facing label'+input(a+'data-cost-field="customerLabel"',c.customerLabel,"text")+'</label>'+
     '<label>Customer charge amount (₹)'+input(a+'data-cost-field="chargeAmount"',c.chargeAmount)+'</label>':'')+
@@ -229,10 +229,37 @@ function pricingView(q,financialRows){
  '<label>Customer discount (%)'+input('data-field="discount" max="100"',q.discount)+'</label>'+
  '<label>Illustrative tax (%)'+input('data-field="taxRate" max="100"',q.taxRate)+'</label>'+
  (p.method==="cost-plus"?'<label>Target markup on cost (%)'+input('data-pricing-field="markup" max="500"',p.markup)+'</label>':'')+'</div>'+
- (p.method==="cost-plus"?'<div class="cpq-price-target"><div><b>Suggested selling amount before discount: '+(t.target===null?"Complete cost data / check inputs":fmt(t.target))+'</b><p>Apply once to distribute the target among billable BOQ rates after deducting any separate customer charges. Rates remain editable; unit rounding may produce a small difference. Discounts reduce final profit.</p></div><button type="button" class="btn primary" data-action="price-apply-target">Apply Cost-plus Target</button></div>':'')+
- metrics(q)+(t.profit!==null&&t.profit<0?'<p class="cpq-price-alert">Below estimated cost — requires a commercial exception review in production.</p>':'')+
- '<div class="cpq-price-final"><div><b>Internal pricing only</b><p>Costs, commission, profit, margin and override history are not included in the customer-facing layout. No actual permission is enforced in this public demo.</p></div>'+financialRows(q)+'</div>'+
- history(q)+'</section></div>';
+ (p.method==="cost-plus"?'<div class="cpq-price-target"><div><b data-price-target>Suggested selling amount before discount: '+(t.target===null?"Complete cost data / check inputs":fmt(t.target))+'</b><p>Apply once to distribute the target among billable BOQ rates after deducting any separate customer charges. Rates remain editable; unit rounding may produce a small difference. Discounts reduce final profit.</p></div><button type="button" class="btn primary" data-action="price-apply-target">Apply Cost-plus Target</button></div>':'')+
+ '<div data-price-metrics>'+metrics(q)+'</div><div data-price-loss>'+(t.profit!==null&&t.profit<0?'<p class="cpq-price-alert">Below estimated cost — requires a commercial exception review in production.</p>':'')+'</div>'+
+ '<div class="cpq-price-final"><div><b>Internal pricing only</b><p>Costs, commission, profit, margin and override history are not included in the customer-facing layout. No actual permission is enforced in this public demo.</p></div><div data-price-summary>'+financialRows(q)+'</div></div>'+
+ '<div data-price-history>'+history(q)+'</div></section></div>';
+}
+function refresh(q,root,financialRows){
+ const t=calculate(q);
+ const get=selector=>root?.querySelector?.(selector);
+ const html=(selector,value)=>{const el=get(selector);if(el)el.innerHTML=value;};
+ const text=(selector,value)=>{const el=get(selector);if(el)el.textContent=value;};
+ const show=(selector,value)=>{const el=get(selector);if(el)el.hidden=!value;};
+ html("[data-price-metrics]",metrics(q));
+ html("[data-price-loss]",t.profit!==null&&t.profit<0?'<p class="cpq-price-alert">Below estimated cost — requires a commercial exception review in production.</p>':"");
+ html("[data-price-summary]",financialRows(q));
+ const historyOpen=get("[data-price-history] details")?.open;
+ html("[data-price-history]",history(q));
+ const detail=get("[data-price-history] details");if(detail&&historyOpen)detail.open=true;
+ text("[data-price-target]","Suggested selling amount before discount: "+(t.target===null?"Complete cost data / check inputs":fmt(t.target)));
+ for(const l of q.lines||[]){
+  const id=String(l.id).replace(/[^A-Za-z0-9_-]/g,"");
+  text('[data-offered-total="'+id+'"]',fmt(lineTotal(l)));
+  show('[data-rate-changed="'+id+'"]',requiresReason(l));
+  show('[data-cost-missing="'+id+'"]',l.pricing?.unitCost==null);
+  const reason=get('[data-price-line="'+id+'"][data-price-field="reason"]');
+  if(reason){reason.value=l.pricing?.overrideReason||"";reason.placeholder=requiresReason(l)?"Reason required before review":"Optional change reason";}
+ }
+ for(const c of q.pricing?.costs||[]){
+  const id=String(c.id).replace(/[^A-Za-z0-9_-]/g,"");
+  text('[data-cost-total="'+id+'"]',fmt(costAmount(c,t.directCost,t.taxable)));
+  text('[data-cost-title="'+id+'"]',c.name||"Additional cost");
+ }
 }
 function internalSummary(q){
  if(!q.pricing)return '<p class="cpq-price-help">Legacy sample: detailed pricing was not captured on this record.</p>';
@@ -242,5 +269,5 @@ function internalSummary(q){
  q.pricing.costs.map(c=>'<tr><td>'+esc(c.name)+'</td><td>'+esc(methods.find(m=>m[0]===c.method)?.[1]||c.method)+'</td><td>'+fmt(costAmount(c,calculate(q).directCost,calculate(q).taxable))+'</td><td>'+(c.separate&&!privateKinds.has(c.kind)?fmt(c.chargeAmount):'Internal / included')+'</td></tr>').join("")+
  '</tbody></table></div></details>':'')+history(q)+'</section>';
 }
-window.CPQ_PRICING={prepare,captureLine,lineTotal,publicCharges,calculate,requiresReason,setRate,setReason,addCost,updateCost,removeCost,errors,applyTarget,pricingView,internalSummary,validNumber};
+window.CPQ_PRICING={prepare,captureLine,lineTotal,publicCharges,calculate,requiresReason,setRate,setReason,addCost,updateCost,removeCost,errors,applyTarget,pricingView,refresh,internalSummary,validNumber};
 })();
