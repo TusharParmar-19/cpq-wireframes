@@ -2,7 +2,7 @@
 (()=>{
 "use strict";
 const a=window.CPQ_MA003,{users,roles,perms,entities,state,$,esc,userBy,roleBy,render}=a;
-let saveHandler=null,cancelHandler=null,restoreFocus=null,userCounter=users.length,roleCounter=0;
+let saveHandler=null,cancelHandler=null,restoreFocus=null,userCounter=Math.max(0,...users.map(u=>Number(String(u.id).replace(/\D/g,""))||0)),roleCounter=Math.max(0,...roles.filter(r=>/^custom\d+$/.test(r.id)).map(r=>Number(r.id.slice(6))));
 const branchItems=entities.flatMap(e=>e.branches.map(b=>({id:b.id,companyId:e.id,companyName:e.name,name:b.name})));
 function open(title,subtitle,body,handler=null,label="Save demo"){
  restoreFocus=document.activeElement;
@@ -104,13 +104,13 @@ function employeeForm(u=null){
    branches:[...new Set(assignments.flatMap(a=>a.branches))],updated:"07 Nov 2026 (demo)"};
   if(u){Object.assign(u,change);audit("Company role assignments updated",u.name+" · "+u.id);}
   else{
-   userCounter+=1;
+   userCounter=Math.max(userCounter,...users.map(u=>Number(String(u.id).replace(/\D/g,""))||0))+1;
    const created={...change,id:"U"+String(userCounter).padStart(3,"0"),created:"07 Nov 2026 (demo)",status:"Invited"};
    users.push(created);state.selectedUser=created.id;state.filters={q:"",role:"all",company:"all",status:"all"};
    $("user-search").value="";$("user-role-filter").value="all";$("user-company-filter").value="all";$("user-status-filter").value="all";
    audit("Employee invitation prepared",created.name+" · "+created.id);
   }
-  close();render();toast("Scoped employee roles updated on this demo page only.");
+  close();render();toast("Scoped employee roles updated in this browser.");if(creating)window.CPQ_QUICK_CREATE?.saved("employee",state.selectedUser);
  });
  $("ma3-editor").addEventListener("submit",e=>{e.preventDefault();saveHandler?.()});
  $("ma3-editor").addEventListener("change",e=>{
@@ -225,8 +225,8 @@ function customRoleForm(source=null,copy=false,restoredDraft=null){
   open("Confirm Role Configuration","Inspect proposed page and action changes before saving",review,()=>{
    if(inactiveActions.length)return; // Inconsistent role grants must not be saved.
    if(editing){Object.assign(source,record);state.selectedRole=source.id;audit("Role page & action policy updated",record.name+" · "+record.pages.length+" pages / "+record.perms.length+" actions");}
-   else{roleCounter+=1;const id="custom"+roleCounter;roles.push({id,...record});state.selectedRole=id;audit("Custom role created",record.name+" · "+record.pages.length+" pages / "+record.perms.length+" actions");}
-   state.roleView="pages";close();refreshRoleFilters();render();toast("Role page and action policy updated on this demo page only.");
+   else{roleCounter=Math.max(roleCounter,...roles.filter(r=>/^custom\d+$/.test(r.id)).map(r=>Number(r.id.slice(6))))+1;const id="custom"+roleCounter;roles.push({id,...record});state.selectedRole=id;audit("Custom role created",record.name+" · "+record.pages.length+" pages / "+record.perms.length+" actions");}
+   state.roleView="pages";close();refreshRoleFilters();render();toast("Role page and action policy updated in this browser.");if(!editing)window.CPQ_QUICK_CREATE?.saved("role",state.selectedRole);
   },"Confirm demo changes");
   $("modal-save").disabled=inactiveActions.length>0;
   if(inactiveActions.length)$("modal-save").title="Resolve all ineffective action grants before confirming";
@@ -363,4 +363,12 @@ render();
 const initialPanel=window.location.hash.replace(/^#/, "");
 if(["users","roles","preview"].includes(initialPanel))setTab(initialPanel);
 if(new URLSearchParams(window.location.search).get("action")==="new")employeeForm();
+window.CPQ_QC_FORMS={employee:ctx=>{
+ employeeForm();
+ if(ctx.companyId){
+  const card=Array.from(document.querySelectorAll(".ma3-scope-card")).find(x=>x.dataset.companyId===ctx.companyId);
+  if(card){card.open=true;const branch=Array.from(card.querySelectorAll('input[name="scopeBranch"]')).find(x=>x.value===ctx.companyId+":"+ctx.branchId);if(branch){branch.checked=true;branch.dispatchEvent(new Event("change",{bubbles:true}));}}
+ }
+ return $("overlay");
+},role:()=>{customRoleForm();return $("overlay");}};
 })();

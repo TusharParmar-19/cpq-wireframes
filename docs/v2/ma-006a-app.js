@@ -572,5 +572,5 @@ else if(opRef&&opportunity(opRef)){
  Object.assign(c,{kind:"Customer configuration",customerId:o.customerId,buyerId:o.buyerId,opportunityId:o.id,serviceIds:flow.normalized(o.serviceIds||[],true),companyId:o.companyId,branchId:o.branchId,ownerId:o.ownerId,contactId:o.contactId||"",siteId:o.siteId||"",projectId:o.projectId||"",name:"Configuration — "+o.title,notes:"From sample enquiry "+o.id+": "+o.summary});
  renderBuilder();
 }else render();
-window.CPQ_MA006A={state,records,products,review,record,visible,quotationLink,payload,save,newBuilder,addItem};
+window.CPQ_MA006A={state,records,products,review,record,visible,quotationLink,payload,save,newBuilder,addItem,quickSelectProduct:id=>{if(!state.builder)return;state.builder.productGroup="all";state.builder.catalogSearch="";setProduct(state.builder,id);renderBuilder();}};
 })();
