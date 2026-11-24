@@ -239,7 +239,7 @@ function openEditor(mode,parentId){
  state.focus=document.activeElement;
  const rec=source||{code:"",name:"",parentId:parentId||"",status:"Draft",domain:"Solar",workType:"Installation",unit:"Job",description:"",scope:"",deliverables:"",notes:"",productIds:[]};
  $("sm-dialog-title").textContent=source?"Edit Service":"Add "+(rec.parentId?"Sub-service":"Service");
- const units=["Job","Visit","Hour","Day","Month","Year","Contract","Project","Package","Set","Other"];
+ const units=db.units||["Job","Visit","Hour","Day","Month","Year","Contract","Project","Package","Set","Other"];
  $("sm-fields").innerHTML=
   '<details open><summary>1. Service basics</summary><div>'+
   '<div class="sm-form-grid">'+
@@ -313,7 +313,7 @@ function saveEditor(event){
  revealParents(record.id);state.collapsedInFilter.clear();
  closeEditor();render();
  if(state.view==="detail")keepSelectedRowVisible();
- toast(existing?"Service updated (demo).":"Service created (demo).");
+ toast(existing?"Service updated (demo).":"Service created (demo).");if(!existing)window.CPQ_QUICK_CREATE?.saved("service",record.id);
 }
 let toastId=null;
 function toast(msg){
@@ -362,4 +362,6 @@ $("sm-detail").addEventListener("click",event=>{
 });
 document.querySelectorAll("[data-planned]").forEach(b=>b.addEventListener("click",()=>window.alert(b.dataset.planned+" is a planned wireframe module.")));
 render();
+window.CPQ_SERVICE_UI={db:()=>db};
+window.CPQ_QC_FORMS={service:ctx=>{openEditor("add",ctx.parentId||"");return $("sm-overlay");}};
 })();

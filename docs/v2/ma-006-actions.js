@@ -630,4 +630,5 @@ if(configRef){
 }else if(quoteRef&&quote(quoteRef)){state.selected=quoteRef;state.tab="summary";render();}
 else if(opRef&&opportunity(opRef)){newBuilder(opRef);}
 else if(params.get("action")==="new")newBuilder();
+a.quickSelectProduct=id=>{if(!state.builder)return;state.builder.addPickerOpen=true;state.builder.catalogSearch="";setProduct(state.builder,id);renderBuilder();};
 })();

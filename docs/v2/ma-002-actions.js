@@ -2,7 +2,7 @@
 (()=>{
 "use strict";
 const app=window.CPQ_MA002,{records,$,esc,state,current,render}=app;
-let before=null,saveAction=null,counter=3;
+let before=null,saveAction=null,counter=Math.max(0,...records.map(x=>Number(String(x.id).replace(/\D/g,""))||0));
 const schema={
 new:[
 ["name","Company / trading name","text",true],["legalName","Registered legal name","text",true],
@@ -85,7 +85,7 @@ function saveForm(kind,original,branchId){
   if(required&&!String(data[key]||"").trim()){document.getElementById("org-error").textContent=label+" is required.";return;}
   if(type!=="file"&&typeof data[key]==="string")data[key]=data[key].trim();
  }
- const error=document.getElementById("org-error");
+ const error=document.getElementById("org-error");let createdId="";
  if((kind==="new"||kind==="branding")&&records.some(x=>x.id!==original?.id&&x.prefix.toUpperCase()===data.prefix.toUpperCase())){
   error.textContent="Quotation number prefix already belongs to another legal entity.";return;
  }
@@ -98,15 +98,16 @@ function saveForm(kind,original,branchId){
    error.textContent="This branch name already exists under the selected company.";return;
   }
   if(branchId){Object.assign(entity.branches.find(x=>x.id===branchId),data);}
-  else entity.branches.push({...data,id:entity.id+"b"+(entity.branches.length+1)});
+  else {let i=entity.branches.length+1;while(entity.branches.some(b=>b.id===entity.id+"b"+i))i++;createdId=entity.id+"b"+i;entity.branches.push({...data,id:createdId});}
  }else if(kind==="new"){
-  counter+=1;
+  counter=Math.max(counter,...records.map(x=>Number(String(x.id).replace(/\D/g,""))||0))+1;
   const id="e"+counter,defaults={id,name:"",legalName:"",type:"Other",address:"",city:"",state:"",pin:"",gstin:"",pan:"",registration:"",msme:"",phone:"",email:"",website:"",logo:"Not configured",letterhead:"Not configured",signature:"Not configured",signatory:"",bankName:"",accountHolder:"",bankAccount:"",ifsc:"",terms:"",prefix:"",status:"Active",branches:[]};
-  records.push({...defaults,...data,id});state.selected=id;state.status="all";state.search="";$("entity-search").value="";$("entity-status").value="all";state.tab="overview";
+  records.push({...defaults,...data,id});createdId=id;state.selected=id;state.status="all";state.search="";$("entity-search").value="";$("entity-status").value="all";state.tab="overview";
  }else{
   Object.assign(current(),data);
  }
- close();render();toast("Demo changes shown on this page only. They will disappear on refresh.");
+ close();render();toast("Demo changes saved in this browser.");
+ if(createdId)window.CPQ_QUICK_CREATE?.saved(kind==="branch"?"branch":"company",createdId);
 }
 function edit(kind,branchId=null){
  const source=kind==="new"?{}:kind==="branch"?(current().branches.find(b=>b.id===branchId)||{status:"Active"}):current();
@@ -143,4 +144,8 @@ $("modal-done").addEventListener("click",()=>saveAction?saveAction():close());
 $("overlay").addEventListener("click",e=>{if(e.target===$("overlay"))close()});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("overlay").classList.contains("open"))close()});
 if(new URLSearchParams(window.location.search).get("action")==="new")edit("new");
+window.CPQ_QC_FORMS={company:()=>{edit("new");return $("overlay");},branch:ctx=>{
+ if(!records.some(e=>e.id===ctx.companyId))throw Error("Choose a valid parent company.");
+ state.selected=ctx.companyId;edit("branch");return $("overlay");
+}};
 })();

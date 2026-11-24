@@ -111,7 +111,7 @@ function createCustomer(){
   db.companies.push({id:buyerId,customerId:id,name:buyerName,kind:type==="Individual"?"Individual":"Head office",primary:true,taxStatus:type==="Individual"?"Not applicable":"Not supplied",email:type==="Individual"?personalEmail:"",phone:type==="Individual"?personalPhone:"",city:"",state:"",address:"",billingTerms:"Not configured"});
   state.company="all";state.branch="all";state.status="all";state.type="all";state.q="";
   $("customer-search").value="";$("status-filter").value="all";$("type-filter").value="all";state.selected=id;
-  saved(c,(type==="Individual"?"Individual customer created":type==="Group"?"Customer group created":"Company customer created")+": "+name,"overview");
+  saved(c,(type==="Individual"?"Individual customer created":type==="Group"?"Customer group created":"Company customer created")+": "+name,"overview");window.CPQ_QUICK_CREATE?.saved("customer",id);
  },"Create customer (demo)");
  updateCreateType();
 }
@@ -167,7 +167,7 @@ function companyForm(id=null){
   if(old)Object.assign(old,patch);
   else db.companies.push({id:next("CC-",db.companies),customerId:c.id,...patch,primary:companies(c.id).length===0});
   if(personal)c.name=name;
-  saved(c,(personal?"Individual billing profile updated":old?"Buyer company updated":"Buyer company added")+": "+name,"companies");
+  saved(c,(personal?"Individual billing profile updated":old?"Buyer company updated":"Buyer company added")+": "+name,"companies");if(!old)window.CPQ_QUICK_CREATE?.saved("buyer",db.companies.find(y=>y.customerId===c.id&&y.name===name)?.id);
  },personal?"Save individual buyer (demo)":old?"Save buyer changes (demo)":"Add buyer company (demo)");
 }
 
@@ -199,7 +199,7 @@ function contactForm(id=null){
   const patch={name,companyId:co,role:v(fd,"role"),email,phone:v(fd,"phone"),status:v(fd,"status"),primary};
   if(old)Object.assign(old,patch);
   else db.contacts.push({id:next("CT-",db.contacts),customerId:c.id,...patch});
-  saved(c,(old?"Contact updated":"Contact added")+": "+name+" ("+(buyer(co)?.name||"Buyer")+")","contacts");
+  saved(c,(old?"Contact updated":"Contact added")+": "+name+" ("+(buyer(co)?.name||"Buyer")+")","contacts");if(!old)window.CPQ_QUICK_CREATE?.saved("contact",db.contacts.at(-1).id);
  },"Save contact (demo)");
 }
 
@@ -219,7 +219,7 @@ function siteForm(id=null){
   const patch={name,companyId:co,type:v(fd,"type"),status:v(fd,"status"),city:v(fd,"city"),state:v(fd,"state"),address:v(fd,"address")};
   if(old)Object.assign(old,patch);
   else db.sites.push({id:next("ST-",db.sites),customerId:c.id,...patch});
-  saved(c,(old?"Customer site updated":"Customer site added")+": "+name,"sites");
+  saved(c,(old?"Customer site updated":"Customer site added")+": "+name,"sites");if(!old)window.CPQ_QUICK_CREATE?.saved("site",db.sites.at(-1).id);
  },"Save site (demo)");
 }
 const stages=[["New","New"],["Planning","Planning"],["In discussion","In discussion"],["Quotation","Quotation"],["In progress","In progress"],["Completed","Completed"],["Cancelled","Cancelled"]];
@@ -244,7 +244,7 @@ function projectForm(id=null){
   const patch={name,companyId:co,siteId,stage:v(fd,"stage"),owner:v(fd,"owner")};
   if(old)Object.assign(old,patch);
   else db.projects.push({id:next("PR-",db.projects),customerId:c.id,...patch});
-  saved(c,(old?"Project updated":"Project added")+": "+name,"sites");
+  saved(c,(old?"Project updated":"Project added")+": "+name,"sites");if(!old)window.CPQ_QUICK_CREATE?.saved("project",db.projects.at(-1).id);
  },"Save project (demo)");
 }
 function archiveCustomer(){
@@ -307,4 +307,17 @@ $("modal-body").addEventListener("change",e=>{
 $("overlay").addEventListener("click",e=>{if(e.target===$("overlay"))close();});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("overlay").classList.contains("open"))close();});
 if(new URLSearchParams(window.location.search).get("action")==="new")createCustomer();
+function qcCustomerChild(ctx,form){
+ const c=cust(ctx.customerId);if(!c||c.status==="Archived")throw Error("Choose an available customer first.");
+ state.selected=c.id;form();
+ const selector=$("ma4-project-company")||$("f-companyId");
+ if(selector&&ctx.buyerId&&Array.from(selector.options).some(o=>o.value===ctx.buyerId)){selector.value=ctx.buyerId;selector.dispatchEvent(new Event("change",{bubbles:true}));}
+ return $("overlay");
+}
+window.CPQ_QC_FORMS={customer:ctx=>{
+ createCustomer();
+ if(ctx.companyId&&Array.from($("ma4-own-company").options).some(o=>o.value===ctx.companyId)){$("ma4-own-company").value=ctx.companyId;updateOwnBranches();}
+ if(ctx.branchId&&Array.from($("ma4-own-branch").options).some(o=>o.value===ctx.branchId)){$("ma4-own-branch").value=ctx.branchId;updateOwners();}
+ return $("overlay");
+},buyer:ctx=>qcCustomerChild(ctx,companyForm),contact:ctx=>qcCustomerChild(ctx,contactForm),site:ctx=>qcCustomerChild(ctx,siteForm),project:ctx=>qcCustomerChild(ctx,projectForm)};
 })();

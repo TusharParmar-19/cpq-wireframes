@@ -88,7 +88,7 @@ function createForm(){
   const record={id,title,customerId,buyerId,contactId,siteId,projectId,companyId,branchId,ownerId,serviceIds,stage:"New",priority:v(fd,"priority")||"Medium",source:v(fd,"source")||"Direct Enquiry",kind:v(fd,"kind")||"Mixed Requirement",summary,requirements:v(fd,"requirements").split(/\n/).map(x=>x.trim()).filter(Boolean),received:dateText(v(fd,"received"))||today(),needBy:dateText(v(fd,"needBy")),expectedClose:"",nextFollowUp:dateText(v(fd,"nextFollowUp")),nextAction:v(fd,"nextAction"),remarks:v(fd,"remarks"),lostReason:"",linkedQuotes:[],lastUpdated:"07 Nov 2026 (demo)"};
   db.opportunities.unshift(record);
   state.company="all";state.branch="all";state.stage="all";state.owner="all";state.priority="all";state.query="";state.selected=id;
-  done(record,"Enquiry created: "+id,title,"overview");
+  done(record,"Enquiry created: "+id,title,"overview");window.CPQ_QUICK_CREATE?.saved("enquiry",id);
  },"Create enquiry (demo)");
 }
 function updateCustomerBuyers(){
@@ -269,4 +269,13 @@ if(params.get("action")==="new"){
   }
  }
 }
+window.CPQ_QC_FORMS={enquiry:ctx=>{
+ createForm();
+ const set=(id,value)=>{const el=$("f-"+id);if(el&&value&&Array.from(el.options).some(o=>o.value===value)){el.value=value;return true;}return false;};
+ if(set("customerId",ctx.customerId))updateCustomerBuyers();
+ if(set("buyerId",ctx.buyerId))updateBuyerLinks();
+ if(set("companyId",ctx.companyId))updateInternalBranches();
+ if(set("branchId",ctx.branchId))updateOwners();
+ return $("overlay");
+}};
 })();

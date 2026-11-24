@@ -422,6 +422,7 @@ function partFields(p={}){
 function editorMarkup(){
  const e=state.editor;if(!e)return "";
  if(e.mode==="product-new")return familyFields()+variantFields({}, {solarKind:state.editor?.solarKind||"general"});
+ if(e.mode==="family-new")return familyFields({solarKind:e.solarKind||"general"});
  if(e.mode==="family-edit")return familyFields(family(e.familyId));
  if(e.mode==="variant-new")return '<div class="ma6a-editor-section-note"><b>Family:</b> '+esc(family(e.familyId)?.name||"Unknown")+'</div>'+variantFields({},family(e.familyId));
  if(e.mode==="variant-edit")return '<div class="ma6a-editor-section-note"><b>Family:</b> '+esc(family(e.familyId)?.name||"Unknown")+'</div>'+variantFields(variant(e.variantId),family(e.familyId));
@@ -431,7 +432,7 @@ function editorMarkup(){
 }
 function openEditor(mode,ids={}){
  state.editor={mode,solarKind:mode==="product-new"?"pv-module":"general",...ids};
- const titles={"product-new":"Add Product","family-edit":"Edit Product Group","variant-new":"Add Another Model","variant-edit":"Edit Model","manufacturer-new":"Add Manufacturer","manufacturer-edit":"Edit Manufacturer","part-new":"Add Part / Accessory","part-edit":"Edit Part / Accessory"};
+ const titles={"product-new":"Add Product","family-new":"Add Product Group","family-edit":"Edit Product Group","variant-new":"Add Another Model","variant-edit":"Edit Model","manufacturer-new":"Add Manufacturer","manufacturer-edit":"Edit Manufacturer","part-new":"Add Part / Accessory","part-edit":"Edit Part / Accessory"};
  $("catalog-editor-title").textContent=titles[mode]||"Edit Catalog";
  $("catalog-editor-subtitle").textContent="Fictional master-data fields · Demo save only · Not production authorization";
  $("catalog-editor-body").innerHTML=editorMarkup();$("catalog-editor-error").hidden=true;
@@ -522,6 +523,7 @@ function saveEditor(event){
  event.preventDefault();
  const e=state.editor;if(!e)return;
  const fd=new FormData($("catalog-editor-form"));
+ let createdType="",createdId="";
  try{
   if(e.mode==="product-new"){
    const chosen=trim(fd,"wizardFamilyId");
@@ -537,8 +539,12 @@ function saveEditor(event){
    const docs=stagedWizardDocuments($("catalog-editor-form"),null);
    if(newFamily)db.families.unshift(newFamily);
    const vari={id:idNext("VAR-",db.variants),familyId:fam.id,documents:docs?.documents||[],documentHistory:docs?.documentHistory||[],revisionHistory:[],...v};db.variants.unshift(vari);
-   state.family=fam.id;state.variant=vari.id;state.tab="variants";
+   createdType="product";createdId=vari.id;state.family=fam.id;state.variant=vari.id;state.tab="variants";
    state.search="";state.category="all";state.manufacturer="all";state.status="all";state.hub="products";
+  }else if(e.mode==="family-new"){
+   const data=getFamilyForm(fd);data.status="Draft";
+   if(db.families.some(x=>x.name.trim().toLowerCase()===data.name.trim().toLowerCase()&&(x.solarKind||"general")===(data.solarKind||"general")))throw Error("This product group already exists for the equipment template.");
+   const f={id:idNext("FAM-",db.families),...data};db.families.unshift(f);createdType="family";createdId=f.id;state.family=f.id;state.variant="";state.hub="products";state.tab="variants";state.search="";state.category="all";state.status="all";state.manufacturer="all";
   }else if(e.mode==="family-edit"){
    const f=family(e.familyId);if(!f)throw Error("Family not found.");
    const data=getFamilyForm(fd);data.status=f.status;Object.assign(f,data);state.family=f.id;
@@ -559,16 +565,17 @@ function saveEditor(event){
     }
    }
    else{
-    const v={id:idNext("VAR-",db.variants),familyId:fam.id,documents:docs?.documents||[],documentHistory:docs?.documentHistory||[],revisionHistory:[],...input};db.variants.unshift(v);state.variant=v.id;
+    const v={id:idNext("VAR-",db.variants),familyId:fam.id,documents:docs?.documents||[],documentHistory:docs?.documentHistory||[],revisionHistory:[],...input};db.variants.unshift(v);state.variant=v.id;createdType="product";createdId=v.id;
    }
    state.family=fam.id;state.tab="variants";
    state.manufacturer="all";state.status="all";state.search="";
   }else if(e.mode==="manufacturer-new"||e.mode==="manufacturer-edit"){
    const name=trim(fd,"name");if(!name)throw Error("Manufacturer name is required.");
+   if(db.manufacturers.some(m=>m.id!==e.manufacturerId&&m.name.trim().toLowerCase()===name.toLowerCase()))throw Error("This manufacturer already exists. Select its existing record.");
    const input={name:name.slice(0,150),brand:trim(fd,"brand"),country:trim(fd,"country"),
     website:trim(fd,"website"),status:trim(fd,"status")||"Active",notes:trim(fd,"notes")};
    if(e.mode==="manufacturer-edit"){const m=maker(e.manufacturerId);if(!m)throw Error("Manufacturer not found.");input.status=m.status;Object.assign(m,input);}
-   else db.manufacturers.push({id:idNext("MFG-",db.manufacturers),...input,status:"Draft"});
+   else{createdId=idNext("MFG-",db.manufacturers);createdType="manufacturer";db.manufacturers.push({id:createdId,...input,status:"Draft"});}
    state.hub="manufacturers";
   }else if(e.mode==="part-new"||e.mode==="part-edit"){
    const code=trim(fd,"code"),name=trim(fd,"name");if(!code||!name)throw Error("Part code and name are required.");
@@ -580,10 +587,11 @@ function saveEditor(event){
     status:trim(fd,"status")||"Draft",spec:trim(fd,"spec"),notes:trim(fd,"notes"),
     sellPrice:price===""?0:price};
    if(e.mode==="part-edit"){const p=part(e.partId);if(!p)throw Error("Part not found.");input.status=p.status;Object.assign(p,input);}
-   else db.parts.push({id:idNext("PART-",db.parts),...input});
+   else{createdId=idNext("PART-",db.parts);createdType="part";db.parts.push({id:createdId,...input});}
    state.hub="parts";
   }
   closeEditor();renderCatalog();
+  if(createdType&&createdId)window.CPQ_QUICK_CREATE?.saved(createdType,createdId);
  }catch(err){issue(err.message||"Unable to save this demo record.");}
 }
 document.addEventListener("click",event=>{
@@ -603,7 +611,9 @@ document.addEventListener("click",event=>{
  else if(action==="edit-variant"){
   if(!state.variant){return;}
   openEditor("variant-edit",{familyId:state.family,variantId:state.variant});
- }else if(action==="add-manufacturer")openEditor("manufacturer-new");
+ }else if(action==="add-family")openEditor("family-new");
+ else if(action==="add-category")window.CPQ_QUICK_CREATE?.open("category",{},()=>renderCatalog(),t);
+ else if(action==="add-manufacturer")openEditor("manufacturer-new");
  else if(action==="edit-manufacturer")openEditor("manufacturer-edit",{manufacturerId:d.makerId});
  else if(action==="add-part")openEditor("part-new");
  else if(action==="edit-part")openEditor("part-edit",{partId:d.partId});
@@ -652,4 +662,10 @@ const params=new URLSearchParams(window.location.search);
 if(params.get("configuration")||params.get("opportunity")||params.get("hub")==="configurations")state.hub="configurations";
 renderCatalog();
 window.CPQ_MA006A_CATALOG_UI={db,state,visibleFamilies,familyVariants,renderCatalog,openEditor,saveEditor,dimension,setHub};
+window.CPQ_QC_FORMS={
+ manufacturer:()=>{openEditor("manufacturer-new");return $("catalog-editor-overlay");},
+ product:()=>{openEditor("product-new");return $("catalog-editor-overlay");},
+ family:ctx=>{openEditor("family-new",{solarKind:ctx.solarKind||"general"});return $("catalog-editor-overlay");},
+ part:()=>{openEditor("part-new");return $("catalog-editor-overlay");}
+};
 })();

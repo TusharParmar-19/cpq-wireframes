@@ -62,7 +62,7 @@ function refreshGroupOptions(form,kind){
  const sel=form.querySelector('[name="wizardFamilyId"]');if(!sel)return;
  const groups=groupsFor(kind);
  sel.innerHTML=groups.map(f=>'<option value="'+E(f.id)+'">'+E(f.name)+'</option>').join("")+
-  '<option value="__new__">+ Create a new product group</option>';
+  '<option value="__new__">Create a group with this product</option>';
  sel.value=groups[0]?.id||"__new__";updateGroupMode(form);
 }
 function checkBasics(){
@@ -79,7 +79,7 @@ function checkBasics(){
   return status("This SKU already exists. Enter a unique stock code.");
  const type=selectedGroup(form)?.type||form.querySelector('[name="familyType"]')?.value||current.productType;
  if(type!=="service"&&!form.querySelector('[name="manufacturerId"]')?.value)
-  return status("Select a manufacturer, or add a new one below.");
+  return status("Select a manufacturer, or use + Add New Manufacturer in the dropdown.");
  return true;
 }
 function updateReview(){
@@ -110,19 +110,6 @@ function showStep(next){
  if(step===2)updateReview();
  $("catalog-editor-body").scrollTop=0;return true;
 }
-function makeManufacturer(form){
- const name=String(form.querySelector('[name="quickMakerName"]')?.value||"").trim();
- const brand=String(form.querySelector('[name="quickMakerBrand"]')?.value||"").trim();
- if(!name)return status("Enter the manufacturer company name.");
- const match=db.manufacturers.find(m=>m.name.toLowerCase()===name.toLowerCase());
- if(match)return status("This manufacturer already exists. Select it from the list.");
- const next=Math.max(0,...db.manufacturers.map(m=>Number(String(m.id).replace(/\D/g,""))||0))+1;
- const id="MFG-"+String(next).padStart(3,"0");
- db.manufacturers.push({id,name:name.slice(0,150),brand:brand.slice(0,100),country:"India",status:"Draft",website:"",notes:"Added while preparing product draft; review pending"});
- const selected=form.querySelector('[name="manufacturerId"]');
- if(selected){selected.insertAdjacentHTML("beforeend",'<option value="'+E(id)+'">'+E(name)+'</option>');selected.value=id;}
- $("catalog-wizard-quick-maker").hidden=true;closeStatus();
-}
 function mount(editor,database){
  current=editor;db=database;step=0;
  current.productType=db.families.find(x=>x.id===editor.familyId)?.type||"standard";
@@ -149,14 +136,6 @@ function mount(editor,database){
  basic.appendChild(basicGrid);
  if(editor.mode!=="product-new")basic.appendChild(node("div","ma6a-wizard-tip",
   'Adding or updating a manufacturer model inside <b>'+E(db.families.find(f=>f.id===editor.familyId)?.name||"the selected family")+'</b>.'));
- const maker=node("div","ma6a-wizard-maker",
-  '<button type="button" class="btn" data-wizard-maker="open">+ Manufacturer not listed?</button>'+
-  '<div id="catalog-wizard-quick-maker" hidden><div class="ma6-field-grid">'+
-  '<div class="ma6-field"><label>Manufacturer company name *</label><input name="quickMakerName" type="text" placeholder="Company name"></div>'+
-  '<div class="ma6-field"><label>Brand (optional)</label><input name="quickMakerBrand" type="text" placeholder="Brand name"></div></div>'+
-  '<div class="ma6a-wizard-actions"><button type="button" class="btn primary" data-wizard-maker="save">Add Manufacturer</button>'+
-  '<button type="button" class="btn" data-wizard-maker="cancel">Cancel</button></div></div>');
- basic.appendChild(maker);
  if(editor.mode==="product-new"){
   const adv=node("details","ma6a-editor-details ma6a-wizard-advanced",
    '<summary>Advanced catalog classification (optional)</summary><p>Category and behavior are set automatically. Authorized staff can adjust them here.</p>');
@@ -246,18 +225,14 @@ function init(){
  $("catalog-editor-back").addEventListener("click",()=>showStep(step-1));
  $("catalog-editor-next").addEventListener("click",()=>showStep(step+1));
  $("catalog-editor-form").addEventListener("click",e=>{
-  const action=e.target.closest("[data-product-wizard-step],[data-wizard-maker]");if(!current||!action)return;
-  e.preventDefault();
-  if(action.dataset.productWizardStep!==undefined){showStep(Number(action.dataset.productWizardStep));return;}
-  const box=$("catalog-wizard-quick-maker");
-  if(action.dataset.wizardMaker==="open")box.hidden=false;
-  if(action.dataset.wizardMaker==="cancel")box.hidden=true;
-  if(action.dataset.wizardMaker==="save")makeManufacturer($("catalog-editor-form"));
+  const action=e.target.closest("[data-product-wizard-step]");if(!current||!action)return;
+  e.preventDefault();showStep(Number(action.dataset.productWizardStep));
  });
  $("catalog-editor-form").addEventListener("change",e=>{
   if(current?.mode!=="product-new")return;
   const form=$("catalog-editor-form");
   if(e.target.name==="wizardFamilyId"){updateGroupMode(form);return;}
+  if(e.target.name==="familyCategory"){refreshCategoryFields(form);return;}
   if(e.target.name==="solarKind"){updateCategory(form,e.target.value);refreshGroupOptions(form,e.target.value);}
  });
  $("catalog-editor-form").addEventListener("submit",e=>{

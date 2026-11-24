@@ -1,0 +1,30 @@
+/* Shared Quick Create · retain the original form and its validation. */
+.qc-host{padding:0;border:1px solid #cbdbe8;border-radius:13px;width:min(1100px,96vw);height:min(840px,91vh);max-width:96vw;max-height:94vh;background:#f5f8fb;color:#24445c;box-shadow:0 20px 75px #0c253e44;overflow:hidden}
+.qc-host[open]{display:flex;flex-direction:column}
+.qc-host::backdrop{background:#10243b99}
+.qc-host-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:15px 19px;background:#fff;border-bottom:1px solid #dce7ef;flex:0 0 auto}
+.qc-host-head strong{font-size:17px;color:#244b69}
+.qc-host-head small{display:block;font-size:11px;color:#71869b;margin-top:5px}
+.qc-host-content{flex:1;min-height:0;overflow:auto}
+.qc-frame{width:100%;height:100%;border:0;display:block;background:#f5f8fb}
+.qc-compact{width:min(520px,94vw);height:auto}
+.qc-list-form{padding:20px;display:grid;gap:12px}
+.qc-list-form label{font-size:12px;font-weight:750;color:#45647d}
+.qc-list-form input{font:inherit;padding:11px;border-radius:7px;border:1px solid #cfdfe9;width:100%;box-sizing:border-box;color:#284b65;background:white}
+.qc-help{font-size:11px;color:#6e8495;line-height:1.6;margin:0}
+.qc-error{font-size:12px;color:#a23832;margin:0}
+.qc-error:empty{display:none}
+.qc-list-actions{display:flex;justify-content:flex-end;gap:8px}
+.qc-add-option{color:#17618e;font-weight:700}
+.qc-inline-button{width:max-content;max-width:100%;font-weight:750;color:#1b668f;border-color:#bcd9eb;background:#f2f9fe;margin-top:8px;white-space:normal;align-self:start}
+#cpq-qc-notice{position:fixed;z-index:999999;right:18px;bottom:18px;max-width:min(500px,calc(100vw - 36px));padding:14px 18px;border-radius:9px;background:#173d5d;color:white;font-size:12px;line-height:1.6;box-shadow:0 4px 16px #10243b35}
+#cpq-qc-notice[hidden]{display:none}
+.qc-embedded{background:#f5f8fb!important;overflow:hidden!important}
+.qc-embedded .layout{visibility:hidden}
+.qc-embedded .overlay:not(.open){display:none!important}
+.qc-embedded .overlay.open{position:fixed!important;inset:0!important;z-index:1000!important;visibility:visible!important;background:transparent!important;padding:12px!important}
+.qc-embedded .overlay.open *{visibility:visible}
+.qc-embedded .overlay.open [hidden]{display:none!important}
+.qc-embedded .overlay.open .dialog,.qc-embedded .overlay.open [role="dialog"]{max-height:calc(100vh - 24px)!important}
+.qc-embedded #cpq-demo-reset,.qc-embedded #cpq-demo-store-notice{display:none!important}
+@media(max-width:650px){.qc-host{width:98vw;height:93vh;max-width:98vw}.qc-compact{height:auto}.qc-host-head{padding:12px}.qc-embedded .overlay.open{padding:6px!important}}
