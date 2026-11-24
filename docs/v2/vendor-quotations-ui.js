@@ -4,7 +4,7 @@
 const W=window,D=document,Q=W.CPQ_VENDOR_QUOTE,M=W.CPQ_VENDOR_MODEL,$=id=>D.getElementById(id),copy=x=>JSON.parse(JSON.stringify(x));
 const esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const money=x=>"₹"+Number(x||0).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});
-const state={selected:"",editor:null,focus:null,review:null,formOpen:false,reviewOpen:false};
+const state={selected:"",editor:null,focus:null,review:null,formOpen:false,reviewOpen:false,preferredVendor:""};
 const rows=()=>Q.db().offers,offer=id=>rows().find(x=>x.id===id);
 const opt=(id,label,current)=>'<option value="'+esc(id)+'"'+(String(id)===String(current??"")?' selected':'')+'>'+esc(label)+'</option>';
 const field=(name,label,value="",type="text",extra="")=>'<label>'+esc(label)+'<input name="'+esc(name)+'" type="'+type+'" value="'+esc(value??"")+'" '+extra+'></label>';
@@ -85,7 +85,7 @@ function chooseItem(row,id){
 function openEditor(id="",prefill={},copyMode=false){
  const orig=id?offer(id):null;if(id&&!orig)return;
  if(orig&&!copyMode&&!["Draft","Pending verification","Returned"].includes(orig.status)){say("Verified or archived offers are locked. Copy as New Offer to record a changed offer.");return;}
- state.editor=orig&&!copyMode?copy(orig):null;state.formOpen=true;state.focus=D.activeElement;
+ state.editor=orig&&!copyMode?copy(orig):null;state.formOpen=true;state.focus=D.activeElement;state.preferredVendor=prefill.vendorId||"";
  const o=orig?copy(orig):{companyId:prefill.companyId||"",vendorId:prefill.vendorId||"",received:Q.today(),quoteDate:Q.today(),lines:[],evidence:[]};
  if(copyMode){o.reference="";o.received=Q.today();o.quoteDate=Q.today();o.validUntil="";o.evidence=[];o.lines=o.lines.map(l=>({...l,id:""}));}
  $("vq-title").textContent=orig&&!copyMode?"Edit Vendor Quotation":copyMode?"Copy as New Vendor Quotation":"Add Vendor Quotation";
@@ -133,7 +133,7 @@ $("vq-form").addEventListener("submit",saveEditor);
 $("vq-form").addEventListener("input",recalc);
 $("vq-form").addEventListener("change",e=>{
  const t=e.target,row=t.closest(".vq-line");
- if(t.id==="vq-f-company")updateParents(t.value,"","","");
+ if(t.id==="vq-f-company")updateParents(t.value,state.preferredVendor,"","");
  else if(t.id==="vq-f-branch")updateParents($("vq-f-company").value,$("vq-f-vendor").value,t.value,"");
  else if(row&&t.name==="kind"){const kind=t.value;rfield(row,"lineId").value="";row.querySelector(".vq-line-select").hidden=kind==="custom";row.querySelector(".vq-custom").hidden=kind!=="custom";rfield(row,"unit").readOnly=kind!=="custom";rfield(row,"customDescription").value="";chooseItem(row,"");}
  else if(row&&t.name==="itemId"){rfield(row,"lineId").value="";chooseItem(row,t.value);}

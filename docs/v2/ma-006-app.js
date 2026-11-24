@@ -262,7 +262,7 @@ function demoReadiness(q){
  if(!reviewChecks(q)[2][1])missing.push("Complete product option selections");
  if(!reviewChecks(q)[3][1])missing.push("Validity, payment and delivery terms");
  if(q.pricing){
-  missing.push(...pricing.errors(q));
+  missing.push(...new Set([...pricing.errors(q),...pricing.supplierIssues(q,true)]));
   if(q.lines.some(l=>pricing.requiresReason(l)&&!String(l.pricing?.overrideReason||"").trim()))
    missing.push("Enter a reason for each manual or changed offered rate in Pricing & Costing.");
  }

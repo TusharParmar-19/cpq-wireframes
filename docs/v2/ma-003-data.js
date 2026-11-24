@@ -92,13 +92,14 @@ window.CPQ_MA003_PAGE_CATALOG=[
  {id:"configuration-workspace",name:"Product & Solution Configuration",section:"Configurations",code:"MA-006A",stage:"Available",actions:["configurations.view","configurations.create","configurations.edit","configurations.handoff"]},
  {id:"quote-register",name:"Quotation Register",section:"Quotations",code:"MA-006",stage:"Available",actions:["quotes.view","quotes.duplicate"]},
  {id:"quote-builder",name:"Quotation Builder & BOQ",section:"Quotations",code:"MA-006",stage:"Available",actions:["quotes.view","quotes.create","quotes.edit","selling.view","cost.view","margin.view"]},
- {id:"pricing-workspace",name:"Pricing & Costing",section:"Quotations",code:"MA-006",stage:"Available",actions:["pricing.view","pricing.override","pricing.costs.edit","pricing.markup.apply","selling.view","cost.view","margin.view"]},
+ {id:"pricing-workspace",name:"Pricing & Costing",section:"Quotations",code:"MA-006",stage:"Available",actions:["pricing.view","pricing.override","pricing.costs.edit","pricing.markup.apply","selling.view","cost.view","margin.view","vendorquotes.use_rate"]},
  {id:"quote-revisions",name:"Quotation Versions & History",section:"Quotations",code:"MA-006",stage:"Available",actions:["quotes.view"]},
  {id:"quote-pdf",name:"Quotation PDF & Issue",section:"Quotations",code:"MA-006",stage:"Available",actions:["quotes.view","quotes.pdf","quotes.issue","documents.download"]},
  {id:"quote-dispatch",name:"Quotation Dispatch & Response",section:"Quotations",code:"MA-006",stage:"Available",actions:["quotes.view","quotes.dispatch","quotes.response"]},
  {id:"product-rules",name:"Product Catalog & Configuration Rules",section:"Configurations",code:"Planned",stage:"Planned",actions:["catalog.view","catalog.manage","configuration.rules.manage"]},
  {id:"vendor-master",name:"Vendors / Suppliers",section:"Procurement & Files",code:"Vendor Master",stage:"Available",actions:["vendors.view","vendors.create","vendors.edit","vendors.archive","vendors.documents.manage"]},
- {id:"vendor-rfqs",name:"Vendor RFQs & Supplier Offers",section:"Procurement & Files",code:"Planned",stage:"Planned",actions:["rfq.view","rfq.create","rfq.send","rfq.compare","cost.view"]},
+ {id:"vendor-quotations",name:"Vendor Quotations (received offers)",section:"Procurement & Files",code:"Vendor Quotations",stage:"Available",actions:["vendorquotes.view","vendorquotes.create","vendorquotes.edit","vendorquotes.verify","vendorquotes.archive","cost.view"]},
+ {id:"vendor-rfqs",name:"Advanced RFQ & Supplier Comparison (Phase 2)",section:"Procurement & Files",code:"Planned",stage:"Planned",actions:["rfq.view","rfq.create","rfq.send","rfq.compare","cost.view"]},
  {id:"documents",name:"Documents & Evidence",section:"Procurement & Files",code:"Planned",stage:"Planned",actions:["documents.view","documents.upload","documents.download","documents.delete"]},
  {id:"orders",name:"Orders & Registration",section:"Orders & Controls",code:"Planned",stage:"Planned",actions:["orders.view","orders.edit","orders.register","records.archive"]},
  {id:"approvals",name:"Approval Queue & Policy",section:"Orders & Controls",code:"Planned",stage:"Planned",actions:["approvals.view","approvals.decide","discount.approve"]},
@@ -107,6 +108,12 @@ window.CPQ_MA003_PAGE_CATALOG=[
  {id:"audit",name:"Activity & Audit History",section:"Reporting & Audit",code:"Planned",stage:"Planned",actions:["audit.view"]}
 ];
 window.CPQ_MA003_PERMISSIONS.push(
+ {id:"vendorquotes.view",name:"View authorized received supplier offers",group:"Vendor quotations",sensitive:true},
+ {id:"vendorquotes.create",name:"Record supplier offers and evidence",group:"Vendor quotations"},
+ {id:"vendorquotes.edit",name:"Edit unverified supplier offers",group:"Vendor quotations"},
+ {id:"vendorquotes.verify",name:"Verify supplier evidence and rates under policy",group:"Vendor quotations",sensitive:true},
+ {id:"vendorquotes.archive",name:"Archive offers without removing history",group:"Vendor quotations",sensitive:true},
+ {id:"vendorquotes.use_rate",name:"Apply eligible supplier rate to internal costing (cost access required)",group:"Vendor quotations",sensitive:true},
  {id:"vendors.view",name:"View authorized suppliers",group:"Vendors & sourcing"},
  {id:"vendors.create",name:"Create supplier master records",group:"Vendors & sourcing"},
  {id:"vendors.edit",name:"Edit supplier details and links",group:"Vendors & sourcing"},
@@ -183,10 +190,12 @@ window.CPQ_MA003_ROLE_EXTRA_GRANTS={
 };
 // Proposed demo defaults; saved custom roles are not silently granted new access.
 for(const id of ["master","owner","manager","technical","purchase","finance"]){
- window.CPQ_MA003_ROLE_PAGE_DEFAULTS[id].push("vendor-master");
- window.CPQ_MA003_ROLE_EXTRA_GRANTS[id].push("vendors.view");
+ window.CPQ_MA003_ROLE_PAGE_DEFAULTS[id].push("vendor-master","vendor-quotations");
+ window.CPQ_MA003_ROLE_EXTRA_GRANTS[id].push("vendors.view","vendorquotes.view");
 }
-for(const id of ["master","purchase"])window.CPQ_MA003_ROLE_EXTRA_GRANTS[id].push("vendors.create","vendors.edit","vendors.archive","vendors.documents.manage");
+for(const id of ["master","purchase"])window.CPQ_MA003_ROLE_EXTRA_GRANTS[id].push("vendors.create","vendors.edit","vendors.archive","vendors.documents.manage","vendorquotes.create","vendorquotes.edit","vendorquotes.archive");
+// Demo permission design only; separate verification/cost grants require approved policy.
+for(const id of ["master","purchase","finance"])window.CPQ_MA003_ROLE_EXTRA_GRANTS[id].push("vendorquotes.verify","vendorquotes.use_rate");
 window.CPQ_MA003_ROLES.forEach(r=>{
  r.pages=[...(window.CPQ_MA003_ROLE_PAGE_DEFAULTS[r.id]||[])];
  r.perms=[...new Set([...r.perms,...(window.CPQ_MA003_ROLE_EXTRA_GRANTS[r.id]||[])])];

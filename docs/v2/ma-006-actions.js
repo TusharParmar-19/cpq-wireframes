@@ -342,7 +342,13 @@ function handleAction(action,target){
  if(action.startsWith("price-")&&state.builder){
   const q=state.builder.quote;
   try{
-   if(action==="price-add-cost")pricing.addCost(q);
+   if(action==="price-apply-vendor"){
+    const l=q.lines.find(x=>x.id===target.dataset.priceLine),key=target.closest("td")?.querySelector("[data-vendor-rate-select]")?.value;
+    if(!l||!key)throw Error("Select an eligible verified supplier rate first.");
+    pricing.applyVendorRate(q,l,key);toast("Supplier cost captured in this draft only. Review separate freight and tax.");
+   }else if(action==="price-clear-vendor"){
+    const l=q.lines.find(x=>x.id===target.dataset.priceLine);if(l)pricing.clearVendorRate(q,l);
+   }else if(action==="price-add-cost")pricing.addCost(q);
    else if(action==="price-remove-cost"){
     if(!window.confirm("Remove this additional expense from this draft quotation?"))return;
     pricing.removeCost(q,target.dataset.costId);
@@ -399,9 +405,10 @@ function changedInput(e,commit=true){
     if(t.dataset.priceField==="rate"){pricing.setRate(q,l,t.value);t.value=l.unitPrice;}
     else if(t.dataset.priceField==="reason")pricing.setReason(q,l,t.value);
     else if(t.dataset.priceField==="cost"){
-     if(String(t.value).trim()==="")l.pricing.unitCost=null;
-     else if(pricing.validNumber(t.value)){l.pricing.unitCost=Math.round(Number(t.value)*100)/100;t.value=l.pricing.unitCost;}
-     else throw Error("Enter a valid estimated unit cost, or leave it blank if unknown.");
+     const value=String(t.value).trim()===""?null:pricing.validNumber(t.value)?Math.round(Number(t.value)*100)/100:NaN;
+     if(Number.isNaN(value))throw Error("Enter a valid estimated unit cost, or leave it blank if unknown.");
+     if(l.pricing.vendorRate&&value!==l.pricing.unitCost){pricing.clearVendorRate(q,l,value);renderBuilder();return;}
+     l.pricing.unitCost=value;t.value=value??"";
     }
    }else if(t.dataset.costField){
     pricing.updateCost(q,t.dataset.costId,t.dataset.costField,t.value);

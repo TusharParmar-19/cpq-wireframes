@@ -54,8 +54,7 @@ function build(input,old=null,records=db(),record=false,now=new Date().toISOStri
   lines.push({id:prior?.id||id+"-L"+(++seq),kind,itemId:kind==="custom"?"":itemId,itemSnapshot:snapshot,description:description||snapshot?.label||"",unit,quantity,rate,taxRate,remarks:str(row.remarks)});
  }
  if(record&&!lines.length)throw Error("Add at least one priced product, service or custom item.");
- const evidence=copy(old?.evidence||[]);for(const f of input.files||[]){const name=str(f.name),size=Number(f.size);if(!name||name.length>255||!Number.isFinite(size)||size<0)throw Error("Invalid evidence metadata.");if(!evidence.some(x=>x.name===name&&x.size===size))evidence.push({name,size,type:str(f.type),metadataOnly:true,addedAt:now});}
- if(input.removeEvidence)evidence.splice(0,evidence.length);
+ const evidence=input.removeEvidence?[]:copy(old?.evidence||[]);for(const f of input.files||[]){const name=str(f.name),size=Number(f.size);if(!name||name.length>255||!Number.isFinite(size)||size<0)throw Error("Invalid evidence metadata.");if(!evidence.some(x=>x.name===name&&x.size===size))evidence.push({name,size,type:str(f.type),metadataOnly:true,addedAt:now});}
  const result={id,companyId,companyName:c.name,branchId,opportunityId,vendorId,vendorName:v.name,reference,received,quoteDate,validUntil,currency:"INR",lines,lineSeq:seq,evidence,freight:num(input.freight,"freight",{optional:true})||0,otherCharges:num(input.otherCharges,"other charges",{optional:true})||0,chargeTaxRate:num(input.chargeTaxRate,"tax on additional charges",{optional:true,max:100}),payment:str(input.payment),delivery:str(input.delivery),remarks:str(input.remarks),status:record?"Pending verification":"Draft",verification:null,createdAt:old?.createdAt||now,updatedAt:now,history:[...(old?.history||[]),{at:now,actor:"Demo employee",action:old?"Updated offer":"Created offer",note:record?"Recorded for separate verification":"Saved draft"}]};
  return result;
 }
