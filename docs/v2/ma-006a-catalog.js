@@ -231,7 +231,7 @@ function renderPrices(f,v){
  '</tbody></table></div>':'<div class="ma6a-empty-note">No variants match the filters.</div>')+
  '<div class="ma6a-section-heading"><h3>Document references — '+esc(v?flow.variantLabel(v):"No model selected")+'</h3><button class="btn" type="button" data-catalog-action="edit-variant">Edit prices &amp; files</button></div>'+
  '<div class="ma6-kvs">'+kv("Datasheet",v?.datasheet)+kv("Drawing",v?.drawing)+kv("Price-list validity",v?.price?.from?(v.price.from+" to "+(v.price.to||"open end")):"Not supplied")+
- kv("Sample currency",v?.price?.currency)+kv("Lifecycle",v?.status)+kv("Model notes",v?.notes)+'</div>'+
+ kv("Preferred supplier",window.CPQ_VENDOR_MODEL?.data().vendors.find(x=>x.id===v?.price?.supplierId)?.name||v?.price?.supplierRef||"Not selected")+kv("Sample currency",v?.price?.currency)+kv("Lifecycle",v?.status)+kv("Model notes",v?.notes)+'</div>'+
  note('<b>Pricing protection:</b> All costs/prices shown are fictional. Real vendor cost and margin require separate MA-003 grants. Real prices need approval, branch/company price lists, effective dates, currency and tax treatment. The quotation must freeze the price and specifications actually offered; later master edits must not silently rewrite issued quotations.');
 }
 function renderDetails(){
@@ -389,7 +389,8 @@ function variantFields(v={},f={}){
  textField("priceList","Price List Name",p.list||"Demo Base Price List")+
  numberField("sell","Sample Selling Price / Unit",p.sell??0)+
  selectField("availability","Availability",[["Unknown","Unknown"],["In Stock","In Stock"],["Order Basis","Order Basis"],["Not Available","Not Available"]],p.availability||"Unknown")+
- textField("supplierRef","Preferred Supplier / Vendor Reference",p.supplierRef||"")+
+ selectField("supplierId","Preferred Supplier (optional)",[...((window.CPQ_VENDOR_MODEL?.selectable()||[]).map(v=>[v.id,v.name+" · "+v.id])),...((p.supplierId&&!window.CPQ_VENDOR_MODEL?.selectable().some(v=>v.id===p.supplierId))?[[p.supplierId,(window.CPQ_VENDOR_MODEL?.data().vendors.find(v=>v.id===p.supplierId)?.name||p.supplierId)+" (historical / inactive)"]]:[]) ],p.supplierId||"","Not selected")+
+ textField("supplierRef","Supplier reference / legacy note (optional)",p.supplierRef||"")+
  textField("hsnSac","HSN / SAC (requires review)",p.hsnSac||"")+
  numberField("leadTimeDays","Expected Lead Time (days)",p.leadTimeDays??"")+
 
@@ -512,6 +513,8 @@ function getVariantForm(f,familyType,existing=null,solarKind="general",category=
    throw Error("Usable battery energy cannot exceed nominal energy.");
  const categorySpecs=pim.readCategory(f,{category,solarKind},existing?.categorySpecs||{});
  const warranty=pim.readWarranty(f,existing?.warranty||{});
+ const supplierId=trim(f,"supplierId");
+ if(supplierId&&supplierId!==existing?.price?.supplierId&&!window.CPQ_VENDOR_MODEL?.selectable().some(v=>v.id===supplierId))throw Error("Choose an active vendor from the supplier master.");
  const from=trim(f,"priceFrom"),to=trim(f,"priceTo");
  if(from&&to&&to<from)throw Error("Price effective-until cannot precede the effective-from date.");
  return {...identity,variant:trim(f,"variantName")||identity.model||tpl.describe(solarKind,solar,trim(f,"capacity"),db)||identity.sku,specTemplate:tpl.capture(solarKind,db),
@@ -522,7 +525,7 @@ function getVariantForm(f,familyType,existing=null,solarKind="general",category=
   ...(Object.keys(warranty).length||existing?.warranty?{warranty}:{}),
   price:{currency:trim(f,"currency")||"INR",list:trim(f,"priceList")||"Demo Base Price List",
    cost:cost===""?0:cost,sell:sell===""?0:sell,from,to,
-   availability:trim(f,"availability")||"Unknown",supplierRef:trim(f,"supplierRef"),
+   availability:trim(f,"availability")||"Unknown",supplierId,supplierRef:trim(f,"supplierRef"),
    hsnSac:trim(f,"hsnSac"),leadTimeDays:positive(f,"leadTimeDays")},
   datasheet:trim(f,"datasheet"),drawing:trim(f,"drawing"),notes:trim(f,"variantNotes")};
 }

@@ -24,6 +24,7 @@ const sources={
  template:["Specification Template","ma-006a-configuration.html","catalog","specTemplates"],
  product:["Product Model","ma-006a-configuration.html","catalog","variants"],
  part:["Part / Accessory","ma-006a-configuration.html","catalog","parts"],
+ vendor:["Vendor","vendor-master.html","vendors","vendors"],
  service:["Service / Sub-service","service-master.html","services","services"]
 };
 const lists={
@@ -36,7 +37,7 @@ const lists={
  enquiryKind:["Enquiry Type","opportunities","kinds",["Products / Equipment","Project / EPC","Service / Maintenance","Mixed Requirement"]],
  costType:["Cost Type","quotations","customCostTypes",[]]
 };
-const globals={entities:"CPQ_MA002_DATA",users:"CPQ_MA003_USERS",roles:"CPQ_MA003_ROLES",customers:"CPQ_MA004_DATA",opportunities:"CPQ_MA005_DATA",catalog:"CPQ_MA006A_CATALOG",services:"CPQ_SERVICE_MASTER",quotations:"CPQ_MA006_DATA",configurations:"CPQ_MA006A_DATA"};
+const globals={entities:"CPQ_MA002_DATA",users:"CPQ_MA003_USERS",roles:"CPQ_MA003_ROLES",customers:"CPQ_MA004_DATA",opportunities:"CPQ_MA005_DATA",catalog:"CPQ_MA006A_CATALOG",services:"CPQ_SERVICE_MASTER",vendors:"CPQ_VENDOR_MASTER",quotations:"CPQ_MA006_DATA",configurations:"CPQ_MA006A_DATA"};
 function store(){return W.CPQ_SHARED?.read()?.modules||{};}
 function memoryTargets(key){
  const a=W.CPQ_MA003,c=W.CPQ_MA004,o=W.CPQ_MA005;
@@ -89,6 +90,7 @@ function label(type,r){
 }
 function eligible(type,r,ctx,activeOnly=false){
  if(!r)return "The new record could not be read from the shared master.";
+ if(type==="vendor"&&(r.status!=="Active"||(ctx.companyId&&!r.companyIds?.includes(ctx.companyId))))return "Vendor saved, but not active for the selected company. Review the supplier master before selection.";
  if(type==="employee"&&r.status!=="Active")return "Employee saved as "+r.status+". Activate the account and assign the required branch before selecting it as owner.";
  if(type==="product"&&activeOnly&&r.status!=="Active")return "Product model saved as "+r.status+". Complete the existing catalog review before selecting it for a configuration, quotation or service link.";
  if(type==="service"&&activeOnly&&r.status!=="Active")return "Service saved as "+r.status+". Activate it in Service Management before selecting it for a new enquiry or quotation.";
@@ -156,6 +158,7 @@ function resolve(el){
  }
  if(el.closest("#catalog-editor-form")){
   if(name==="manufacturerId")return "manufacturer";
+  if(name==="supplierId")return "vendor";
   if(name==="familyCategory")return "category";
   if(name==="tplCategory")return "category";
   if(name==="solarKind")return "template";
