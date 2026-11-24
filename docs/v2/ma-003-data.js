@@ -97,6 +97,7 @@ window.CPQ_MA003_PAGE_CATALOG=[
  {id:"quote-pdf",name:"Quotation PDF & Issue",section:"Quotations",code:"MA-006",stage:"Available",actions:["quotes.view","quotes.pdf","quotes.issue","documents.download"]},
  {id:"quote-dispatch",name:"Quotation Dispatch & Response",section:"Quotations",code:"MA-006",stage:"Available",actions:["quotes.view","quotes.dispatch","quotes.response"]},
  {id:"product-rules",name:"Product Catalog & Configuration Rules",section:"Configurations",code:"Planned",stage:"Planned",actions:["catalog.view","catalog.manage","configuration.rules.manage"]},
+ {id:"vendor-master",name:"Vendors / Suppliers",section:"Procurement & Files",code:"Vendor Master",stage:"Available",actions:["vendors.view","vendors.create","vendors.edit","vendors.archive","vendors.documents.manage"]},
  {id:"vendor-rfqs",name:"Vendor RFQs & Supplier Offers",section:"Procurement & Files",code:"Planned",stage:"Planned",actions:["rfq.view","rfq.create","rfq.send","rfq.compare","cost.view"]},
  {id:"documents",name:"Documents & Evidence",section:"Procurement & Files",code:"Planned",stage:"Planned",actions:["documents.view","documents.upload","documents.download","documents.delete"]},
  {id:"orders",name:"Orders & Registration",section:"Orders & Controls",code:"Planned",stage:"Planned",actions:["orders.view","orders.edit","orders.register","records.archive"]},
@@ -106,6 +107,11 @@ window.CPQ_MA003_PAGE_CATALOG=[
  {id:"audit",name:"Activity & Audit History",section:"Reporting & Audit",code:"Planned",stage:"Planned",actions:["audit.view"]}
 ];
 window.CPQ_MA003_PERMISSIONS.push(
+ {id:"vendors.view",name:"View authorized suppliers",group:"Vendors & sourcing"},
+ {id:"vendors.create",name:"Create supplier master records",group:"Vendors & sourcing"},
+ {id:"vendors.edit",name:"Edit supplier details and links",group:"Vendors & sourcing"},
+ {id:"vendors.archive",name:"Deactivate or reactivate suppliers",group:"Vendors & sourcing",sensitive:true},
+ {id:"vendors.documents.manage",name:"Maintain permitted supplier documents",group:"Vendors & sourcing",sensitive:true},
  {id:"configurations.view",name:"View authorized configurations",group:"Configurations"},
  {id:"configurations.create",name:"Create product/solution configurations",group:"Configurations"},
  {id:"configurations.edit",name:"Edit permitted configurations",group:"Configurations"},
@@ -175,6 +181,12 @@ window.CPQ_MA003_ROLE_EXTRA_GRANTS={
  finance:["catalog.view","pricing.view","pricing.override","pricing.costs.edit","pricing.markup.apply","services.view","product.documents.view","catalog.prices.manage","configurations.view","approvals.view","selling.view","commercial.view","reports.export","documents.download"],
  read:["catalog.view","services.view","product.documents.view","configurations.view"]
 };
+// Proposed demo defaults; saved custom roles are not silently granted new access.
+for(const id of ["master","owner","manager","technical","purchase","finance"]){
+ window.CPQ_MA003_ROLE_PAGE_DEFAULTS[id].push("vendor-master");
+ window.CPQ_MA003_ROLE_EXTRA_GRANTS[id].push("vendors.view");
+}
+for(const id of ["master","purchase"])window.CPQ_MA003_ROLE_EXTRA_GRANTS[id].push("vendors.create","vendors.edit","vendors.archive","vendors.documents.manage");
 window.CPQ_MA003_ROLES.forEach(r=>{
  r.pages=[...(window.CPQ_MA003_ROLE_PAGE_DEFAULTS[r.id]||[])];
  r.perms=[...new Set([...r.perms,...(window.CPQ_MA003_ROLE_EXTRA_GRANTS[r.id]||[])])];
