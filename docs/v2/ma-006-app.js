@@ -377,8 +377,9 @@ function renderRegister(){
  renderList(qs);renderFullList(qs);detail();
 }
 const steps=[["Customer & Project","Customer and selling scope"],["Products & BOQ","Imported technical selections"],["Pricing & Costing","Internal costs and offered rates"],["Final Quotation","Customer offer and terms"],["Review & Save","Draft checks and preview"]];
-function formSelect(id,label,values,current,placeholder="Select...",required=false){
- return '<div class="ma6-field"><label for="b-'+esc(id)+'">'+esc(label)+(required?' *':'')+'</label><select id="b-'+esc(id)+'" data-field="'+esc(id)+'"><option value="">'+esc(placeholder)+'</option>'+opts(values,current)+'</select></div>';
+function formSelect(id,label,values,current,placeholder="Select...",required=false,helpHtml=""){
+ const helpId="b-"+id+"-help";
+ return '<div class="ma6-field"><label for="b-'+esc(id)+'">'+esc(label)+(required?' *':'')+'</label><select id="b-'+esc(id)+'" data-field="'+esc(id)+'"'+(helpHtml?' aria-describedby="'+esc(helpId)+'"':'')+'><option value="">'+esc(placeholder)+'</option>'+opts(values,current)+'</select>'+(helpHtml?'<div class="ma6-field-note" id="'+esc(helpId)+'">'+helpHtml+'</div>':'')+'</div>';
 }
 function formInput(id,label,value="",type="text",full=false,required=false){
  return '<div class="ma6-field'+(full?' full':'')+'"><label for="b-'+esc(id)+'">'+esc(label)+(required?' *':'')+'</label><input id="b-'+esc(id)+'" data-field="'+esc(id)+'" type="'+esc(type)+'" value="'+esc(value)+'"></div>';
@@ -397,9 +398,14 @@ function contextBuilder(q){
  const branches=(entity(q.companyId)?.branches||[]).filter(x=>links.some(l=>l.companyId===q.companyId&&l.branchId===x.id)).map(x=>[x.id,x.name+" · "+x.city]);
  const owners=staff.filter(u=>u.status==="Active"&&(u.assignments||[]).some(x=>x.companyId===q.companyId&&x.branches.includes(q.branchId))).map(x=>[x.id,x.name]);
  const opps=enquiries.filter(x=>x.customerId===q.customerId&&x.buyerId===q.buyerId).map(x=>[x.id,x.id+" · "+x.title]);
+ const companyHelp=q.customerId?
+  (comps.length?'Showing '+comps.length+' linked internal '+(comps.length===1?'company.':'companies.'):'No internal company is linked to this customer yet.')+
+  '<div class="ma6-scope-links"><a href="ma-004-customers.html?customer='+encodeURIComponent(q.customerId)+'" target="_blank" rel="noopener">Manage customer company links ↗</a><button class="btn ma6-scope-refresh" type="button" data-action="refresh-customer-scope">Refresh links</button></div>'
+  :'Select a customer first. Only its linked selling companies will be available.';
+ const branchHelp=q.companyId?'Only branches linked to this customer under the selected selling company.':'Choose a selling company first.';
  return panel("1 · Customer, Buyer & Scope","Use MA-004 master records and optionally link an MA-005 enquiry. A direct quotation is also allowed.")+
  '<div class="ma6-field-grid">'+formSelect("customerId","Customer account",customers,q.customerId,"Choose customer",true)+formSelect("buyerId","Exact buyer / bill-to",bs,q.buyerId,"Choose buyer",true)+
- formSelect("companyId","Our selling legal entity",comps,q.companyId,"Choose legal entity",true)+formSelect("branchId","Our internal branch",branches,q.branchId,"Choose branch",true)+
+ formSelect("companyId","Our selling legal entity",comps,q.companyId,"Choose linked company",true,companyHelp)+formSelect("branchId","Our internal branch",branches,q.branchId,"Choose linked branch",true,branchHelp)+
  formSelect("ownerId","Responsible employee",owners,q.ownerId,"Choose owner",true)+formSelect("opportunityId","Source opportunity (optional)",opps,q.opportunityId,"Direct quotation — no opportunity")+
  formSelect("contactId","Customer contact (optional)",contacts,q.contactId,"Choose contact")+formSelect("siteId","Delivery / project site (optional)",sites,q.siteId,"Choose site")+
  formSelect("projectId","Customer project (optional)",projects,q.projectId,"Choose project")+
