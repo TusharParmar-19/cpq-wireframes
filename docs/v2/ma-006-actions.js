@@ -328,7 +328,26 @@ function saveDemoResponse(){
  q.lastUpdated=demoDate()+" (demo)";
  closeModal();state.tab="documents";render();toast("Demo response recorded. No order was created.");
 }
+// Refresh shared organization/customer master data without replacing the current quotation draft.
+function refreshCustomerScope(q){
+ const shared=window.CPQ_SHARED?.read()?.modules||{},merge=window.CPQ_QUICK_CREATE?.merge;
+ if(!merge)throw Error("Shared master refresh is unavailable. Save the draft before reloading the page.");
+ for(const [key,target] of [["entities",org],["customers",master],["users",staff]]){
+  const latest=shared[key];
+  if(latest&&typeof latest==="object"&&Array.isArray(latest)===Array.isArray(target))merge(target,latest);
+ }
+ const c=customer(q.customerId),links=c?.links||[];
+ const validCompanies=org.filter(e=>links.some(l=>l.companyId===e.id));
+ if(q.companyId&&!validCompanies.some(e=>e.id===q.companyId)){q.companyId="";q.branchId="";q.ownerId="";}
+ if(q.branchId&&(!entity(q.companyId)?.branches?.some(b=>b.id===q.branchId)||!links.some(l=>l.companyId===q.companyId&&l.branchId===q.branchId))){q.branchId="";q.ownerId="";}
+ if(q.ownerId&&!staff.some(u=>u.id===q.ownerId&&u.status==="Active"&&(u.assignments||[]).some(x=>x.companyId===q.companyId&&x.branches.includes(q.branchId))))q.ownerId="";
+ renderBuilder();toast("Customer company links refreshed. Your quotation items, rates and other draft details remain open.");
+}
 function handleAction(action,target){
+ if(action==="refresh-customer-scope"&&state.builder){
+  try{refreshCustomerScope(state.builder.quote);}catch(error){explain("Cannot refresh links",esc(error.message));}
+  return;
+ }
  if(action==="go-demo-approvals"){state.tab="approvals";render();return;}
  if(action==="open-demo-dispatch"){openDemoDispatch();return;}
  if(action==="record-demo-dispatch"){recordDemoDispatch();return;}

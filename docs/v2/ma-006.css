@@ -326,3 +326,6 @@
 .ma6a-dispatch-form .ma6-field select:focus,
 .ma6a-dispatch-form .ma6-field textarea:focus{outline:2px solid #78b4dc;outline-offset:1px}
 @media(max-width:740px){.ma6a-dispatch-grid,.ma6a-dispatch-form{grid-template-columns:1fr}}
+
+/* Explicit relationship guidance without removing company/branch scope rules. */
+.ma6-scope-links{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:5px}.ma6-scope-links a{color:#235f88;text-decoration:underline}.ma6-scope-links .ma6-scope-refresh{padding:5px 8px;font-size:11px;min-height:0}

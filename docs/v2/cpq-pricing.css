@@ -60,3 +60,6 @@
 @media(max-width:580px){.cpq-price-settings,.cpq-cost-grid{grid-template-columns:1fr}.cpq-price-section{padding:12px}.cpq-price-target{flex-direction:column;align-items:flex-start}.cpq-price-metric strong{font-size:15px}}
 
 .cpq-vendor-rate{display:grid;gap:5px;margin-top:8px;min-width:140px;max-width:220px}.cpq-vendor-rate select{font:inherit;width:100%;max-width:100%;padding:6px;border:1px solid #cbd5e1;border-radius:5px}.cpq-vendor-rate .btn{white-space:normal}.cpq-vendor-rate small{line-height:1.4}.cpq-vendor-rate a{color:#245f8b;text-decoration:underline}
+
+/* Explicit display rules for conditional validation hints; author display:block on small otherwise overrides hidden. */
+.cpq-price-scroll small[data-cost-missing][hidden],.cpq-price-scroll small[data-rate-changed][hidden]{display:none!important}
