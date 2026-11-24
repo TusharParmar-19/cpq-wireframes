@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Vendors / Suppliers · CPQ V2</title>
-<link rel="stylesheet" href="ma-001.css"><link rel="stylesheet" href="vendor-master.css"><link rel="stylesheet" href="cpq-quick-create.css"></head>
+<link rel="stylesheet" href="ma-001.css"><link rel="stylesheet" href="vendor-master.css"><link rel="stylesheet" href="vendor-quotations.css"><link rel="stylesheet" href="cpq-quick-create.css"></head>
 <body><div class="layout"><aside class="sidebar">
   <div class="logo"><span>CP</span><div>CPQ Platform<small>Master Admin Workspace</small></div></div>
   <nav class="nav" aria-label="CPQ navigation">
@@ -16,7 +16,6 @@
    <a class="nav-link" href="service-master.html">▤ &nbsp; Service Management <small>Master</small></a>
    <a class="nav-link" href="ma-006a-configuration.html">⚙ &nbsp; Products &amp; Configuration <small>MA-006A</small></a>
    <a class="nav-link" href="ma-006-quotations.html">▣ &nbsp; Quotations <small>MA-006</small></a>
-   <button type="button" class="nav-link" data-planned="Vendor RFQs">⇄ &nbsp; Vendor RFQs</button>
    <button type="button" class="nav-link" data-planned="Orders">☷ &nbsp; Orders</button>
    <div class="nav-title">Controls</div>
    <button type="button" class="nav-link" data-planned="Approval Policies">✓ &nbsp; Approval Policies</button>
@@ -28,6 +27,7 @@
 <div class="app"><header class="top"><div>CPQ Workspace / <b>Vendors &amp; Suppliers</b></div><span class="avatar">MA</span></header>
 <main class="page vm-page">
 <div class="hero"><div><div class="overline">MASTER ADMIN / BUSINESS RECORDS</div><h1>Vendors / Suppliers</h1><p class="muted">Keep one supplier record and reuse it for the products and services you buy.</p></div><div class="actions"><button class="btn primary" id="vm-add" type="button">+ Add Vendor</button></div></div>
+<nav class="vq-tabs" aria-label="Vendors workspace"><a href="vendor-master.html" aria-current="page">Vendor Master</a><a href="vendor-quotations.html">Vendor Quotations</a></nav>
 <div class="info"><b>WIREFRAME ONLY · Fictional records.</b> Changes stay in this browser. Supplier information is not price verification, approval or purchasing authorization. Do not enter real business documents or sensitive information.</div>
 <div id="vm-summary" class="vm-summary" aria-label="Vendor summary"></div>
 <div class="vm-workspace" id="vm-workspace">
@@ -39,4 +39,4 @@
 <div class="overlay vm-overlay" id="vm-overlay" aria-hidden="true"><section class="dialog vm-dialog" role="dialog" aria-modal="true" aria-labelledby="vm-dialog-title"><div class="vm-heading vm-editor-head"><div><h2 id="vm-dialog-title">Add Vendor</h2><p class="muted">Start with a name and select the company that can use this supplier. Everything else can be added later.</p></div><button class="btn" id="vm-close" aria-label="Close vendor form" type="button">×</button></div>
 <form id="vm-form" novalidate><div class="vm-form-body" id="vm-fields"></div><p id="vm-error" role="alert" hidden></p><div class="vm-form-actions"><button class="btn" type="button" id="vm-cancel">Cancel</button><button class="btn primary" type="submit">Save Vendor (demo)</button></div></form></section></div>
 <div id="vm-toast" role="status" hidden></div>
-<script src="ma-002-data.js"></script><script src="ma-006a-catalog-data.js"></script><script src="service-master-data.js"></script><script src="vendor-master-data.js"></script><script src="cpq-demo-store.js"></script><script src="vendor-master-ui.js"></script><script src="cpq-quick-create.js"></script></body></html>
+<script src="ma-002-data.js"></script><script src="ma-006a-catalog-data.js"></script><script src="service-master-data.js"></script><script src="vendor-master-data.js"></script><script src="vendor-quotations-data.js"></script><script src="cpq-demo-store.js"></script><script src="vendor-master-ui.js"></script><script src="cpq-quick-create.js"></script></body></html>
