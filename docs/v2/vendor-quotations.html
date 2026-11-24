@@ -1,0 +1,38 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Vendor Quotations · CPQ V2</title><link rel="stylesheet" href="ma-001.css"><link rel="stylesheet" href="vendor-master.css"><link rel="stylesheet" href="vendor-quotations.css"><link rel="stylesheet" href="cpq-quick-create.css"></head>
+<body><div class="layout"><aside class="sidebar">
+  <div class="logo"><span>CP</span><div>CPQ Platform<small>Master Admin Workspace</small></div></div>
+  <nav class="nav" aria-label="CPQ navigation">
+   <div class="nav-title">Workspace</div>
+   <a class="nav-link" href="ma-001-dashboard.html">▦ &nbsp; Dashboard</a>
+   <div class="nav-title">Organization &amp; People</div>
+   <a class="nav-link" href="ma-002-organization.html">▤ &nbsp; Companies &amp; Branches</a>
+   <a class="nav-link" href="ma-003-users-roles.html">♙ &nbsp; Users, Roles &amp; Access</a>
+   <div class="nav-title">Business Records</div>
+   <a class="nav-link" href="ma-004-customers.html">◉ &nbsp; Customers <small>MA-004</small></a>
+   <a class="nav-link" href="ma-005-opportunities.html">◇ &nbsp; Opportunities <small>MA-005</small></a>
+   <a class="nav-link active" href="vendor-master.html" aria-current="page">▤ &nbsp; Vendors / Suppliers</a>
+   <a class="nav-link" href="service-master.html">▤ &nbsp; Service Management <small>Master</small></a>
+   <a class="nav-link" href="ma-006a-configuration.html">⚙ &nbsp; Products &amp; Configuration <small>MA-006A</small></a>
+   <a class="nav-link" href="ma-006-quotations.html">▣ &nbsp; Quotations <small>MA-006</small></a>
+
+   <button type="button" class="nav-link" data-planned="Orders">☷ &nbsp; Orders</button>
+   <div class="nav-title">Controls</div>
+   <button type="button" class="nav-link" data-planned="Approval Policies">✓ &nbsp; Approval Policies</button>
+   <button type="button" class="nav-link" data-planned="Commercial Settings">⚙ &nbsp; Commercial Settings</button>
+   <button type="button" class="nav-link" data-planned="Reports">▥ &nbsp; Reports</button>
+  </nav>
+  <div class="sidebar-foot"><b>Vendors &amp; Suppliers · Demo</b><p>Record received supplier offers and check evidence separately. No actual RFQ sending, verified purchase authorization or confidential documents.</p></div>
+ </aside><div class="app"><header class="top"><div>CPQ Workspace / Vendors &amp; Suppliers / <b>Vendor Quotations</b></div><span class="avatar">MA</span></header>
+<main class="page vm-page"><div class="hero"><div><div class="overline">MASTER ADMIN / BUSINESS RECORDS</div><h1>Vendors / Suppliers</h1><p class="muted">Maintain supplier information and received quotations in one workspace.</p></div><div class="actions"><button class="btn primary" id="vq-add" type="button">+ Add Vendor Quotation</button></div></div>
+<nav class="vq-tabs" aria-label="Vendors workspace"><a href="vendor-master.html">Vendor Master</a><a href="vendor-quotations.html" aria-current="page">Vendor Quotations</a></nav>
+<div class="info"><b>WIREFRAME ONLY · Fictional offers.</b> Record received supplier quotations. File references and rate verification are simulated; no documents uploaded, real rates approved, RFQs sent or orders placed.</div>
+<div class="vm-summary" id="vq-summary"></div><div id="vq-workspace" class="vm-workspace">
+<section class="card vm-register"><div class="vm-heading"><div><h2>Vendor Quotation Register</h2><p class="muted">Keep received offers, their validity and verification in one place.</p></div><span id="vq-count" class="chip"></span></div>
+<div class="vm-filters vq-filters"><label>Search<input id="vq-search" type="search" placeholder="Reference, vendor, item..."></label><label>Our company<select id="vq-company"></select></label><label>Vendor<select id="vq-vendor"></select></label><label>Status<select id="vq-status"><option value="all">All statuses</option><option>Draft</option><option>Pending verification</option><option>Verified (demo)</option><option>Expired</option><option>Returned</option><option>Archived</option></select></label><button class="btn" type="button" id="vq-clear">Clear filters</button></div>
+<div class="vm-table-wrap"><table class="vm-table vq-table"><thead><tr><th>Supplier quotation</th><th>Vendor</th><th>Valid until</th><th>Estimated total (₹)</th><th>Status</th><th>Action</th></tr></thead><tbody id="vq-rows"></tbody></table></div><p class="muted vm-foot">A recorded source document is not the same as a verified rate.</p></section>
+<section class="card vm-detail" id="vq-detail" hidden><div class="vm-heading"><button class="btn" id="vq-expand" type="button">⤢ Expand Table</button><span class="muted">Supplier offer details</span></div><div id="vq-detail-body"></div></section>
+</div><footer class="footer">CPQ · Vendor Quotations · V2 browser demonstration</footer></main></div></div>
+<div class="overlay vm-overlay" id="vq-overlay" aria-hidden="true"><section class="dialog vm-dialog vq-dialog" role="dialog" aria-modal="true" aria-labelledby="vq-title"><div class="vm-heading vm-editor-head"><div><h2 id="vq-title">Add Vendor Quotation</h2><p class="muted">Enter the supplier offer. Save a draft or record it for verification.</p></div><button class="btn" id="vq-close" type="button" aria-label="Close">×</button></div><form id="vq-form" novalidate><div class="vm-form-body" id="vq-fields"></div><p id="vq-error" role="alert" hidden></p><div class="vm-form-actions"><button class="btn" id="vq-cancel" type="button">Cancel</button><button class="btn" type="submit" data-record="no">Save Draft</button><button class="btn primary" type="submit" data-record="yes">Record Offer</button></div></form></section></div>
+<div class="overlay vm-overlay" id="vq-review" aria-hidden="true"><section class="dialog vm-dialog vq-review-dialog" role="dialog" aria-modal="true" aria-labelledby="vq-review-title"><div class="vm-heading vm-editor-head"><h2 id="vq-review-title">Check supplier rates</h2><button class="btn" type="button" id="vq-review-close" aria-label="Close">×</button></div><form id="vq-review-form"><div class="vm-form-body" id="vq-review-fields"></div><p id="vq-review-error" role="alert" hidden></p><div class="vm-form-actions"><button class="btn" type="button" id="vq-review-cancel">Cancel</button><button class="btn primary" type="submit" id="vq-review-submit">Record decision</button></div></form></section></div>
+<div id="vq-toast" role="status" hidden></div>
+<script src="ma-002-data.js"></script><script src="ma-003-data.js"></script><script src="ma-004-data.js"></script><script src="ma-005-data.js"></script><script src="ma-006a-catalog-data.js"></script><script src="service-master-data.js"></script><script src="vendor-master-data.js"></script><script src="vendor-quotations-data.js"></script><script src="cpq-demo-store.js"></script><script src="vendor-quotations-ui.js"></script><script src="cpq-quick-create.js"></script></body></html>
