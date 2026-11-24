@@ -89,7 +89,7 @@ function fieldRow(f={},locked=false){
  (locked?'<input type="hidden" name="tplType" value="'+esc(f.type)+'">':'')+'</label>'+
  '<label>Unit (optional)<input name="tplUnit" maxlength="40" value="'+esc(f.unit||"")+'" placeholder="kV / mm²"'+(locked?' readonly':'')+'></label>'+
  '<label>Dropdown choices (separate with ;)<input name="tplChoices" maxlength="1000" value="'+esc(f.choices||"")+'" placeholder="Choice A;Choice B"'+(locked?' readonly':'')+'></label>'+
- '<label>Required before review<select name="tplRequired">'+opt("no","Optional",f.required?"yes":"no")+opt("yes","Required",f.required?"yes":"no")+'</select></label>'+
+ '<label>Required before demo use<select name="tplRequired">'+opt("no","Optional",f.required?"yes":"no")+opt("yes","Required",f.required?"yes":"no")+'</select></label>'+
  '<label>Placement<select name="tplAdvanced">'+opt("no","Basic specifications",f.advanced?"yes":"no")+opt("yes","Advanced specifications",f.advanced?"yes":"no")+'</select></label>'+
  (locked?'<small class="cpq-template-locked">Existing field key and data type preserved</small>':'<button type="button" class="btn" data-template-remove>Remove unsaved field</button>')+'</div>';
 }

@@ -314,7 +314,7 @@ const familyTypes=[["config","Configurable product"],["standard","Standard catal
 function solarKindSchema(kind){return window.CPQ_MA006A_SOLAR_FIELDS?.templates?.[kind]||window.CPQ_MA006A_SOLAR_FIELDS?.templates?.general;}
 function solarField(field,record={}){
  const [key,label,unit,type,choices,required]=field,name="solar_"+key,value=record[key]??"";
- const title=esc(label)+(unit?' <small>('+esc(unit)+')</small>':'')+(required?' <small>· Required before review</small>':'');
+ const title=esc(label)+(unit?' <small>('+esc(unit)+')</small>':'')+(required?' <small>· Required before demo use</small>':'');
  if(type==="select")return '<div class="ma6-field"><label for="cat-'+name+'">'+title+'</label><select id="cat-'+name+'" name="'+name+'"><option value="">Select if applicable</option>'+selectOptions(choices.split(";").map(v=>[v,v]),value)+'</select></div>';
  return '<div class="ma6-field"><label for="cat-'+name+'">'+title+'</label><input id="cat-'+name+'" name="'+name+'" type="'+(type==="number"?"number":"text")+'"'+(type==="number"?' step="any"':'')+' value="'+esc(value)+'" placeholder="Optional until verified"></div>';
 }
@@ -339,12 +339,13 @@ function solarDataFromForm(form,kind,old={}){
 function familyFields(f={}){
  const typeOptions=window.CPQ_MA006A_SOLAR_FIELDS.types.filter(([id])=>id!=="service"||f.solarKind==="service");
  const types=familyTypes.filter(([id])=>id!=="service"||f.type==="service");
+ const defaultTemplate=tpl.get(f.solarKind||state.editor?.solarKind||"general",db);
  return section("1 · Product Basics","Start with the product name, category and equipment type. The technical fields below will adapt automatically.")+
  group(textField("familyName","Product Family / Name",f.name,"text",false,true)+
- selectField("familyCategory","Category",db.categories.map(x=>[x,x]),f.category||"Solar Equipment","Choose category",true)+
+ selectField("familyCategory","Category",db.categories.map(x=>[x,x]),f.category||defaultTemplate?.category||"Other","Choose category",true)+
  selectField("solarKind","Product Specification Template",typeOptions,f.solarKind||state.editor?.solarKind||"general","Select template")+
  selectField("familyType","Product Type",types,f.type||"standard","Choose type",true))+
- details("More family details",group(textField("familyUnit","Default Unit of Measure",f.unit||"Nos")+
+ details("More family details",group(textField("familyUnit","Default Unit of Measure",f.unit||defaultTemplate?.unit||"Nos")+
  textField("familyRating","General Rating / Size",f.rating||"")+
  selectField("familyStatus","Lifecycle Status",statuses.map(x=>[x,x]),f.status||"Draft")+
  areaField("familyDescription","Description",f.description||"")+
@@ -446,6 +447,7 @@ function openEditor(mode,ids={}){
  $("catalog-editor-title").textContent=titles[mode]||"Edit Catalog";
  $("catalog-editor-subtitle").textContent="Fictional master-data fields · Demo save only · Not production authorization";
  $("catalog-editor-body").innerHTML=editorMarkup();$("catalog-editor-error").hidden=true;
+ if(mode==="family-edit"&&siblings(ids.familyId).length){const select=$("cat-solarKind");if(select){select.disabled=true;const hidden=document.createElement("input");hidden.type="hidden";hidden.name="solarKind";hidden.value=family(ids.familyId)?.solarKind||"general";select.after(hidden);}}
  const simple=window.CPQ_MA006A_SIMPLE_WIZARD;
  if(simple&&["product-new","variant-new","variant-edit"].includes(mode))simple.mount(state.editor,db);
  else{if(simple)simple.reset();$("catalog-editor-back").hidden=true;$("catalog-editor-next").hidden=true;$("catalog-editor-save").hidden=mode==="templates";$("catalog-editor-save").textContent=mode.startsWith("template-")?"Save Template":"Save Demo";}
@@ -473,7 +475,7 @@ function techParse(raw){
 }
 function getFamilyForm(f){
  const name=trim(f,"familyName"),category=trim(f,"familyCategory"),type=trim(f,"familyType"),kind=trim(f,"solarKind")||"general";
- if(!name||!category||!type||!tpl.get(kind,db))throw Error("Product group name, category, type and valid specification template are required.");
+ if(!name||!db.categories.includes(category)||!familyTypes.some(([id])=>id===type)||!tpl.get(kind,db))throw Error("Product group name, category, type and valid specification template are required.");
  if((type==="service"||kind==="service")&&state.editor?.mode!=="family-edit")throw Error("Use Service Management to add new services.");
  return {name:name.slice(0,150),category,type,solarKind:trim(f,"solarKind")||"general",unit:trim(f,"familyUnit")||"Nos",
   rating:trim(f,"familyRating"),description:trim(f,"familyDescription"),status:trim(f,"familyStatus")||"Draft",
@@ -481,6 +483,7 @@ function getFamilyForm(f){
 }
 function getVariantForm(f,familyType,existing=null,solarKind="general",category="Other"){
  const identity=tpl.identity(db,f,solarKind,existing);
+ if(familyType==="service"&&!identity.manufacturerId)identity.manufacturerSource="service";
  const dims={unit:trim(f,"dimensionUnit")||"mm",weightUnit:trim(f,"weightUnit")||"kg"};
  for(const [k,fk] of [["length","dimLength"],["width","dimWidth"],["height","dimHeight"],["depth","dimDepth"],["weight","weight"]])dims[k]=positive(f,fk);
  const components=f.getAll("linkedPart").map(id=>{
@@ -549,6 +552,8 @@ function saveEditor(event){
      throw Error("Product group already exists. Choose that group instead of making a duplicate.");
     newFamily={id:idNext("FAM-",db.families),...f};fam=newFamily;
    }
+   if(fam.type==="service"||fam.solarKind==="service")throw Error("Use Service Management for new services.");
+   if((fam.solarKind||"general")!==(trim(fd,"solarKind")||"general"))throw Error("Choose a product group matching the selected specification template.");
    const v=getVariantForm(fd,fam.type,null,fam.solarKind||"general",fam.category||"Other");v.status="Draft";
    const docs=stagedWizardDocuments($("catalog-editor-form"),null);
    if(newFamily)db.families.unshift(newFamily);

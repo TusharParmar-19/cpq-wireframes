@@ -199,7 +199,7 @@ function items(c){
   return '<div class="ma6a-config-item"><div class="ma6a-config-item-head"><div><strong>'+(i+1)+'. '+esc(p?.name||l.productId)+'</strong><small>'+esc(l.productId)+' · '+esc(typeLabel(p?.type))+'</small></div>'+
   '<span class="ma6-tag">'+esc(l.quantity)+' '+esc(p?.unit||"unit")+'</span></div>'+
   '<div class="ma6a-config-options"><span>'+esc(l.modelSnapshot?
- [l.modelSnapshot.manufacturer,l.modelSnapshot.model,l.modelSnapshot.sku,l.customSpec].filter(Boolean).join(" · "):optionText(l))+'</span></div>'+
+ [l.modelSnapshot.manufacturer,l.modelSnapshot.model||l.modelSnapshot.variantLabel||l.modelSnapshot.capacity,l.modelSnapshot.sku,l.customSpec].filter(Boolean).join(" · "):optionText(l))+'</span></div>'+
  (l.modelSnapshot?.documentRefs?.length?'<p class="cpq-scope-caption">'+l.modelSnapshot.documentRefs.length+' product document reference(s) captured when this line was added.</p>':"")+
   (l.note?'<p class="ma6a-table-foot">'+esc(l.note)+'</p>':'')+
   (issues.length?'<div class="ma6-validation">'+issues.map(esc).join("; ")+'</div>':'')+'</div>';

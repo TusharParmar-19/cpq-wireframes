@@ -194,7 +194,9 @@ function items(q){
  (q.lines.some(l=>l.modelSnapshot)?q.lines.filter(l=>l.modelSnapshot).map(l=>{
   const m=l.modelSnapshot,docs=m.documentRefs||[],w=m.warranty||{};
   return '<details><summary>'+esc(l.description)+' · '+esc(m.sku)+' ('+docs.length+' document references)</summary>'+
-   '<p>'+esc([m.manufacturer,m.model,m.capacity].filter(Boolean).join(" · "))+'</p>'+
+   '<p>'+esc([m.manufacturer,m.model||m.variantLabel||m.variant,m.capacity].filter(Boolean).join(" · "))+'</p>'+
+   (m.specTemplate?'<p><b>Specification template:</b> '+esc(m.specTemplate.name)+' · v'+esc(m.specTemplate.version)+'</p><ul>'+(m.specTemplate.fields||[]).filter(f=>m.solar?.[f.key]!==undefined).map(f=>'<li>'+esc(f.label+': '+m.solar[f.key]+(f.unit?" "+f.unit:""))+'</li>').join("")+'</ul>':"")+
+   (m.components?.length?'<p><b>Captured BOM per unit</b> · Included / optional references, not separately priced</p><ul>'+m.components.map(c=>'<li>'+esc([c.group,c.name||c.partId,c.qty+" "+c.unit,c.role].filter(Boolean).join(" · "))+'</li>').join("")+'</ul>':"")+
    (w.months!==undefined?'<p>Product warranty recorded: '+esc(w.months)+' months</p>':'')+
    (docs.length?'<ul>'+docs.map(d=>'<li>'+esc(d.name)+' · '+esc(d.type)+' · v'+esc(d.version)+
     ' ('+esc(d.visibility)+')</li>').join("")+'</ul>':'<p>No current document references captured.</p>')+

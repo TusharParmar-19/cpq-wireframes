@@ -71,7 +71,9 @@ function checkBasics(){
  if(!current)return false;
  const form=$("catalog-editor-form");
  const existing=current.mode==="product-new"&&!!selectedGroup(form);
- const kind=selectedGroup(form)?.solarKind||form.querySelector('[name="solarKind"]')?.value||db.families.find(f=>f.id===current.familyId)?.solarKind||"general";
+ const selectedKind=form.querySelector('[name="solarKind"]')?.value;
+ if(current.mode==="product-new"&&(!selectedKind||selectedKind==="service"||!window.CPQ_PRODUCT_TEMPLATES.get(selectedKind,db)))return status("Choose a product specification template before continuing.");
+ const kind=selectedGroup(form)?.solarKind||selectedKind||db.families.find(f=>f.id===current.familyId)?.solarKind||"general";
  const fields=[...(current.mode==="product-new"&&!existing?[["familyName","New Product Group Name"]]:[]),...(window.CPQ_PRODUCT_TEMPLATES.get(kind,db)?.modelRequired?[["model","Manufacturer Model Number"]]:[])];
  for(const [name,label] of fields){
   const input=form.querySelector('[name="'+name+'"]');
