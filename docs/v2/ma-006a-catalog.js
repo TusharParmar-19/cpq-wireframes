@@ -159,7 +159,8 @@ function renderFamilyHeader(f){
  '<p>'+esc(f.rating)+' · '+esc(f.type==="config"?"Configurable product":f.type==="service"?"Service":"Standard product")+' · Unit '+esc(f.unit)+'</p></div>'+
  '<div class="ma6-detail-actions">'+badge(f.status)+
  '<button type="button" class="btn" data-catalog-action="edit-family">Edit Product Group</button>'+
- '<button type="button" class="btn primary" data-catalog-action="add-variant">+ Add Another Model</button></div></div>'+
+ (f.status==="Draft"?'<button type="button" class="btn" data-catalog-action="demo-enable-family">Enable Group for Demo</button>':"")+
+ (f.type!=="service"?'<button type="button" class="btn primary" data-catalog-action="add-variant">+ Add Another Variant</button>':"")+'</div></div>'+
  '<div class="ma6-quote-meta"><span class="ma6-tag">'+siblings(f.id).length+' model(s)</span><span class="ma6-tag">One group / multiple manufacturers</span>'+
  '<span class="ma6-tag">Catalog master</span></div>'+
  '<div class="ma6-banner">'+esc(f.description)+'</div>';
@@ -277,7 +278,7 @@ function renderManufacturers(){
   return '<div class="ma6a-directory-card"><div class="ma6a-list-inline"><span class="ma6-tag">'+esc(m.id)+'</span>'+badge(m.status)+'</div>'+
   '<h3>'+esc(m.name)+'</h3><p>Brand: '+esc(m.brand||"Not assigned")+' · Country: '+esc(m.country||"Not supplied")+'</p>'+
   '<p>'+matches.length+' product variant(s) · '+esc(m.notes||"")+'</p>'+
-  '<div class="ma6a-directory-foot"><small class="ma6a-color-quiet">Manufacturer, not our selling company</small><button class="btn" type="button" data-catalog-action="edit-manufacturer" data-maker-id="'+esc(m.id)+'">Edit Manufacturer</button></div></div>';
+  '<div class="ma6a-directory-foot"><small class="ma6a-color-quiet">Manufacturer, not our selling company</small>'+(m.status==="Draft"?'<button class="btn" type="button" data-catalog-action="demo-enable-manufacturer" data-maker-id="'+esc(m.id)+'">Enable for Demo</button>':"")+'<button class="btn" type="button" data-catalog-action="edit-manufacturer" data-maker-id="'+esc(m.id)+'">Edit Manufacturer</button></div></div>';
  }).join("");
 }
 function renderPartLibrary(){
@@ -490,6 +491,10 @@ function getVariantForm(f,familyType,existing=null,solarKind="general",category=
  });
  const cost=positive(f,"cost"),sell=positive(f,"sell");
   const solar=solarDataFromForm(f,solarKind,existing?.solar||{});
+  if(solarKind==="cable-kit"){
+   for(const key of ["voltageGradeKv","coreCount","cableSizeMm2","packageQuantity"])if(solar[key]!==undefined&&!(Number(solar[key])>0))throw Error("Cable kit ratings and package quantity must be positive when supplied.");
+   for(const key of ["coreCount","packageQuantity"])if(solar[key]!==undefined&&!Number.isInteger(solar[key]))throw Error("Core count and package quantity must be whole numbers.");
+  }
   if(solarKind==="pv-module"){
    for(const key of ["pmaxWp","vocV","vmpV","iscA","impA"])
     if(solar[key]!==undefined&&solar[key]<=0)throw Error("PV electrical ratings must be positive when entered.");
@@ -559,6 +564,7 @@ function saveEditor(event){
    const data=getFamilyForm(fd);if(siblings(f.id).length&&((data.solarKind||"general")!==(f.solarKind||"general")||data.type!==f.type))throw Error("Existing variants must keep their product type and template. Create another group for a different schema.");if(data.type==="service"&&f.type!=="service")throw Error("Use Service Management for new services.");data.status=f.status;Object.assign(f,data);state.family=f.id;
   }else if(e.mode==="variant-new"||e.mode==="variant-edit"){
    const fam=family(e.familyId);if(!fam)throw Error("Select a valid product family.");
+   if(e.mode==="variant-new"&&fam.type==="service")throw Error("New services belong in Service Management.");
    const orig=e.mode==="variant-edit"?variant(e.variantId):null;
    const input=getVariantForm(fd,fam.type,orig,fam.solarKind||"general",fam.category||"Other");
    const docs=stagedWizardDocuments($("catalog-editor-form"),orig);
@@ -615,6 +621,10 @@ document.addEventListener("click",event=>{
  const action=d.catalogAction;
  if(!action)return;
  if(["demo-submit-review","demo-enable-model","demo-revoke-model"].includes(action)){applyDemoReview(action);return;}
+ if(action==="demo-enable-family"||action==="demo-enable-manufacturer"){
+  const target=action==="demo-enable-family"?family(state.family):maker(d.makerId);
+  if(target?.status==="Draft"&&window.confirm("Enable this master for browser-demo selection only? This is not real approval or supplier verification.")){target.status="Active";target.demoEnabled=true;renderCatalog();}return;
+ }
  if(action==="manage-templates")openEditor("templates");
  else if(action==="add-template")openEditor("template-new");
  else if(action==="edit-template")openEditor("template-edit",{templateId:d.templateId});
@@ -645,8 +655,12 @@ $("catalog-editor-form").addEventListener("change",e=>{
  if(e.target.name!=="solarKind"||!state.editor)return;
  if(state.editor.mode==="family-new"){const t=tpl.get(e.target.value,db);if(t){$("cat-familyCategory").value=t.category;$("cat-familyUnit").value=t.unit;}return;}
  if(state.editor.mode!=="product-new")return;
+ const prior=state.editor.solarKind;
+ const target=$("catalog-solar-fields");
+ state.editor.templateDraftValues=state.editor.templateDraftValues||{};
+ if(target&&prior){state.editor.templateDraftValues[prior]=Object.fromEntries(Array.from(target.querySelectorAll("[name^=solar_]")).map(x=>[x.name.slice(6),x.value]));}
  state.editor.solarKind=e.target.value;
- const target=$("catalog-solar-fields");if(target)target.innerHTML=solarFields(e.target.value,{});
+ if(target)target.innerHTML=solarFields(e.target.value,state.editor.templateDraftValues[e.target.value]||{});
 });
 /* Document picker stores safe metadata only. File bytes never enter localStorage. */
 $("catalog-family-body").addEventListener("submit",event=>{

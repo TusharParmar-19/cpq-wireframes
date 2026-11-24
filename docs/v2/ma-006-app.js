@@ -28,8 +28,8 @@ const product=id=>{
  const fam=cat.families.find(f=>f.id===v.familyId),maker=cat.manufacturers.find(m=>m.id===v.manufacturerId);
  if(!fam)return null;
  const dims=v.dimensions||{},size=[dims.length,dims.width,dims.height].filter(x=>x!==undefined&&x!=="").join(" × ");
- return {id:v.id,name:fam.name+" — "+v.model,unit:fam.unit||"Nos",type:fam.type==="service"?"service":"standard",
-  basePrice:Number(v.price?.sell)||0,status:v.status,sku:v.sku,model:v.model,manufacturer:maker?.brand||maker?.name||"",
+ return {id:v.id,name:flow.productName(fam,v),unit:fam.unit||"Nos",type:fam.type==="service"?"service":"standard",
+  basePrice:Number(v.price?.sell)||0,status:v.status,sku:v.sku,model:v.model||"",manufacturer:flow.manufacturerLabel(v,maker),
   rating:v.capacity||"",catalogSpec:[maker?.brand||maker?.name,v.sku,v.capacity,size?size+" "+(dims.unit||"mm"):""].filter(Boolean).join(" · "),
   sourceVariantId:v.id,demoOnly:v.demoReview?.state==="Enabled for demo"};
 };

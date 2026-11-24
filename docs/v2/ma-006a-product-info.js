@@ -2,7 +2,7 @@
 (function(){
 "use strict";
 const E=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const docTypes=["Datasheet","Blueprint / Design Drawing","Installation Manual","User Guide","Warranty Certificate","Guarantee Certificate","Test Report","Certification","Product Photo","Brochure","Other"];
+const docTypes=["Datasheet","Blueprint / Design Drawing","Installation Manual","User Guide","Warranty Certificate","Guarantee Certificate","Test Report","Certification","Product Photo","Packaging Photo","Bill of Materials (BOM)","Brochure","Other"];
 const visibilities=["Internal Only","Approved Customer Sharing"];
 const categoryTemplates={
  "Panels & Assemblies":[["ratedCurrent","Rated current","A","number"],["ratedVoltage","Rated voltage","V","text"],["phase","Phase","","select","Single-phase;Three-phase;DC;Other"],["feederCount","Number of feeders / ways","","text"],["busbar","Busbar material and rating","","text"],["fabrication","Design / fabrication","","text"],["protection","Protection devices","","text"],["designStandards","Applicable design standard refs","","text"]],

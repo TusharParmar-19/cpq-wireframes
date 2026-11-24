@@ -17,8 +17,8 @@ function itemProduct(id){
  const old=products.find(p=>p.id===id);if(old)return old;
  const v=catalogVariant(id);if(!v)return null;
  const f=catalogFamily(v.familyId),m=catalogMaker(v.manufacturerId);
- return {id:v.id,name:(f?.name||"Catalog item")+" — "+v.model,type:f?.type==="service"?"service":"standard",unit:f?.unit||"Nos",
- model:v.model,sku:v.sku,manufacturer:m?.brand||m?.name||"Service",capacity:v.capacity,solarKind:f?.solarKind||"general",variant:v};
+ return {id:v.id,name:flow.productName(f,v),type:f?.type==="service"?"service":"standard",unit:f?.unit||"Nos",
+ model:v.model||"",displayModel:flow.variantLabel(v),sku:v.sku,manufacturer:flow.manufacturerLabel(v,m),capacity:v.capacity,solarKind:f?.solarKind||"general",variant:v};
 }
 const record=id=>records.find(c=>c.id===id);
 const customer=id=>master.customers.find(c=>c.id===id);
@@ -37,7 +37,7 @@ function optionText(line){
  const p=itemProduct(line.productId);if(!p)return "Product unavailable";
  if(p.variant){
   const d=p.variant.dimensions||{},size=d.width&&d.height&&d.depth?[d.width,d.height,d.depth].join(" × ")+" "+(d.unit||"mm"):"";
-  return [p.manufacturer,p.model,p.capacity,size,line.customSpec].filter(Boolean).join(" · ");
+  return [p.manufacturer,p.displayModel,p.capacity,size,line.customSpec].filter(Boolean).join(" · ");
  }
  if(p.type!=="config")return "No option-level configuration required";
  return Object.entries(p.options).map(([k,v])=>v.label+": "+(line.options?.[k]||"Not selected")).join(" · ");
@@ -74,7 +74,7 @@ function solarWarnings(c){
  if(!Number(p.usableArea))a.push("Usable area / roof survey is not supplied.");
  if(!m.modules)a.push("Select a PV module and quantity from the product catalog.");
  if(!m.acKw)a.push("Select an inverter model and quantity from the catalog.");
- for(const l of c.items){const v=catalogVariant(l.productId);if(v?.demoReview?.state==="Enabled for demo")a.push(v.model+" is enabled for browser demo only: technical specifications and pricing are not approved.");}
+ for(const l of c.items){const v=catalogVariant(l.productId);if(v?.demoReview?.state==="Enabled for demo")a.push(flow.variantLabel(v)+" is enabled for browser demo only: technical specifications and pricing are not approved.");}
  if(Number(p.targetDcKwp)>0&&m.dcKwp>0&&Math.abs(m.dcKwp-Number(p.targetDcKwp))/Number(p.targetDcKwp)>0.1)
   a.push("Selected module DC capacity differs by over 10% from target.");
  a.push("Electrical string/MPPT pairing, structural load, shading and performance require engineering verification.");
@@ -326,11 +326,11 @@ function renderProduct(c,b){
  '<div class="ma6a-pick-grid"><div><div class="ma6a-catalog">'+(filtered.length?filtered.map(x=>
  '<button class="ma6-product-card'+(x.id===p.id?' selected':'')+'" type="button" data-product="'+esc(x.id)+'">'+
  '<div><span class="ma6-tag">'+esc(x.variant?catalogFamily(x.variant.familyId)?.name||"Catalog model":typeLabel(x.type))+'</span>'+
- '<strong>'+esc(x.variant?x.model:x.name)+'</strong><small>'+
+ '<strong>'+esc(x.variant?x.displayModel:x.name)+'</strong><small>'+
  esc(x.variant?[x.manufacturer,x.capacity,x.sku].filter(Boolean).join(" · "):x.id+" · "+x.unit)+(suggested.has(x.id)?' · Suggested for service':'')+'</small></div>'+
  '<span class="ma6-tag">Select</span></button>').join(""):
  '<div class="ma6a-empty-note">No approved matching models. Draft products must pass review before use.</div>')+'</div></div>'+
- '<div class="ma6a-spec-editor"><h3>'+esc(v?p.model:p.name)+'</h3>'+
+ '<div class="ma6a-spec-editor"><h3>'+esc(v?p.displayModel:p.name)+'</h3>'+
  (v?'<div class="ma6-kvs">'+kv("Manufacturer",p.manufacturer)+kv("Rating",p.capacity)+kv("SKU",p.sku)+
  kv("Dimensions",d.width&&d.height&&d.depth?[d.width,d.height,d.depth].join(" × ")+" "+(d.unit||"mm"):"Not applicable")+'</div>'+
  '<div class="ma6a-quiet-box">'+(v.demoReview?.state==="Enabled for demo"?'<b>Demo-enabled · not verified.</b> Manufacturer technical evidence and approved selling price are still pending. ':"")+'Specifications come from the selected catalog model. Custom changes below apply only to this project.</div>':
@@ -340,13 +340,14 @@ function renderProduct(c,b){
  (v?'<details class="ma6a-builder-details"><summary>Model technical data, warranty &amp; document references</summary>'+
   '<div class="ma6-kvs">'+
   Object.entries(v.categorySpecs||{}).slice(0,20).map(([key,val])=>kv(key,String(val))).join("")+
-  Object.entries(v.solar||{}).slice(0,20).map(([key,val])=>kv(key,String(val))).join("")+
+  Object.entries(v.solar||{}).slice(0,80).map(([key,val])=>{const field=v.specTemplate?.fields?.find(f=>f.key===key)||window.CPQ_PRODUCT_TEMPLATES?.get(p.solarKind)?.fields?.find(f=>f.key===key);return kv(field?field.label+(field.unit?" ("+field.unit+")":""):key,String(val));}).join("")+
   kv("Product warranty",v.warranty?.months!==undefined?v.warranty.months+" months":"Not specified")+
   kv("Guarantee",v.warranty?.guaranteeMonths!==undefined?v.warranty.guaranteeMonths+" months":"Not specified")+
   '</div>'+
   ((v.documents||[]).some(d=>d.status==="Current")?'<div class="cpq-model-snapshot"><h4>Documents (references only)</h4><ul>'+
    v.documents.filter(d=>d.status==="Current").slice(0,20).map(d=>'<li>'+esc(d.name)+' · v'+esc(d.version)+' · '+esc(d.type)+'</li>').join("")+'</ul></div>':
    '<p class="cpq-scope-caption">No current product document references recorded.</p>')+
+  ((v.components||[]).length?'<details class="ma6a-builder-details"><summary>Included / optional BOM per unit</summary><ul>'+(v.components||[]).map(c=>{const part=catalog().parts.find(x=>x.id===c.partId);return '<li>'+esc([c.group,part?.name||c.partId,c.qty+" "+(part?.unit||"Nos"),c.role].filter(Boolean).join(" · "))+'</li>';}).join("")+'</ul><small>BOM information only. Components are not added as separate charges.</small></details>':"")+
   '<p class="cpq-scope-caption">Model metadata is captured when added to configuration. No file contents are stored in this demo.</p></details>':"")+
  '<div class="ma6a-field-inline"><div class="ma6-field"><label for="config-add-qty">Quantity *</label>'+
  '<input id="config-add-qty" type="number" min="1" step="1" data-add-qty value="'+esc(b.quantity)+'"></div><span>'+esc(p.unit||"Nos")+'</span></div>'+

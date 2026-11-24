@@ -309,7 +309,7 @@ function decoratePickers(){
  for(const host of D.querySelectorAll(".ma6a-parts-picker")){
   button(host,"part","+ Add New Part",r=>{
    const item=D.createElement("div");item.className="ma6a-part-choice";
-   item.innerHTML='<label><input type="checkbox" name="linkedPart" checked value="'+esc(r.id)+'"> '+esc(r.name)+'</label><input type="number" name="qty_'+esc(r.id)+'" value="1" min="1" step="1" aria-label="Part quantity"><select name="role_'+esc(r.id)+'" aria-label="Part requirement"><option>Required</option><option>Optional</option></select>';
+   item.innerHTML='<label><input type="checkbox" name="linkedPart" checked value="'+esc(r.id)+'"> '+esc(r.name)+'</label><input type="number" name="qty_'+esc(r.id)+'" value="1" min="1" step="1" aria-label="Part quantity"><select name="role_'+esc(r.id)+'" aria-label="Part requirement"><option>Required</option><option>Optional</option></select><input name="group_'+esc(r.id)+'" placeholder="BOM group (optional)" maxlength="100">';
    host.insertBefore(item,host.lastElementChild);
   });
  }
