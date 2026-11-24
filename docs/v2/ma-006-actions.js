@@ -204,6 +204,10 @@ function updateBuilderField(field,value){
   q[field]=Math.max(0,Math.min(100,Number(value)||0));if(b.step===2)pricing.refresh(q,$("builder-body"),a.financialRows);else renderBuilder();return;
  }
  q[field]=value;
+ if(b.step===3&&["validUntil","payment","delivery","warranty","exclusions"].includes(field)){
+  const preview=$("cpq-final-customer-paper");
+  if(preview)preview.innerHTML=paper(q);
+ }
 }
 function demoStamp(){return new Date().toLocaleString("en-GB",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});}
 function submitDemoReview(){
