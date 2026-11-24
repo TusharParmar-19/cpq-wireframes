@@ -342,7 +342,8 @@ function handleAction(action,target){
  if(action.startsWith("price-")&&state.builder){
   const q=state.builder.quote;
   try{
-   if(action==="price-apply-vendor"){
+   if(action==="price-refresh-vendor"){toast("Supplier rate options refreshed; unsaved quotation remains open.");}
+   else if(action==="price-apply-vendor"){
     const l=q.lines.find(x=>x.id===target.dataset.priceLine),key=target.closest("td")?.querySelector("[data-vendor-rate-select]")?.value;
     if(!l||!key)throw Error("Select an eligible verified supplier rate first.");
     pricing.applyVendorRate(q,l,key);toast("Supplier cost captured in this draft only. Review separate freight and tax.");

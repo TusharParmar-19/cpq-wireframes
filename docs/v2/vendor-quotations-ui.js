@@ -86,7 +86,7 @@ function openEditor(id="",prefill={},copyMode=false){
  const orig=id?offer(id):null;if(id&&!orig)return;
  if(orig&&!copyMode&&!["Draft","Pending verification","Returned"].includes(orig.status)){say("Verified or archived offers are locked. Copy as New Offer to record a changed offer.");return;}
  state.editor=orig&&!copyMode?copy(orig):null;state.formOpen=true;state.focus=D.activeElement;state.preferredVendor=prefill.vendorId||"";
- const o=orig?copy(orig):{companyId:prefill.companyId||"",vendorId:prefill.vendorId||"",received:Q.today(),quoteDate:Q.today(),lines:[],evidence:[]};
+ const o=orig?copy(orig):{companyId:prefill.companyId||"",vendorId:prefill.vendorId||"",branchId:prefill.branchId||"",opportunityId:prefill.opportunityId||"",received:Q.today(),quoteDate:Q.today(),lines:prefill.lines||[],evidence:[]};
  if(copyMode){o.reference="";o.received=Q.today();o.quoteDate=Q.today();o.validUntil="";o.evidence=[];o.lines=o.lines.map(l=>({...l,id:""}));}
  $("vq-title").textContent=orig&&!copyMode?"Edit Vendor Quotation":copyMode?"Copy as New Vendor Quotation":"Add Vendor Quotation";
  $("vq-fields").innerHTML='<div class="vq-section"><h3>1. Supplier and reference</h3><div class="vq-form-grid">'+select("companyId","Our purchasing company *","vq-f-company","",btn("+ Add New",'data-vq-master="company"'))+select("vendorId","Vendor / supplier *","vq-f-vendor","",'<button class="btn" id="vq-new-vendor" type="button" data-vq-master="vendor">+ Add New</button>')+
@@ -166,5 +166,12 @@ D.addEventListener("click",e=>{
  }
  else if(d.planned)W.alert(d.planned+" is a planned wireframe module.");
 });
-filterOptions();const params=new URLSearchParams(W.location.search),vid=params.get("vendor"),oid=params.get("offer");if(vid&&Q.vendor(vid))$("vq-vendor").value=vid;if(offer(oid))state.selected=oid;render();if(params.get("action")==="new"&&vid&&Q.vendor(vid))openEditor("",{vendorId:vid,companyId:Q.vendor(vid).companyIds.length===1?Q.vendor(vid).companyIds[0]:""});
+filterOptions();const params=new URLSearchParams(W.location.search),vid=params.get("vendor"),oid=params.get("offer");if(vid&&Q.vendor(vid))$("vq-vendor").value=vid;if(offer(oid))state.selected=oid;render();if(params.get("action")==="new"){
+ const v=Q.vendor(vid),companyId=Q.company(params.get("company"))?.id||(v?.companyIds.length===1?v.companyIds[0]:"");
+ const branchId=Q.company(companyId)?.branches?.some(b=>b.id===params.get("branch")&&b.status!=="Inactive")?params.get("branch"):"";
+ const opportunityId=Q.enquiries().some(e=>e.id===params.get("enquiry")&&e.companyId===companyId&&(!branchId||e.branchId===branchId))?params.get("enquiry"):"";
+ const item=Q.items().find(x=>x.id===params.get("item")&&x.kind===params.get("kind")&&x.status==="Active");
+ const quantity=Number(params.get("quantity")),lines=item?[{kind:item.kind,itemId:item.id,unit:item.unit,quantity:Number.isFinite(quantity)&&quantity>0&&quantity<=1e6?quantity:1}]:[];
+ openEditor("",{vendorId:v?.id||"",companyId,branchId,opportunityId,lines});
+}
 })();

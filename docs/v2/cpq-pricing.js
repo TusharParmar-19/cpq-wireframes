@@ -200,12 +200,18 @@ function history(q){
  '<div class="cpq-price-scroll"><table><thead><tr><th>Item</th><th>Previous rate</th><th>New rate</th><th>Reason</th><th>Recorded</th></tr></thead><tbody>'+
  [...rows].reverse().map(h=>'<tr><td>'+esc(h.item)+'</td><td>'+fmt(h.before)+'</td><td>'+fmt(h.after)+'</td><td>'+esc(h.reason)+'</td><td>'+esc(h.actor)+'<small>'+esc(String(h.at||"").replace("T"," ").slice(0,19))+'</small></td></tr>').join("")+'</tbody></table></div></details>';
 }
+function offerLink(q,l){
+ const id=l.serviceId||l.sourceVariantId||l.modelSnapshot?.variantId||"";
+ if(!id||!q.companyId)return "vendor-quotations.html";
+ const p=new URLSearchParams({action:"new",company:q.companyId,branch:q.branchId||"",enquiry:q.opportunityId||"",kind:l.serviceId?"service":"product",item:id,quantity:String(l.quantity||1)});
+ return "vendor-quotations.html?"+p.toString();
+}
 function vendorRatePicker(q,l){
  const s=l.pricing?.vendorRate,choices=window.CPQ_VENDOR_QUOTE?.choices(q,l)||[],issue=window.CPQ_VENDOR_QUOTE?.snapshotIssues(q,l,true)||"";
  if(l.includedInParent&&!s)return "";
- return '<div class="cpq-vendor-rate">'+(s?'<small><b>Supplier source:</b> '+esc(s.vendorName)+" · "+esc(s.reference)+'<br>Valid until '+esc(s.validUntil)+' · '+fmt(s.rate)+' before GST</small>'+(issue?'<small class="cpq-price-warning">'+esc(issue)+'</small>':"")+'<button type="button" class="btn cpq-price-small" data-action="price-clear-vendor" data-price-line="'+esc(l.id)+'">Clear supplier source</button>':"")+
+ return '<details class="cpq-vendor-rate"'+(s||choices.length?' open':'')+'><summary>Supplier rate'+(s?' · captured':choices.length?' · available':'')+'</summary>'+(s?'<small><b>Supplier source:</b> '+esc(s.vendorName)+" · "+esc(s.reference)+'<br>Valid until '+esc(s.validUntil)+' · '+fmt(s.rate)+' before GST</small>'+(issue?'<small class="cpq-price-warning">'+esc(issue)+'</small>':"")+'<button type="button" class="btn cpq-price-small" data-action="price-clear-vendor" data-price-line="'+esc(l.id)+'">Clear supplier source</button>':"")+
  (choices.length?'<select data-vendor-rate-select aria-label="Verified supplier rate for '+esc(l.description)+'"><option value="">Select verified supplier rate</option>'+choices.map(c=>'<option value="'+esc(c.key)+'">'+esc(c.offer.vendorName+" · "+c.offer.reference+" · "+fmt(c.line.rate))+'</option>').join("")+'</select><button type="button" class="btn cpq-price-small" data-action="price-apply-vendor" data-price-line="'+esc(l.id)+'">Use supplier rate</button>':'<small>No eligible verified offer for this company, item, unit and quantity.</small>')+
- '<small><a href="vendor-quotations.html" target="_blank" rel="noopener">Open Vendor Quotations ↗</a></small></div>';
+ '<small><a href="'+esc(offerLink(q,l))+'" target="_blank" rel="noopener">+ Record supplier offer ↗</a> · <button class="btn cpq-price-small" type="button" data-action="price-refresh-vendor">Refresh rates</button></small></details>';
 }
 function supplierSummary(q){
  const xs=(q.lines||[]).filter(l=>l.pricing?.vendorRate),hs=q.pricing?.vendorHistory||[];
