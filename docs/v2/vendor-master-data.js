@@ -55,9 +55,10 @@ function build(input,old=null,db=data(),now=new Date().toISOString()){
  record.history=[...(old?.history||[]),{at:now,actor:"Master Admin (demo)",action:old?"Updated vendor":"Created vendor",changed}];
  return record;
 }
-const forProduct=(id,companyId="")=>data().vendors.filter(v=>v.productIds.includes(id)&&(!companyId||v.companyIds.includes(companyId)));
+const forProduct=(id,companyId="")=>data().vendors.filter(v=>(v.productIds.includes(id)||products().some(p=>p.id===id&&p.price?.supplierId===v.id))&&(!companyId||v.companyIds.includes(companyId)));
+const preferredProducts=id=>products().filter(p=>p.price?.supplierId===id);
 const forService=(id,companyId="")=>data().vendors.filter(v=>v.serviceIds.includes(id)&&(!companyId||v.companyIds.includes(companyId)));
 const selectable=(companyId="")=>data().vendors.filter(v=>v.status==="Active"&&(!companyId||v.companyIds.includes(companyId)));
 function matches(v,q){const text=[v.id,v.name,v.gstin,v.city,...v.companyIds.map(companyName),...v.categories,...v.productIds.map(productName),...v.serviceIds.map(serviceName),...v.contacts.flatMap(c=>[c.name,c.email,c.phone,c.role])].join(" ");return norm(text).includes(norm(q));}
-W.CPQ_VENDOR_MODEL={data,entities,catalog,products,services,companyName,productName,serviceName,nextId,build,forProduct,forService,selectable,matches};
+W.CPQ_VENDOR_MODEL={data,entities,catalog,products,services,companyName,productName,serviceName,nextId,build,forProduct,preferredProducts,forService,selectable,matches};
 })();

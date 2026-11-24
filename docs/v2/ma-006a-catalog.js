@@ -389,7 +389,7 @@ function variantFields(v={},f={}){
  textField("priceList","Price List Name",p.list||"Demo Base Price List")+
  numberField("sell","Sample Selling Price / Unit",p.sell??0)+
  selectField("availability","Availability",[["Unknown","Unknown"],["In Stock","In Stock"],["Order Basis","Order Basis"],["Not Available","Not Available"]],p.availability||"Unknown")+
- selectField("supplierId","Preferred Supplier (optional)",[["","Not selected"],...((window.CPQ_VENDOR_MODEL?.selectable()||[]).map(v=>[v.id,v.name+" · "+v.id])),...((p.supplierId&&!window.CPQ_VENDOR_MODEL?.selectable().some(v=>v.id===p.supplierId))?[[p.supplierId,(window.CPQ_VENDOR_MODEL?.data().vendors.find(v=>v.id===p.supplierId)?.name||p.supplierId)+" (historical / inactive)"]]:[])],p.supplierId||"")+
+ selectField("supplierId","Preferred Supplier (optional)",[...((window.CPQ_VENDOR_MODEL?.selectable()||[]).map(v=>[v.id,v.name+" · "+v.id])),...((p.supplierId&&!window.CPQ_VENDOR_MODEL?.selectable().some(v=>v.id===p.supplierId))?[[p.supplierId,(window.CPQ_VENDOR_MODEL?.data().vendors.find(v=>v.id===p.supplierId)?.name||p.supplierId)+" (historical / inactive)"]]:[]) ],p.supplierId||"","Not selected")+
  textField("supplierRef","Supplier reference / legacy note (optional)",p.supplierRef||"")+
  textField("hsnSac","HSN / SAC (requires review)",p.hsnSac||"")+
  numberField("leadTimeDays","Expected Lead Time (days)",p.leadTimeDays??"")+
