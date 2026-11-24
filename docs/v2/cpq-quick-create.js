@@ -188,13 +188,20 @@ function close(cancel=false,result=null){
  if(!current)return;
  const task=current;current=null;
  const changed=sync(task.before);
+ const staleNotice=$("cpq-demo-store-notice");if(staleNotice)staleNotice.remove();
  if($("cpq-qc-dialog")?.open)$("cpq-qc-dialog").close();
  if($("cpq-qc-content"))$("cpq-qc-content").replaceChildren();
  if(result?.id){
   const r=row(task.type,result.id);
   const issue=result.error||eligible(task.type,r,task.ctx,task.activeOnly);
   if(issue){notice(issue);}
-  else{try{task.onSave?.(r);notice(label(task.type,r)+" saved and selected.");}catch(e){notice("Saved to master. Please reopen the selector to select it. "+e.message);}}
+  else{try{
+   // Refresh any already open compatible selectors, preserving their current values.
+   for(const el of D.querySelectorAll("select")){
+    if(resolve(el)!==task.type||!allowed(task.type,context(el))||eligible(task.type,r,context(el)))continue;
+    insertOption(el,task.type==="employee"&&el.id==="f-owner"?r.name:r.id,label(task.type,r));
+   }
+   task.onSave?.(r);notice(label(task.type,r)+" saved and selected.");}catch(e){notice("Saved to master. Please reopen the selector to select it. "+e.message);}}
  }else if(result?.value){
   try{task.onSave?.(result.value);notice(result.value+(task.onSave?" saved and selected.":" saved to master."));}catch(e){notice(result.value+" saved to master. "+e.message);}
  }else if(result?.error)notice(result.error);
@@ -228,6 +235,7 @@ function openList(type){
   e.preventDefault();
   const value=$("qc-option-name").value.trim();
   if(!value)return;
+  if(["all","__new__",addValue].includes(value.toLowerCase())){$("qc-list-error").textContent="Choose a name other than a reserved system option.";return;}
   const existing=store()[module]||memoryTargets(module)[0];
   if(!existing){$("qc-list-error").textContent="Master data is unavailable.";return;}
   const next=copy(existing);const all=Array.isArray(next[key])?next[key]:[...defaults];
