@@ -6,6 +6,7 @@
 <link rel="stylesheet" href="ma-001.css">
 <link rel="stylesheet" href="ma-006.css">
 <link rel="stylesheet" href="cpq-service-flow.css">
+<link rel="stylesheet" href="cpq-pricing.css">
 </head>
 <body>
 <div class="layout">
@@ -40,7 +41,7 @@
         <div>
           <div class="overline">MASTER ADMIN / MA-006</div>
           <h1>Quotations &amp; BOQ</h1>
-          <p class="muted">Use saved technical configurations, build the BOQ, apply illustrative pricing and prepare the customer offer.</p>
+          <p class="muted">Use saved configurations, confirm products and services, calculate internal costs and offered prices, then prepare the final customer quotation.</p>
         </div>
         <div class="actions">
           <a class="btn" href="ma-006a-configuration.html">Product Catalog &amp; Configuration</a>
@@ -112,7 +113,7 @@
         </div>
       </section>
       <section class="ma6-design-note">
-        <b>Proposed module boundary:</b> MA-006A handles reusable configurations before pricing. Product Catalog &amp; Rules administration will define approved attributes and compatibility. BOQ/Pricing uses authorized rates and tax logic. A quotation revision stores fixed customer/buyer, scope, lines, pricing, terms and approval history. A quote can be started directly or from an MA-005 opportunity; quote issuance and order registration are separate controlled actions.
+        <b>Proposed module boundary:</b> MA-006A handles reusable configurations before pricing. Product Catalog &amp; Rules administration will define approved attributes and compatibility. Pricing &amp; Costing is a separate stage for captured list rates, quotation-specific offered rates, internal expenses, profit and margin; Final Quotation uses only approved customer-facing information. A quotation revision stores fixed customer/buyer, scope, lines, pricing, terms and approval history. A quote can be started directly or from an MA-005 opportunity; quote issuance and order registration are separate controlled actions.
       </section>
       <footer class="footer">CPQ · MA-006 Quotations, Configuration &amp; BOQ · Design wireframe only · No production backend</footer>
     </main>
@@ -137,6 +138,7 @@
 <script src="service-master-data.js"></script>
 <script src="cpq-demo-store.js"></script>
 <script src="cpq-service-flow.js"></script>
+<script src="cpq-pricing.js"></script>
 <script src="ma-006-app.js"></script>
 <script src="ma-006-actions.js"></script>
 </body>
