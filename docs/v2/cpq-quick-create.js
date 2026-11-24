@@ -30,7 +30,10 @@ const lists={
  domain:["Business Domain","services","domains",["Trading","Solar","Electrical","Substation","Other"]],
  workType:["Work Type","services","workTypes",["Installation","Other"]],
  unit:["Service Unit","services","units",["Job","Visit","Hour","Day","Month","Year","Contract","Project","Package","Set","Other"]],
- payment:["Payment Terms Template","quotations","paymentPresets",["50% advance; 50% before dispatch","30% advance; 70% after completion","Net 30 days from invoice"]]
+ payment:["Payment Terms Template","quotations","paymentPresets",["50% advance; 50% before dispatch","30% advance; 70% after completion","Net 30 days from invoice"]],
+ enquirySource:["Enquiry Source","opportunities","sources",["Existing Customer","Direct Enquiry","Website","Email","Phone","Referral","Tender / RFP","Other"]],
+ enquiryKind:["Enquiry Type","opportunities","kinds",["Products / Equipment","Project / EPC","Service / Maintenance","Mixed Requirement"]],
+ costType:["Cost Type","quotations","customCostTypes",[]]
 };
 const globals={entities:"CPQ_MA002_DATA",users:"CPQ_MA003_USERS",roles:"CPQ_MA003_ROLES",customers:"CPQ_MA004_DATA",opportunities:"CPQ_MA005_DATA",catalog:"CPQ_MA006A_CATALOG",services:"CPQ_SERVICE_MASTER",quotations:"CPQ_MA006_DATA",configurations:"CPQ_MA006A_DATA"};
 function store(){return W.CPQ_SHARED?.read()?.modules||{};}
@@ -99,6 +102,7 @@ function eligible(type,r,ctx,activeOnly=false){
   if(!(c?.links||[]).some(l=>type==="company"?l.companyId===r.id:l.companyId===r.companyId&&l.branchId===r.id))
    return "Saved to Organization. This customer must first be linked to the new company/branch using its existing Link Internal Company & Branch form.";
  }
+ if(type==="family"&&ctx.solarKind&&(r.solarKind||"general")!==ctx.solarKind)return "Product group saved, but its equipment template differs from the one selected on your product.";
  if(type==="role"&&r.system)return "Existing system role is not a new custom role.";
  return "";
 }
@@ -143,6 +147,11 @@ function resolve(el){
  if(id==="sm-work")return "workType";
  if(id==="sm-unit")return "unit";
  if(id==="quote-payment-preset")return "payment";
+ if(el.dataset.costField==="kind")return "costType";
+ if(page==="ma-005-opportunities.html"&&el.closest("#op-form")){
+  if(name==="source")return "enquirySource";
+  if(name==="kind")return "enquiryKind";
+ }
  if(el.closest("#catalog-editor-form")){
   if(name==="manufacturerId")return "manufacturer";
   if(name==="familyCategory")return "category";
@@ -187,8 +196,7 @@ function close(cancel=false,result=null){
   if(issue){notice(issue);}
   else{try{task.onSave?.(r);notice(label(task.type,r)+" saved and selected.");}catch(e){notice("Saved to master. Please reopen the selector to select it. "+e.message);}}
  }else if(result?.value){
-  task.onSave?.(result.value);
-  notice(result.value+" saved and selected.");
+  try{task.onSave?.(result.value);notice(result.value+(task.onSave?" saved and selected.":" saved to master."));}catch(e){notice(result.value+" saved to master. "+e.message);}
  }else if(result?.error)notice(result.error);
  else if(changed.length&&cancel)notice("Returned to your form. Any separately saved master records remain available.");
  if(task.anchor?.isConnected)task.anchor.focus({preventScroll:true});
@@ -223,7 +231,8 @@ function openList(type){
   const existing=store()[module]||memoryTargets(module)[0];
   if(!existing){$("qc-list-error").textContent="Master data is unavailable.";return;}
   const next=copy(existing);const all=Array.isArray(next[key])?next[key]:[...defaults];
-  if(all.some(x=>str(x).toLowerCase()===value.toLowerCase())){$("qc-list-error").textContent="This option already exists. Choose it from the list.";return;}
+  const reserved=type==="costType"?["Labour","Installation","Transportation","Loading / unloading","Engineering & design","Site survey","Subcontractor","Commission","Administrative expenses","Overhead","Contingency","Other custom cost"]:[];
+  if([...all,...reserved].some(x=>str(x).toLowerCase()===value.toLowerCase())){$("qc-list-error").textContent="This option already exists. Choose it from the list.";return;}
   next[key]=[...all,value];
   if(!W.CPQ_SHARED?.save(module,next)){$("qc-list-error").textContent="Could not save in this browser.";return;}
   close(false,{value});
@@ -238,7 +247,7 @@ function insertOption(el,value,title){
 const previous=new WeakMap();
 function choose(el,type,r){
  if(!el.isConnected)throw Error("The original field was closed.");
- const value=typeof r==="string"?r:type==="employee"&&el.id==="f-owner"?r.name:r.id;
+ const value=typeof r==="string"?(type==="costType"?"custom:"+r:r):type==="employee"&&el.id==="f-owner"?r.name:r.id;
  insertOption(el,value,typeof r==="string"?r:label(type,r));
  el.value=value;previous.set(el,value);
  el.dispatchEvent(new Event("change",{bubbles:true}));
@@ -249,8 +258,8 @@ function decorate(el){
  if(type==="payment"){
   for(const v of store().quotations?.paymentPresets||[])insertOption(el,v,v);
  }
- if(type==="category"||type==="domain"||type==="workType"||type==="unit"){
-  const [,module,key,defaults]=lists[type];for(const v of store()[module]?.[key]||defaults)insertOption(el,v,v);
+ if(lists[type]&&type!=="payment"){
+  const [,module,key,defaults]=lists[type];for(const v of store()[module]?.[key]||defaults)insertOption(el,type==="costType"?"custom:"+v:v,v);
  }
  const has=Array.from(el.options).find(o=>o.value===addValue);
  if(!allowed(type,ctx)){if(has)has.remove();return;}
@@ -349,7 +358,7 @@ function embedded(){
   }).observe(overlay,{attributes:true,attributeFilter:["class"]});
  }catch(e){send({error:e.message});}
 }
-W.CPQ_QUICK_CREATE={open,saved,scan,eligible,merge,getRecords};
+W.CPQ_QUICK_CREATE={open,saved,scan,eligible,merge,getRecords,list:type=>{const entry=lists[type];return entry?(store()[entry[1]]?.[entry[2]]||entry[3]):[];}};
 new MutationObserver(schedule).observe(D.body,{childList:true,subtree:true});
 scan();embedded();
 })();

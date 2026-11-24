@@ -611,7 +611,9 @@ document.addEventListener("click",event=>{
  else if(action==="edit-variant"){
   if(!state.variant){return;}
   openEditor("variant-edit",{familyId:state.family,variantId:state.variant});
- }else if(action==="add-manufacturer")openEditor("manufacturer-new");
+ }else if(action==="add-family")openEditor("family-new");
+ else if(action==="add-category")window.CPQ_QUICK_CREATE?.open("category",{},()=>renderCatalog(),t);
+ else if(action==="add-manufacturer")openEditor("manufacturer-new");
  else if(action==="edit-manufacturer")openEditor("manufacturer-edit",{manufacturerId:d.makerId});
  else if(action==="add-part")openEditor("part-new");
  else if(action==="edit-part")openEditor("part-edit",{partId:d.partId});

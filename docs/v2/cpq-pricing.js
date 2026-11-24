@@ -106,7 +106,13 @@ function updateCost(q,id,field,value){
  const c=prepare(q).costs.find(x=>x.id===id);
  if(!c)return;
  if(field==="kind"){
+  if(String(value).startsWith("custom:")){
+   const name=String(value).slice(7);
+   if(!(window.CPQ_MA006_DATA?.customCostTypes||[]).includes(name))return;
+   c.kind="other";c.customType=name;c.name=name;c.customerLabel=name+" charges";c.separate=false;c.chargeAmount=0;return;
+  }
   if(!kinds.some(x=>x[0]===value))return;
+  delete c.customType;
   c.kind=value;c.name=kinds.find(x=>x[0]===value)[1];
   c.customerLabel=c.name+" charges";
   if(privateKinds.has(value)){c.separate=false;c.chargeAmount=0;}
@@ -202,7 +208,7 @@ function pricingView(q,financialRows){
  const rows=(p.costs||[]).map(c=>{
   const a='data-cost-id="'+esc(c.id)+'" ',priv=privateKinds.has(c.kind);
   return '<section class="cpq-cost-row"><div class="cpq-cost-head"><strong data-cost-title="'+esc(c.id)+'">'+esc(c.name||"Additional cost")+'</strong><button type="button" class="btn cpq-price-small" data-action="price-remove-cost" data-cost-id="'+esc(c.id)+'">Remove</button></div>'+
-   '<div class="cpq-cost-grid"><label>Cost type'+select(a+'data-cost-field="kind"',kinds,c.kind)+'</label>'+
+   '<div class="cpq-cost-grid"><label>Cost type'+select(a+'data-cost-field="kind"',[...kinds,...(window.CPQ_MA006_DATA?.customCostTypes||[]).map(name=>["custom:"+name,name])],c.customType?"custom:"+c.customType:c.kind)+'</label>'+
    '<label>Internal cost name'+input(a+'data-cost-field="name"',c.name,"text")+'</label>'+
    '<label>Calculation method'+select(a+'data-cost-field="method"',methods,c.method)+'</label>'+
    (c.method==="quantity"?'<label>Quantity'+input(a+'data-cost-field="quantity"',c.quantity)+'</label>':'')+
