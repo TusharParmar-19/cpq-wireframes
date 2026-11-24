@@ -7,6 +7,9 @@ const $=id=>document.getElementById(id);
 const esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const clone=x=>JSON.parse(JSON.stringify(x));
 const db=clone(window.CPQ_MA006A_CATALOG);
+window.CPQ_MA006A_CATALOG=db;
+const tpl=window.CPQ_PRODUCT_TEMPLATES,flow=window.CPQ_FLOW;
+tpl.apply(db);
 const pim=window.CPQ_MA006A_PRODUCT_INFO;
 const state={hub:"products",family:"FAM-005",variant:"VAR-009",tab:"variants",category:"all",manufacturer:"all",status:"all",search:"",editor:null};
 const family=id=>db.families.find(x=>x.id===id);
@@ -27,7 +30,7 @@ const badge=s=>'<span class="ma6a-flag '+esc(String(s||"").toLowerCase().replace
 /* Browser-demo model review never represents real technical or price approval. */
 const demoEnabled=v=>v?.status==="Active"&&v?.demoReview?.state==="Enabled for demo";
 function demoIssues(v){
- const f=family(v.familyId),issues=[];
+ const f=family(v.familyId),issues=tpl.missing(f?.solarKind||"general",v).map(x=>"Required specification missing: "+x);
  if(f?.solarKind==="inverter"){
   if(!(Number(v.solar?.ratedAcKw)>0))issues.push("Rated AC output not defined");
   if(!(Number(v.solar?.maxPvInputKwp)>0))issues.push("Supported PV input not verified");
@@ -66,8 +69,9 @@ function applyDemoReview(action){
   const f=family(v.familyId),m=maker(v.manufacturerId);
   if(!f||f.status!=="Active"||(v.manufacturerId&&m?.status!=="Active")){window.alert("Use an Active product group and manufacturer for this demo review.");return;}
   if(f.solarKind==="inverter"&&!(Number(v.solar?.ratedAcKw)>0)){window.alert("Enter a positive rated AC output before enabling an inverter for the demo.");return;}
+  const required=tpl.missing(f.solarKind||"general",v);if(required.length){window.alert("Complete required specification fields first: "+required.join(", "));return;}
   const warnings=demoIssues(v);
-  if(!window.confirm("DEMO ONLY: Enable "+v.model+" for browser configuration testing?\n\nThis is NOT engineering approval, supplier verification, pricing approval or authorization to issue a real quote.\n\nUnverified: "+(warnings.join("; ")||"Production certification and approval")+"\n\nContinue with simulated eligibility?"))return;
+  if(!window.confirm("DEMO ONLY: Enable "+flow.variantLabel(v)+" for browser configuration testing?\n\nThis is NOT engineering approval, supplier verification, pricing approval or authorization to issue a real quote.\n\nUnverified: "+(warnings.join("; ")||"Production certification and approval")+"\n\nContinue with simulated eligibility?"))return;
   v.status="Active";events.push({action:"Enabled for browser demo ONLY; unverified details retained",at,actor:"Demo operator"});
   v.demoReview={state:"Enabled for demo",events,unverified:warnings};
  }else if(action==="demo-revoke-model"){
@@ -164,8 +168,8 @@ function variantCard(v){
  const m=maker(v.manufacturerId);
  return '<button type="button" data-variant="'+esc(v.id)+'" class="ma6a-variant-card'+(state.variant===v.id?' selected':'')+'" aria-pressed="'+String(state.variant===v.id)+'">'+
  '<div class="ma6a-row"><span class="ma6-tag">'+esc(v.sku)+'</span>'+modelBadge(v)+'</div>'+
- '<h4>'+esc(m?.brand||m?.name||"No manufacturer (service)")+'</h4>'+
- '<p><b>'+esc(v.model)+'</b> · '+esc(v.variant)+'</p>'+
+ '<h4>'+esc(flow.manufacturerLabel(v,m))+'</h4>'+
+ '<p><b>'+esc(flow.variantLabel(v))+'</b>'+(v.model&&v.variant&&v.variant!==v.model?' · '+esc(v.variant):"")+'</p>'+
  '<div class="ma6a-big-rating">'+esc(v.capacity||"Rating not supplied")+'</div>'+
  '<p>Dimensions: '+esc(dimension(v.dimensions))+'</p>'+
  '<div class="ma6a-card-foot"><span>'+esc(v.enclosure||v.mounting||"Details")+'</span><b>'+amount(v.price?.sell)+'</b></div></button>';
@@ -173,12 +177,12 @@ function variantCard(v){
 function selectedVariant(v){
  if(!v)return '<div class="ma6a-empty-note">Select a manufacturer/model variant above.</div>';
  const m=maker(v.manufacturerId),d=v.dimensions||{};
- return '<div class="ma6a-selected-variant"><div class="ma6a-selected-variant-head"><div><h4>'+esc(v.model)+' · '+esc(v.variant)+'</h4>'+
- '<p>'+esc(v.sku)+' · '+esc(m?.name||"Service — no manufacturer")+'</p><div class="ma6a-variant-badges">'+modelBadge(v)+'</div></div>'+
+ return '<div class="ma6a-selected-variant"><div class="ma6a-selected-variant-head"><div><h4>'+esc(flow.variantLabel(v))+'</h4>'+
+ '<p>'+esc(v.sku)+' · '+esc(flow.manufacturerLabel(v,m))+'</p><div class="ma6a-variant-badges">'+modelBadge(v)+'</div></div>'+
  '<div class="ma6-detail-actions"><button type="button" class="btn" data-catalog-tab="more">View Full Details</button>'+
  '<button type="button" class="btn" data-catalog-tab="documents">Documents &amp; Warranty</button>'+
  '<button type="button" class="btn primary" data-catalog-action="edit-variant">Edit Model</button></div></div>'+
- '<div class="ma6-kvs">'+kv("Manufacturer",m?.brand||m?.name||"Not applicable")+
+ '<div class="ma6-kvs">'+kv("Manufacturer",flow.manufacturerLabel(v,m))+kv("Manufacturer model number",v.model||"Not supplied")+kv("Manufacturer part number",v.manufacturerPartNo||"Not supplied")+
  kv("Capacity / Rating",v.capacity)+kv("Dimensions",dimension(d))+
  kv("Sample Unit Selling Price",amount(v.price?.sell))+'</div>'+
  '<p class="ma6a-compact-help">Electrical specs, compliance, detailed dimensions, parts and prices are available under <b>More Product Details</b>.</p></div>';
@@ -198,11 +202,11 @@ function renderSpecs(f,v){
  '<div class="ma6a-family-overview"><p><b>Product family:</b> '+esc(f.name)+'</p><p><b>Configurable attributes to maintain:</b> '+esc(f.attributes||"To be defined")+'</p></div>'+
  '<div class="ma6a-section-heading"><h3>Compare model dimensions</h3><button type="button" class="btn" data-catalog-action="edit-variant">Edit selected model</button></div>'+
  '<div class="ma6a-details-table"><table><thead><tr><th>Model / Manufacturer</th><th>Rating</th><th>Length</th><th>Width</th><th>Height</th><th>Depth</th><th>Weight</th></tr></thead><tbody>'+
- items.map(item=>{const d=item.dimensions||{};return '<tr><td>'+esc(item.model)+'<small>'+esc(maker(item.manufacturerId)?.brand||"Service")+'</small></td><td>'+esc(item.capacity||"—")+'</td>'+
+ items.map(item=>{const d=item.dimensions||{};return '<tr><td>'+esc(flow.variantLabel(item))+'<small>'+esc(flow.manufacturerLabel(item,maker(item.manufacturerId)))+'</small></td><td>'+esc(item.capacity||"—")+'</td>'+
  [d.length,d.width,d.height,d.depth].map(n=>'<td>'+esc(n===""||n==null?"—":n+" "+(d.unit||"mm"))+'</td>').join("")+
  '<td>'+esc(d.weight?d.weight+" "+(d.weightUnit||"kg"):"—")+'</td></tr>';}).join("")+
  '</tbody></table></div>'+
- '<div class="ma6a-section-heading"><h3>Selected model: '+esc(v?.model||"Not selected")+'</h3></div>'+
+ '<div class="ma6a-section-heading"><h3>Selected model: '+esc(v?flow.variantLabel(v):"Not selected")+'</h3></div>'+
  (tech.length?'<div class="ma6-kvs">'+tech.map(t=>kv(t.name,t.value)).join("")+'</div>':
  '<div class="ma6a-empty-note">Select a variant to review its technical attributes.</div>')+
  note('Different product categories require different attributes. Electrical panels, cables, PV modules and services should not all be forced into the same fixed dimensions or technical fields. Actual validation and compatibility rules need authorized catalog administration.');
@@ -210,9 +214,9 @@ function renderSpecs(f,v){
 function renderParts(f,v){
  const components=v?.components||[];
  return panel("Components, parts & accessories","Associate required and optional parts with each manufacturer model.")+
- '<div class="ma6a-section-heading"><h3>Selected model: '+esc(v?.model||"None")+'</h3><button class="btn" type="button" data-catalog-action="edit-variant">Edit part assignment</button></div>'+
- (components.length?'<div class="ma6a-details-table"><table><thead><tr><th>Part code</th><th>Part / Accessory</th><th>Qty</th><th>Requirement</th><th>Manufacturer</th></tr></thead><tbody>'+
- components.map(item=>{const p=part(item.partId);return '<tr><td>'+esc(p?.code||item.partId)+'</td><td>'+esc(p?.name||"Unlisted part")+'</td><td>'+esc(item.qty)+'</td><td>'+esc(item.role)+'</td><td>'+esc(maker(p?.manufacturerId)?.brand||"Not assigned")+'</td></tr>';}).join("")+
+ '<div class="ma6a-section-heading"><h3>Selected model: '+esc(v?flow.variantLabel(v):"None")+'</h3><button class="btn" type="button" data-catalog-action="edit-variant">Edit part assignment</button></div>'+
+ (components.length?'<div class="ma6a-details-table"><table><thead><tr><th>BOM group</th><th>Part code</th><th>Part / Accessory</th><th>Qty / unit</th><th>Requirement</th><th>Manufacturer</th></tr></thead><tbody>'+
+ components.map(item=>{const p=part(item.partId);return '<tr><td>'+esc(item.group||"—")+'</td><td>'+esc(p?.code||item.partId)+'</td><td>'+esc(p?.name||"Unlisted part")+'</td><td>'+esc(item.qty+" "+(p?.unit||"Nos"))+'</td><td>'+esc(item.role)+'</td><td>'+esc(maker(p?.manufacturerId)?.brand||"Not assigned")+'</td></tr>';}).join("")+
  '</tbody></table></div>':'<div class="ma6a-empty-note">No reusable components assigned to this variant. Service and standard products may require none.</div>')+
  '<div class="ma6a-section-heading"><h3>Master parts library</h3><button class="btn" type="button" data-hub="parts">Manage Parts &amp; Accessories</button></div>'+
  '<div class="ma6a-list-inline">'+db.parts.map(p=>'<span class="ma6a-flag">'+esc(p.code)+'</span>').join("")+'</div>'+
@@ -222,9 +226,9 @@ function renderPrices(f,v){
  const rows=familyVariants(f);
  return panel("Prices, documents & revisions","Price list is associated with the exact SKU/model. Effective dates, document references and approval status must be controlled.")+
  (rows.length?'<div class="ma6a-details-table"><table><thead><tr><th>SKU / Model</th><th>Manufacturer</th><th>Price List</th><th>Selling Price (demo)</th><th>Internal Cost (demo)</th><th>Effective From</th></tr></thead><tbody>'+
- rows.map(x=>'<tr><td>'+esc(x.sku)+'<small>'+esc(x.model)+'</small></td><td>'+esc(maker(x.manufacturerId)?.brand||"Not applicable")+'</td><td>'+esc(x.price?.list||"Not assigned")+'</td><td>'+amount(x.price?.sell)+'</td><td>'+amount(x.price?.cost)+'</td><td>'+esc(x.price?.from||"Not supplied")+'</td></tr>').join("")+
+ rows.map(x=>'<tr><td>'+esc(x.sku)+'<small>'+esc(flow.variantLabel(x))+'</small></td><td>'+esc(flow.manufacturerLabel(x,maker(x.manufacturerId)))+'</td><td>'+esc(x.price?.list||"Not assigned")+'</td><td>'+amount(x.price?.sell)+'</td><td>'+amount(x.price?.cost)+'</td><td>'+esc(x.price?.from||"Not supplied")+'</td></tr>').join("")+
  '</tbody></table></div>':'<div class="ma6a-empty-note">No variants match the filters.</div>')+
- '<div class="ma6a-section-heading"><h3>Document references — '+esc(v?.model||"No model selected")+'</h3><button class="btn" type="button" data-catalog-action="edit-variant">Edit prices &amp; files</button></div>'+
+ '<div class="ma6a-section-heading"><h3>Document references — '+esc(v?flow.variantLabel(v):"No model selected")+'</h3><button class="btn" type="button" data-catalog-action="edit-variant">Edit prices &amp; files</button></div>'+
  '<div class="ma6-kvs">'+kv("Datasheet",v?.datasheet)+kv("Drawing",v?.drawing)+kv("Price-list validity",v?.price?.from?(v.price.from+" to "+(v.price.to||"open end")):"Not supplied")+
  kv("Sample currency",v?.price?.currency)+kv("Lifecycle",v?.status)+kv("Model notes",v?.notes)+'</div>'+
  note('<b>Pricing protection:</b> All costs/prices shown are fictional. Real vendor cost and margin require separate MA-003 grants. Real prices need approval, branch/company price lists, effective dates, currency and tax treatment. The quotation must freeze the price and specifications actually offered; later master edits must not silently rewrite issued quotations.');
@@ -244,11 +248,11 @@ function renderDetails(){
    pim.renderDocuments(v,window.CPQ_SERVICE_MASTER?.services||[]);
  }else if(state.tab==="more"){
   const schema=solarKindSchema(f.solarKind||"general");
-  const val=v?.solar||{},all=(schema&&f.solarKind!=="general")?[...schema.essential,...schema.advanced]:[];
+  const val=v?.solar||{},all=schema?[...schema.essential,...schema.advanced]:[];
   const entered=all.filter(([key])=>val[key]!==undefined&&val[key]!==null&&String(val[key]).trim()!=="");
   const missing=all.filter(([key])=>val[key]===undefined||val[key]===null||String(val[key]).trim()==="");
   const present=entered.length?'<div class="ma6-kvs">'+entered.map(([key,label,unit])=>kv(label+(unit?" ("+unit+")":""),val[key])).join("")+'</div>':
-   '<div class="ma6a-empty-note">No solar-specific technical values added yet. Edit Model to enter them.</div>';
+   '<div class="ma6a-empty-note">No template-specific technical values added yet. Edit Model to enter them.</div>';
   const solarInfo=all.length?
     '<div class="ma6a-selected-variant"><h4>'+esc(schema.label)+' · '+entered.length+' technical values entered</h4>'+present+
     (missing.length?'<details class="ma6a-editor-details"><summary>Missing values for technical review ('+missing.length+')</summary>'+
@@ -286,6 +290,7 @@ function renderPartLibrary(){
  }).join("");
 }
 function renderCatalog(){
+ tpl.apply(db);
  if(window.CPQ_SHARED)window.CPQ_SHARED.save("catalog",db);
  renderHub();renderStats();
  if(state.hub==="products"){
@@ -307,36 +312,37 @@ const familyTypes=[["config","Configurable product"],["standard","Standard catal
 
 function solarKindSchema(kind){return window.CPQ_MA006A_SOLAR_FIELDS?.templates?.[kind]||window.CPQ_MA006A_SOLAR_FIELDS?.templates?.general;}
 function solarField(field,record={}){
- const [key,label,unit,type,choices]=field,name="solar_"+key,value=record[key]??"";
- const title=esc(label)+(unit?' <small>('+esc(unit)+')</small>':'');
+ const [key,label,unit,type,choices,required]=field,name="solar_"+key,value=record[key]??"";
+ const title=esc(label)+(unit?' <small>('+esc(unit)+')</small>':'')+(required?' <small>· Required before review</small>':'');
  if(type==="select")return '<div class="ma6-field"><label for="cat-'+name+'">'+title+'</label><select id="cat-'+name+'" name="'+name+'"><option value="">Select if applicable</option>'+selectOptions(choices.split(";").map(v=>[v,v]),value)+'</select></div>';
  return '<div class="ma6-field"><label for="cat-'+name+'">'+title+'</label><input id="cat-'+name+'" name="'+name+'" type="'+(type==="number"?"number":"text")+'"'+(type==="number"?' step="any"':'')+' value="'+esc(value)+'" placeholder="Optional until verified"></div>';
 }
 function solarFields(kind,values={}){
  const schema=solarKindSchema(kind);
- if(!schema||kind==="general")return '<div class="ma6a-editor-section-note">General product: use Additional Technical Attributes below. Solar-specific fields appear when you select a solar equipment template.</div>';
+ if(!schema||(!schema.essential.length&&!schema.advanced.length))return '<div class="ma6a-editor-section-note">General product: use Additional Technical Attributes below. Solar-specific fields appear when you select a solar equipment template.</div>';
  return details(schema.label+" — essential specifications",'<div class="ma6a-field-hint">Only enter verified datasheet values. Missing engineering data stays incomplete, not assumed.</div>'+group(schema.essential.map(f=>solarField(f,values)).join("")),true)+
- details("Advanced solar specifications, warranty & compliance",group(schema.advanced.map(f=>solarField(f,values)).join(""))+
+ details("Advanced technical specifications & compliance",group(schema.advanced.map(f=>solarField(f,values)).join(""))+
  '<div class="ma6a-editor-section-note">IEC/BIS/ALMM/DCR applicability depends on the equipment and project. Record evidence rather than assuming approval.</div>');
 }
 function solarDataFromForm(form,kind,old={}){
  const schema=solarKindSchema(kind),out={...old};
  if(!schema)return out;
- for(const [key,label,unit,type] of [...schema.essential,...schema.advanced]){
+ for(const [key,label,unit,type,choices] of [...schema.essential,...schema.advanced]){
   const raw=trim(form,"solar_"+key);
   if(raw===""){delete out[key];continue;}
   if(type==="number"){const value=Number(raw);if(!Number.isFinite(value)||Math.abs(value)>1e10)throw Error("Enter a valid value for "+label);out[key]=value;}
-  else out[key]=raw.slice(0,400);
+  else {if(type==="select"&&!String(choices||"").split(";").includes(raw)&&old[key]!==raw)throw Error("Choose a valid "+label);out[key]=raw.slice(0,400);}
  }
  return out;
 }
 function familyFields(f={}){
- const typeOptions=window.CPQ_MA006A_SOLAR_FIELDS.types;
+ const typeOptions=window.CPQ_MA006A_SOLAR_FIELDS.types.filter(([id])=>id!=="service"||f.solarKind==="service");
+ const types=familyTypes.filter(([id])=>id!=="service"||f.type==="service");
  return section("1 · Product Basics","Start with the product name, category and equipment type. The technical fields below will adapt automatically.")+
  group(textField("familyName","Product Family / Name",f.name,"text",false,true)+
  selectField("familyCategory","Category",db.categories.map(x=>[x,x]),f.category||"Solar Equipment","Choose category",true)+
- selectField("solarKind","Equipment Field Template",typeOptions,f.solarKind||state.editor?.solarKind||"general","Select template")+
- selectField("familyType","Product Type",familyTypes,f.type||"standard","Choose type",true))+
+ selectField("solarKind","Product Specification Template",typeOptions,f.solarKind||state.editor?.solarKind||"general","Select template")+
+ selectField("familyType","Product Type",types,f.type||"standard","Choose type",true))+
  details("More family details",group(textField("familyUnit","Default Unit of Measure",f.unit||"Nos")+
  textField("familyRating","General Rating / Size",f.rating||"")+
  selectField("familyStatus","Lifecycle Status",statuses.map(x=>[x,x]),f.status||"Draft")+
@@ -349,16 +355,17 @@ function partsPicker(v={}){
   const x=(v.components||[]).find(c=>c.partId===p.id);
   return '<div class="ma6a-part-choice"><label><input type="checkbox" name="linkedPart" value="'+esc(p.id)+'"'+(x?' checked':'')+'> '+esc(p.name)+'</label>'+
   '<input type="number" name="qty_'+esc(p.id)+'" value="'+esc(x?.qty||1)+'" min="1" step="1" aria-label="Part quantity '+esc(p.name)+'">'+
-  '<select name="role_'+esc(p.id)+'" aria-label="Part requirement '+esc(p.name)+'">'+selectOptions([["Required","Required"],["Optional","Optional"]],x?.role||"Required")+'</select></div>';
+  '<select name="role_'+esc(p.id)+'" aria-label="Part requirement '+esc(p.name)+'">'+selectOptions([["Required","Required"],["Optional","Optional"]],x?.role||"Required")+'</select><input name="group_'+esc(p.id)+'" value="'+esc(x?.group||"")+'" placeholder="BOM group (optional, e.g. Armour Earth Arrangement)" maxlength="100" aria-label="BOM group for '+esc(p.name)+'"></div>';
  }).join("")+'</div>';
 }
 function variantFields(v={},f={}){
  const d=v.dimensions||{},p=v.price||{},kind=f.solarKind||state.editor?.solarKind||"general";
  return section("2 · Exact Manufacturer Model","Every model has its own SKU and dimensions. Add a second manufacturer as a separate variant.")+
- group(textField("sku","Unique SKU / Product Code",v.sku,"text",false,true)+
- selectField("manufacturerId","Manufacturer / Brand",db.manufacturers.map(m=>[m.id,m.name+" · "+m.brand]),v.manufacturerId||"","Choose manufacturer (service optional)")+
- textField("model","Model Number",v.model||"","text",false,true)+
- textField("variantName","Model / Size Description",v.variant||"")+
+ group('<div class="ma6-field"><label for="cat-sku">Internal SKU / Product Code</label><input id="cat-sku" name="sku" maxlength="80" value="'+esc(v.sku||"")+'"'+(v.id?' readonly':' placeholder="Auto-generated on save (or enter existing code)"')+'><small class="cpq-identity-help">'+(v.id?"Existing code retained.":"Leave blank to generate a unique PRD code. Existing company codes may be entered manually.")+'</small></div>'+
+ selectField("manufacturerId","Manufacturer / Brand",[...db.manufacturers.map(m=>[m.id,m.name+" · "+m.brand]),["__generic__","Unbranded / Generic"],["__inhouse__","In-house assembled"],["__unknown__","Manufacturer not yet known"]],v.manufacturerId||(v.manufacturerSource==="generic"?"__generic__":v.manufacturerSource==="inhouse"?"__inhouse__":v.id?"__unknown__":""),"Choose manufacturer or source")+
+ textField("model","Manufacturer Model Number"+(tpl.get(kind)?.modelRequired?" (required)":" (optional)"),v.model||"","text",false,!!tpl.get(kind)?.modelRequired)+
+ textField("manufacturerPartNo","Manufacturer Part Number (optional)",v.manufacturerPartNo||"")+
+ textField("variantName","Variant / Size Description (optional)",v.variant||"")+
  textField("capacity","Capacity / Main Rating",v.capacity||"")+
  selectField("variantStatus","Model Status",statuses.map(x=>[x,x]),v.status||"Draft"))+
  '<div id="catalog-solar-fields">'+solarFields(kind,v.solar||{})+'</div>'+
@@ -421,6 +428,8 @@ function partFields(p={}){
 }
 function editorMarkup(){
  const e=state.editor;if(!e)return "";
+ if(e.mode==="templates")return tpl.manager(db);
+ if(e.mode==="template-new"||e.mode==="template-edit")return tpl.editor(e.templateId?tpl.get(e.templateId,db):{},db);
  if(e.mode==="product-new")return familyFields()+variantFields({}, {solarKind:state.editor?.solarKind||"general"});
  if(e.mode==="family-new")return familyFields({solarKind:e.solarKind||"general"});
  if(e.mode==="family-edit")return familyFields(family(e.familyId));
@@ -432,13 +441,13 @@ function editorMarkup(){
 }
 function openEditor(mode,ids={}){
  state.editor={mode,solarKind:mode==="product-new"?"pv-module":"general",...ids};
- const titles={"product-new":"Add Product","family-new":"Add Product Group","family-edit":"Edit Product Group","variant-new":"Add Another Model","variant-edit":"Edit Model","manufacturer-new":"Add Manufacturer","manufacturer-edit":"Edit Manufacturer","part-new":"Add Part / Accessory","part-edit":"Edit Part / Accessory"};
+ const titles={"templates":"Product Specification Templates","template-new":"Add Specification Template","template-edit":"Edit Specification Template","product-new":"Add Product","family-new":"Add Product Group","family-edit":"Edit Product Group","variant-new":"Add Another Model","variant-edit":"Edit Model","manufacturer-new":"Add Manufacturer","manufacturer-edit":"Edit Manufacturer","part-new":"Add Part / Accessory","part-edit":"Edit Part / Accessory"};
  $("catalog-editor-title").textContent=titles[mode]||"Edit Catalog";
  $("catalog-editor-subtitle").textContent="Fictional master-data fields · Demo save only · Not production authorization";
  $("catalog-editor-body").innerHTML=editorMarkup();$("catalog-editor-error").hidden=true;
  const simple=window.CPQ_MA006A_SIMPLE_WIZARD;
  if(simple&&["product-new","variant-new","variant-edit"].includes(mode))simple.mount(state.editor,db);
- else{if(simple)simple.reset();$("catalog-editor-back").hidden=true;$("catalog-editor-next").hidden=true;$("catalog-editor-save").hidden=false;$("catalog-editor-save").textContent="Save Demo";}
+ else{if(simple)simple.reset();$("catalog-editor-back").hidden=true;$("catalog-editor-next").hidden=true;$("catalog-editor-save").hidden=mode==="templates";$("catalog-editor-save").textContent=mode.startsWith("template-")?"Save Template":"Save Demo";}
  $("catalog-editor-overlay").classList.add("open");$("catalog-editor-overlay").setAttribute("aria-hidden","false");
  $("catalog-editor-close").focus();
 }
@@ -462,25 +471,22 @@ function techParse(raw){
  });
 }
 function getFamilyForm(f){
- const name=trim(f,"familyName"),category=trim(f,"familyCategory"),type=trim(f,"familyType");
- if(!name||!category||!type)throw Error("Product family name, category and type are required.");
+ const name=trim(f,"familyName"),category=trim(f,"familyCategory"),type=trim(f,"familyType"),kind=trim(f,"solarKind")||"general";
+ if(!name||!category||!type||!tpl.get(kind,db))throw Error("Product group name, category, type and valid specification template are required.");
+ if((type==="service"||kind==="service")&&state.editor?.mode!=="family-edit")throw Error("Use Service Management to add new services.");
  return {name:name.slice(0,150),category,type,solarKind:trim(f,"solarKind")||"general",unit:trim(f,"familyUnit")||"Nos",
   rating:trim(f,"familyRating"),description:trim(f,"familyDescription"),status:trim(f,"familyStatus")||"Draft",
   attributes:trim(f,"familyAttributes")};
 }
 function getVariantForm(f,familyType,existing=null,solarKind="general",category="Other"){
- const sku=trim(f,"sku"),model=trim(f,"model"),manufacturerId=trim(f,"manufacturerId");
- if(!sku||!model)throw Error("Variant SKU and manufacturer model number are required.");
- if(db.variants.some(v=>v.sku.toLowerCase()===sku.toLowerCase()&&v.id!==existing?.id))throw Error("This SKU already exists. Each model must have a unique product code.");
- if(manufacturerId&&!maker(manufacturerId))throw Error("Select a manufacturer from the master list.");
- if(familyType!=="service"&&!manufacturerId)throw Error("Select a manufacturer for this physical product. Add a new manufacturer from the Manufacturers tab if needed.");
+ const identity=tpl.identity(db,f,solarKind,existing);
  const dims={unit:trim(f,"dimensionUnit")||"mm",weightUnit:trim(f,"weightUnit")||"kg"};
  for(const [k,fk] of [["length","dimLength"],["width","dimWidth"],["height","dimHeight"],["depth","dimDepth"],["weight","weight"]])dims[k]=positive(f,fk);
  const components=f.getAll("linkedPart").map(id=>{
   if(!part(id))throw Error("A referenced part is not in the master library.");
   const qty=Number(trim(f,"qty_"+id)||1);
   if(!Number.isInteger(qty)||qty<1||qty>100000)throw Error("Part quantities must be positive whole numbers.");
-  return {partId:id,qty,role:trim(f,"role_"+id)==="Optional"?"Optional":"Required"};
+  return {partId:id,qty,role:trim(f,"role_"+id)==="Optional"?"Optional":"Required",group:trim(f,"group_"+id).slice(0,100)};
  });
  const cost=positive(f,"cost"),sell=positive(f,"sell");
   const solar=solarDataFromForm(f,solarKind,existing?.solar||{});
@@ -500,7 +506,7 @@ function getVariantForm(f,familyType,existing=null,solarKind="general",category=
  const warranty=pim.readWarranty(f,existing?.warranty||{});
  const from=trim(f,"priceFrom"),to=trim(f,"priceTo");
  if(from&&to&&to<from)throw Error("Price effective-until cannot precede the effective-from date.");
- return {sku:sku.slice(0,80),manufacturerId,model:model.slice(0,120),variant:trim(f,"variantName")||model,
+ return {...identity,variant:trim(f,"variantName")||identity.model||tpl.describe(solarKind,solar,trim(f,"capacity"),db)||identity.sku,specTemplate:tpl.capture(solarKind,db),
   status:trim(f,"variantStatus")||"Draft",capacity:trim(f,"capacity"),voltage:trim(f,"voltage"),
   mounting:trim(f,"mounting"),material:trim(f,"material"),enclosure:trim(f,"enclosure"),
   dimensions:dims,technical:techParse(trim(f,"technical")),solar,components,
@@ -525,7 +531,10 @@ function saveEditor(event){
  const fd=new FormData($("catalog-editor-form"));
  let createdType="",createdId="";
  try{
-  if(e.mode==="product-new"){
+  if(e.mode==="template-new"||e.mode==="template-edit"){
+   const old=e.templateId?tpl.get(e.templateId,db):null;
+   const data=tpl.readTemplate(fd,db,old);tpl.save(db,data);createdType=old?"":"template";createdId=data.id;
+  }else if(e.mode==="product-new"){
    const chosen=trim(fd,"wizardFamilyId");
    let fam=family(chosen),newFamily=null;
    if(!fam){
@@ -547,7 +556,7 @@ function saveEditor(event){
    const f={id:idNext("FAM-",db.families),...data};db.families.unshift(f);createdType="family";createdId=f.id;state.family=f.id;state.variant="";state.hub="products";state.tab="variants";state.search="";state.category="all";state.status="all";state.manufacturer="all";
   }else if(e.mode==="family-edit"){
    const f=family(e.familyId);if(!f)throw Error("Family not found.");
-   const data=getFamilyForm(fd);data.status=f.status;Object.assign(f,data);state.family=f.id;
+   const data=getFamilyForm(fd);if(siblings(f.id).length&&((data.solarKind||"general")!==(f.solarKind||"general")||data.type!==f.type))throw Error("Existing variants must keep their product type and template. Create another group for a different schema.");if(data.type==="service"&&f.type!=="service")throw Error("Use Service Management for new services.");data.status=f.status;Object.assign(f,data);state.family=f.id;
   }else if(e.mode==="variant-new"||e.mode==="variant-edit"){
    const fam=family(e.familyId);if(!fam)throw Error("Select a valid product family.");
    const orig=e.mode==="variant-edit"?variant(e.variantId):null;
@@ -606,7 +615,10 @@ document.addEventListener("click",event=>{
  const action=d.catalogAction;
  if(!action)return;
  if(["demo-submit-review","demo-enable-model","demo-revoke-model"].includes(action)){applyDemoReview(action);return;}
- if(action==="edit-family")openEditor("family-edit",{familyId:state.family});
+ if(action==="manage-templates")openEditor("templates");
+ else if(action==="add-template")openEditor("template-new");
+ else if(action==="edit-template")openEditor("template-edit",{templateId:d.templateId});
+ else if(action==="edit-family")openEditor("family-edit",{familyId:state.family});
  else if(action==="add-variant")openEditor("variant-new",{familyId:state.family});
  else if(action==="edit-variant"){
   if(!state.variant){return;}
@@ -625,8 +637,14 @@ $("catalog-search").addEventListener("input",e=>{state.search=e.target.value;ren
 $("catalog-category").addEventListener("change",e=>{state.category=e.target.value;renderCatalog();});
 $("catalog-manufacturer").addEventListener("change",e=>{state.manufacturer=e.target.value;renderCatalog();});
 $("catalog-status").addEventListener("change",e=>{state.status=e.target.value;renderCatalog();});
+$("catalog-editor-form").addEventListener("click",e=>{
+ if(e.target.closest("[data-template-add]")){$("cpq-template-fields").insertAdjacentHTML("beforeend",tpl.fieldRow());return;}
+ const remove=e.target.closest("[data-template-remove]");if(remove)remove.closest("[data-template-row]").remove();
+});
 $("catalog-editor-form").addEventListener("change",e=>{
- if(e.target.name!=="solarKind"||state.editor?.mode!=="product-new")return;
+ if(e.target.name!=="solarKind"||!state.editor)return;
+ if(state.editor.mode==="family-new"){const t=tpl.get(e.target.value,db);if(t){$("cat-familyCategory").value=t.category;$("cat-familyUnit").value=t.unit;}return;}
+ if(state.editor.mode!=="product-new")return;
  state.editor.solarKind=e.target.value;
  const target=$("catalog-solar-fields");if(target)target.innerHTML=solarFields(e.target.value,{});
 });
@@ -663,6 +681,7 @@ if(params.get("configuration")||params.get("opportunity")||params.get("hub")==="
 renderCatalog();
 window.CPQ_MA006A_CATALOG_UI={db,state,visibleFamilies,familyVariants,renderCatalog,openEditor,saveEditor,dimension,setHub};
 window.CPQ_QC_FORMS={
+ template:()=>{openEditor("template-new");return $("catalog-editor-overlay");},
  manufacturer:()=>{openEditor("manufacturer-new");return $("catalog-editor-overlay");},
  product:()=>{openEditor("product-new");return $("catalog-editor-overlay");},
  family:ctx=>{openEditor("family-new",{solarKind:ctx.solarKind||"general"});return $("catalog-editor-overlay");},

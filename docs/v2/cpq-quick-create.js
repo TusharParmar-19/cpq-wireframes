@@ -21,6 +21,7 @@ const sources={
  enquiry:["Enquiry","ma-005-opportunities.html","opportunities","opportunities"],
  manufacturer:["Manufacturer","ma-006a-configuration.html","catalog","manufacturers"],
  family:["Product Group","ma-006a-configuration.html","catalog","families"],
+ template:["Specification Template","ma-006a-configuration.html","catalog","specTemplates"],
  product:["Product Model","ma-006a-configuration.html","catalog","variants"],
  part:["Part / Accessory","ma-006a-configuration.html","catalog","parts"],
  service:["Service / Sub-service","service-master.html","services","services"]
@@ -70,6 +71,7 @@ function sync(before){
  for(const [key,value] of Object.entries(now)){
   if(JSON.stringify(before[key])===JSON.stringify(value))continue;
   for(const target of memoryTargets(key))merge(target,value);
+  if(key==="catalog")W.CPQ_PRODUCT_TEMPLATES?.apply(W.CPQ_MA006A_CATALOG_UI?.db||W.CPQ_MA006A_CATALOG);
   changed.push(key);
  }
  return changed;
@@ -83,7 +85,7 @@ function getRecords(type,modules=store()){
 function row(type,id){return getRecords(type).find(r=>r.id===id);}
 function label(type,r){
  return type==="manufacturer"?[r.name,r.brand].filter(Boolean).join(" · "):type==="enquiry"?[r.title,r.id].filter(Boolean).join(" · "):
- type==="product"?[r.model,r.sku].filter(Boolean).join(" · "):r.name||r.title||r.id;
+ type==="product"?[r.model||r.variant||r.capacity,r.sku].filter(Boolean).join(" · "):r.name||r.title||r.id;
 }
 function eligible(type,r,ctx,activeOnly=false){
  if(!r)return "The new record could not be read from the shared master.";
@@ -155,6 +157,8 @@ function resolve(el){
  if(el.closest("#catalog-editor-form")){
   if(name==="manufacturerId")return "manufacturer";
   if(name==="familyCategory")return "category";
+  if(name==="tplCategory")return "category";
+  if(name==="solarKind")return "template";
   if(name==="wizardFamilyId")return "family";
  }
  if(!el.closest("#op-form,#config-builder-body,#builder-body"))return "";
