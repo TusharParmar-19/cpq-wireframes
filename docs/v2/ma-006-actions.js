@@ -6,6 +6,7 @@ const {$,esc,db,master,org,staff,enquiries,state,quote,customer,buyer,contact,si
 let toastTimer=null,priorFocus=null;
 const copy=x=>JSON.parse(JSON.stringify(x));
 const flow=window.CPQ_FLOW;
+const pricing=window.CPQ_PRICING;
 const demoDate=()=>new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"});
 const statusDraft="Draft";
 const toISO=v=>{
@@ -53,11 +54,12 @@ function newBuilder(sourceId=""){
    q.lines=flow.serviceLines(q.enquiryServiceIds,1,src.id);
    q.serviceIds=q.lines.map(l=>l.serviceId);
  }
+ pricing.prepare(q,true);
  const b={quote:q,isNew:true,step:0,productId:"",options:{},quantity:1,addPickerOpen:true,catalogSearch:""};
  state.mode="builder";state.builder=b;renderBuilder();
  $("quote-builder").scrollIntoView({block:"start",behavior:"auto"});
 }
-function existingBuilder(mode="edit"){
+function existingBuilder(mode="edit",step=0){
  const original=quote(state.selected);if(!original)return;
  if(mode==="edit"&&original.demoDispatch?.state==="Sent in demo"){explain("Demo snapshot locked","This quote has a simulated dispatch record. A sent revision must not be silently edited. In production, create a controlled new revision; Duplicate as Draft creates a separate quote, not a revision.");return;}
  if(mode==="edit"&&original.status!==statusDraft){
@@ -67,7 +69,7 @@ function existingBuilder(mode="edit"){
   q.id="";q.rev="R0";q.status=statusDraft;q.date=demoDate();q.review="Not submitted";q.response="Not issued";q.responseNote="";
   q.versionNotes="New draft based on an existing sample";q.lastUpdated=demoDate()+" (demo)";delete q.demoApproval;delete q.demoDispatch;
  }
- const b={quote:q,isNew:mode==="duplicate",step:0,productId:"",options:{},quantity:1,addPickerOpen:!q.lines.length,catalogSearch:""};
+ const b={quote:q,isNew:mode==="duplicate",step,productId:"",options:{},quantity:1,addPickerOpen:!q.lines.length,catalogSearch:""};
  const existingConfig=q.lines.find(l=>l.type==="config"&&product(l.productId));
  if(existingConfig)setProduct(b,existingConfig.productId);
  if(existingConfig)b.options={...existingConfig.options};
@@ -102,6 +104,7 @@ function saveBuilder(){
  else if(!sourceOK)error="The selected enquiry must belong to the customer and buyer.";
  else if(!linesOK)error="Check BOQ item quantities, rates and configured options; quantities must be whole numbers from 1 to 100,000.";
  else if(!percentOK)error="Sample discount and tax percentages must be between 0 and 100.";
+ else if(pricing.errors(q).length)error=pricing.errors(q)[0];
  else if(q.validUntil&&!toISO(q.validUntil))error="Choose a valid calendar date or leave validity blank until review.";
  if(error){explain("Please correct the saved data",esc(error)+"<p>Incomplete quotation details and unconfirmed terms are allowed in Draft. Invalid relationships or numbers are not.</p>");return;}
  syncPackageBilling(q);
@@ -112,7 +115,7 @@ function saveBuilder(){
   const idx=db.quotations.findIndex(x=>x.id===q.id);
   if(idx<0||db.quotations[idx].status!=="Draft"){explain("Draft not available","This sample quotation is no longer an editable draft.");return;}
   const before=db.quotations[idx];
-   const material=["title","customerId","buyerId","contactId","siteId","projectId","opportunityId","companyId","branchId","ownerId","validUntil","discount","taxRate","payment","delivery","warranty","exclusions","notes","lines"];
+   const material=["title","customerId","buyerId","contactId","siteId","projectId","opportunityId","companyId","branchId","ownerId","validUntil","discount","taxRate","payment","delivery","warranty","exclusions","notes","lines","pricing"];
    if(before.demoApproval&&material.some(k=>JSON.stringify(before[k])!==JSON.stringify(q[k]))){
     const previous=before.demoApproval;
     q.demoApproval={state:"Needs resubmission",technical:"Not requested",commercial:"Not requested",
@@ -133,7 +136,7 @@ function syncPackageBilling(q){
   const ancestor=flow.hasSelectedAncestor(line.serviceId,selections);
   line.includedInParent=!!ancestor;
   line.includedInServiceId=ancestor?.id||"";
-  if(ancestor)line.unitPrice=0;
+  if(ancestor){line.unitPrice=0;if(line.pricing)line.pricing.overrideReason="";}
  }
  q.serviceIds=flow.normalized(selections,true);
 }
@@ -157,6 +160,7 @@ function addSelectedProduct(){
   Object.assign(line,flow.lineFor(p.id,index,selected,""));
  }
  if(p.sourceVariantId)flow.attachModel(line,p.sourceVariantId);
+ pricing.captureLine(line,true);
  q.lines.push(line);syncPackageBilling(q);
  renderBuilder();toast(p.serviceId?"Service added as an unpriced BOQ line":"Sample product added to BOQ");
 }
@@ -190,13 +194,14 @@ function updateBuilderField(field,value){
    if(!q.title)q.title="Quotation — "+src.title;
    q.enquiryServiceIds=flow.normalized(src.serviceIds||[],true);
    const next=Math.max(0,...q.lines.map(l=>Number(String(l.id).replace(/\D/g,""))||0))+1;
-   q.lines.push(...flow.serviceLines(q.enquiryServiceIds,next,src.id));
+   const imported=flow.serviceLines(q.enquiryServiceIds,next,src.id);
+   imported.forEach(l=>pricing.captureLine(l,true));q.lines.push(...imported);
   }
   syncPackageBilling(q);
   renderBuilder();return;
  }
  if(["discount","taxRate"].includes(field)){
-  q[field]=Math.max(0,Math.min(100,Number(value)||0));renderBuilder();return;
+  q[field]=Math.max(0,Math.min(100,Number(value)||0));if(b.step===2)pricing.refresh(q,$("builder-body"),a.financialRows);else renderBuilder();return;
  }
  q[field]=value;
 }
@@ -329,6 +334,25 @@ function handleAction(action,target){
   if(action==="simulate-review"){openDemoDecision(target?.dataset.role);return;}
   if(action==="record-demo-review"){recordDemoDecision(target?.dataset.role,target?.dataset.decision);return;}
   if(action==="edit-builder"){existingBuilder("edit");return;}
+ if(action==="edit-pricing"){existingBuilder("edit",2);return;}
+ if(action.startsWith("price-")&&state.builder){
+  const q=state.builder.quote;
+  try{
+   if(action==="price-add-cost")pricing.addCost(q);
+   else if(action==="price-remove-cost"){
+    if(!window.confirm("Remove this additional expense from this draft quotation?"))return;
+    pricing.removeCost(q,target.dataset.costId);
+   }else if(action==="price-reset"){
+    const l=q.lines.find(x=>x.id===target.dataset.priceLine);
+    if(l&&l.pricing?.defaultRate!=null)pricing.setRate(q,l,l.pricing.defaultRate);
+   }else if(action==="price-apply-target"){
+    if(!window.confirm("Apply the cost-plus target to all billable offered rates? Existing quote-specific rates will be replaced; the master catalog stays unchanged."))return;
+    pricing.applyTarget(q);toast("Cost-plus target applied to this draft only.");
+   }
+   renderBuilder();
+  }catch(error){explain("Check pricing data",esc(error.message));}
+  return;
+ }
  if(action==="duplicate"){existingBuilder("duplicate");return;}
  if(action==="add-config-item"){addSelectedProduct();return;}
  if(action==="toggle-add-product"){if(state.builder){state.builder.addPickerOpen=!state.builder.addPickerOpen;state.builder.catalogSearch="";renderBuilder();}return;}
@@ -354,7 +378,7 @@ document.addEventListener("click",e=>{
   return;
  }
  if(d.tab){state.tab=d.tab;render();return;}
- if(d.step!==undefined){const i=Number(d.step);if(state.builder&&Number.isInteger(i)&&i>=0&&i<4){state.builder.step=i;renderBuilder();}return;}
+ if(d.step!==undefined){const i=Number(d.step);if(state.builder&&Number.isInteger(i)&&i>=0&&i<a.steps.length){state.builder.step=i;renderBuilder();}return;}
  if(d.product){if(state.builder){setProduct(state.builder,d.product);renderBuilder();}return;}
  if(d.removeLine){if(state.builder){const q=state.builder.quote;q.lines=q.lines.filter(l=>l.id!==d.removeLine);syncPackageBilling(q);renderBuilder();}return;}
  if(d.action){handleAction(d.action,t);return;}
@@ -364,6 +388,30 @@ function changedInput(e,commit=true){
  if(state.mode!=="builder"||!state.builder)return;
  const t=e.target;
  const b=state.builder,q=b.quote;
+ if(t.dataset.priceField||t.dataset.costField||t.dataset.pricingField){
+  try{
+   if(t.dataset.priceField){
+    const l=q.lines.find(x=>x.id===t.dataset.priceLine);if(!l)return;
+    if(t.dataset.priceField==="rate"){pricing.setRate(q,l,t.value);t.value=l.unitPrice;}
+    else if(t.dataset.priceField==="reason")pricing.setReason(q,l,t.value);
+    else if(t.dataset.priceField==="cost"){
+     if(String(t.value).trim()==="")l.pricing.unitCost=null;
+     else if(pricing.validNumber(t.value)){l.pricing.unitCost=Math.round(Number(t.value)*100)/100;t.value=l.pricing.unitCost;}
+     else throw Error("Enter a valid estimated unit cost, or leave it blank if unknown.");
+    }
+   }else if(t.dataset.costField){
+    pricing.updateCost(q,t.dataset.costId,t.dataset.costField,t.value);
+    if(["kind","method","separate"].includes(t.dataset.costField)){renderBuilder();return;}
+   }else if(t.dataset.pricingField==="method"){
+    q.pricing.method=t.value==="cost-plus"?"cost-plus":"standard";renderBuilder();return;
+   }else if(t.dataset.pricingField==="markup"){
+    if(!pricing.validNumber(t.value)||Number(t.value)>500)throw Error("Markup must be between 0 and 500%.");
+    q.pricing.markup=Math.round(Number(t.value)*100)/100;
+   }
+   pricing.refresh(q,$("builder-body"),a.financialRows);
+  }catch(error){renderBuilder();explain("Check pricing data",esc(error.message));}
+  return;
+ }
  if(t.dataset.field){updateBuilderField(t.dataset.field,t.value);return;}
  if(t.dataset.configQty!==undefined){b.quantity=Math.max(1,Number(t.value)||1);return;}
   if(t.dataset.paymentPreset!==undefined){if(t.value){q.payment=t.value;renderBuilder();}return;}
@@ -372,7 +420,7 @@ function changedInput(e,commit=true){
  }
  if(t.dataset.catalogSearch!==undefined){b.catalogSearch=t.value;return;}
   if(t.dataset.lineRate!==undefined){
-  const l=q.lines.find(x=>x.id===t.dataset.lineRate);if(l&&!l.includedInParent){l.unitPrice=Math.max(0,Number(t.value)||0);if(commit)renderBuilder();}return;
+  const l=q.lines.find(x=>x.id===t.dataset.lineRate);if(l&&!l.includedInParent){pricing.setRate(q,l,Math.max(0,Number(t.value)||0));if(commit)renderBuilder();}return;
  }
 }
 $("builder-body").addEventListener("change",e=>changedInput(e,true));
@@ -423,7 +471,7 @@ $("quote-expand-toggle").addEventListener("click",toggleQuotationList);
 $("new-quote").addEventListener("click",()=>newBuilder());
 $("builder-close").addEventListener("click",openQuotationTable);
 $("builder-prev").addEventListener("click",()=>{if(state.builder){state.builder.step=Math.max(0,state.builder.step-1);renderBuilder();}});
-$("builder-next").addEventListener("click",()=>{if(state.builder){state.builder.step=Math.min(3,state.builder.step+1);renderBuilder();}});
+$("builder-next").addEventListener("click",()=>{if(state.builder){state.builder.step=Math.min(a.steps.length-1,state.builder.step+1);renderBuilder();}});
 $("builder-save").addEventListener("click",saveBuilder);
 $("company-filter").addEventListener("change",e=>{state.company=e.target.value;state.branch="all";state.owner="all";render();});
 $("branch-filter").addEventListener("change",e=>{state.branch=e.target.value;state.owner="all";render();});
@@ -526,6 +574,7 @@ function openConfigurationHandoff(raw,fromSaved=false){
   q.sourceConfigRevision=typeof c.revision==="string"?c.revision.slice(0,16):"C0";
  q.lines=[...lines,...flow.serviceLines(quotedServices,lines.length+1,c.opportunityId||"")];
  q.enquiryServiceIds=flow.normalized(src?.serviceIds||[],true);
+ pricing.prepare(q,true);
  syncPackageBilling(q);
  state.builder.addPickerOpen=false;
   state.builder.productId="";
@@ -538,8 +587,10 @@ function openConfigurationHandoff(raw,fromSaved=false){
   siteLocation:String(c.solar.siteLocation||"").slice(0,150)
  }:null;
  q.notes="Source "+c.configId+". Catalog prices are fictional and require approval. Solar electrical/structural checks and project-specific modifications remain unverified.";
+ state.builder.step=2;
+ state.builder.initialQuoteSnapshot=JSON.stringify(q);
  renderBuilder();
- toast("Technical configuration imported into an unissued quotation draft (demo)");
+ toast("Configuration imported. Review automatic rates and additional costs in Pricing & Costing.");
  return true;
 }
 function payloadFromStored(ref){
