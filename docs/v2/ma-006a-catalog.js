@@ -444,6 +444,13 @@ function editorMarkup(){
  if(e.mode==="part-new"||e.mode==="part-edit")return partFields(e.partId?part(e.partId):{});
  return "";
 }
+function syncModelTaxFields(){
+ const form=$("catalog-editor-form"),source=form.querySelector('[name="taxSource"]');if(!source)return;
+ const inherit=source.value!=="override";
+ for(const field of form.querySelectorAll('[name^="modelTax"]')){field.disabled=inherit;const wrapper=field.closest(".ma6-field");if(wrapper){wrapper.hidden=inherit;wrapper.style.display=inherit?"none":"";}}
+ const hint=form.querySelector("[data-model-tax-help]");if(hint)hint.remove();
+ const wrap=source.closest(".ma6-field");if(wrap){const el=document.createElement("small");el.className="cpq-identity-help";el.dataset.modelTaxHelp="";el.textContent=inherit?"Uses the product group GST settings. Edit the group to set defaults, or choose model-specific GST.":"These settings replace the group tax defaults for this model.";wrap.appendChild(el);}
+}
 function openEditor(mode,ids={}){
  state.editor={mode,solarKind:mode==="product-new"?"pv-module":"general",...ids};
  const titles={"templates":"Product Specification Templates","template-new":"Add Specification Template","template-edit":"Edit Specification Template","product-new":"Add Product","family-new":"Add Product Group","family-edit":"Edit Product Group","variant-new":"Add Another Model","variant-edit":"Edit Model","manufacturer-new":"Add Manufacturer","manufacturer-edit":"Edit Manufacturer","part-new":"Add Part / Accessory","part-edit":"Edit Part / Accessory"};
@@ -454,6 +461,7 @@ function openEditor(mode,ids={}){
  const simple=window.CPQ_MA006A_SIMPLE_WIZARD;
  if(simple&&["product-new","variant-new","variant-edit"].includes(mode))simple.mount(state.editor,db);
  else{if(simple)simple.reset();$("catalog-editor-back").hidden=true;$("catalog-editor-next").hidden=true;$("catalog-editor-save").hidden=mode==="templates";$("catalog-editor-save").textContent=mode.startsWith("template-")?"Save Template":"Save Demo";}
+ syncModelTaxFields();
  $("catalog-editor-overlay").classList.add("open");$("catalog-editor-overlay").setAttribute("aria-hidden","false");
  $("catalog-editor-close").focus();
 }
@@ -696,6 +704,7 @@ $("catalog-family-body").addEventListener("click",event=>{
   pim.archiveDocument(v,target.dataset.productDocArchive);state.tab="documents";renderCatalog();
  }catch(err){window.alert(err.message||"Unable to archive this document reference.");}
 });
+$("catalog-editor-form").addEventListener("change",e=>{if(e.target.name==="taxSource")syncModelTaxFields();});
 $("catalog-editor-form").addEventListener("submit",saveEditor);
 $("catalog-editor-cancel").addEventListener("click",closeEditor);
 $("catalog-editor-close").addEventListener("click",closeEditor);

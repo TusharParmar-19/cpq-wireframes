@@ -259,7 +259,7 @@ function pricingView(q,financialRows){
  '<div class="cpq-price-heading"><div><h3>3 · Pricing &amp; Costing</h3><p>Internal working sheet · Configure the commercial offer without changing Product Master.</p></div><span class="ma6-tag">INR · Demo only</span></div>'+
  '<div class="cpq-price-notice"><b>Default vs offered rate:</b> Product list rates and available purchase costs are captured when items enter this draft. Modify the offered rate for this quotation only. Service rates or unavailable catalog prices can be entered manually. Rates and documents remain fictional.</div>'+
  '<section class="cpq-price-section"><div class="cpq-price-heading"><div><h4>Product &amp; service pricing</h4><p>Exact model/SKU, quantity, original rate, cost estimate, offered rate and change reason.</p></div><button type="button" class="btn" data-step="1">Edit BOQ</button></div>'+
- (defaultRows?'<div class="cpq-price-scroll"><table class="cpq-price-table"><thead><tr><th>BOQ item</th><th>Qty</th><th>Captured default / unit</th><th>Internal cost / unit (₹)</th><th>Offered rate / unit (₹)</th><th>Offered amount</th><th>Override reason</th></tr></thead><tbody>'+defaultRows+'</tbody></table></div>':
+ (defaultRows?'<div class="cpq-price-scroll"><table class="cpq-price-table"><thead><tr><th>BOQ item</th><th>Qty</th><th>Captured net rate / unit</th><th>Internal net cost / unit (₹)</th><th>Offered rate excl. GST / unit (₹)</th><th>Offered amount</th><th>Override reason</th></tr></thead><tbody>'+defaultRows+'</tbody></table></div>':
   '<p class="cpq-price-help">No products or services selected. Go back to Products &amp; BOQ.</p>')+
  '<p class="cpq-price-help">For included children, estimate their direct cost only if not already counted in the parent. Enter 0 explicitly if no separate cost. Quotation rates can be restored to the captured default, not to a silently refreshed master price.</p></section>'+
  '<section class="cpq-price-section"><div class="cpq-price-heading"><div><h4>Additional costs</h4><p>Labour, freight, installation, commission, subcontractors, overhead and any custom costs.</p></div><button type="button" class="btn primary" data-action="price-add-cost">+ Add Cost</button></div>'+
@@ -271,7 +271,7 @@ function pricingView(q,financialRows){
  ''+(window.CPQ_TAX.enabled(q)?"":'<label>Legacy illustrative tax (%)'+input('data-field="taxRate" max="100"',q.taxRate)+'</label>')+
  (p.method==="cost-plus"?'<label>Target markup on cost (%)'+input('data-pricing-field="markup" max="500"',p.markup)+'</label>':'')+'</div>'+
  (p.method==="cost-plus"?'<div class="cpq-price-target"><div><b data-price-target>Suggested selling amount before discount: '+(t.target===null?"Complete cost data / check inputs":fmt(t.target))+'</b><p>Apply once to distribute the target among billable BOQ rates after deducting any separate customer charges. Rates remain editable; unit rounding may produce a small difference. Discounts reduce final profit.</p></div><button type="button" class="btn primary" data-action="price-apply-target">Apply Cost-plus Target</button></div>':'')+
- ''+window.CPQ_TAX.editor(q,t)+'<div data-price-metrics>'+metrics(q)+'</div><div data-price-loss>'+(t.profit!==null&&t.profit<0?'<p class="cpq-price-alert">Below estimated cost — requires a commercial exception review in production.</p>':'')+'</div>'+
+ '<div data-tax-editor>'+window.CPQ_TAX.editor(q,t)+'</div><div data-price-metrics>'+metrics(q)+'</div><div data-price-loss>'+(t.profit!==null&&t.profit<0?'<p class="cpq-price-alert">Below estimated cost — requires a commercial exception review in production.</p>':'')+'</div>'+
  '<div class="cpq-price-final"><div><b>Internal pricing only</b><p>Costs, commission, profit, margin and override history are not included in the customer-facing layout. No actual permission is enforced in this public demo.</p></div><div data-price-summary>'+financialRows(q)+'</div></div>'+
  '<div data-price-history>'+history(q)+'</div></section></div>';
 }
@@ -281,6 +281,7 @@ function refresh(q,root,financialRows){
  const html=(selector,value)=>{const el=get(selector);if(el)el.innerHTML=value;};
  const text=(selector,value)=>{const el=get(selector);if(el)el.textContent=value;};
  const show=(selector,value)=>{const el=get(selector);if(el)el.hidden=!value;};
+ html("[data-tax-editor]",window.CPQ_TAX.editor(q,t));
  html("[data-price-metrics]",metrics(q));
  html("[data-price-loss]",t.profit!==null&&t.profit<0?'<p class="cpq-price-alert">Below estimated cost — requires a commercial exception review in production.</p>':"");
  html("[data-price-summary]",financialRows(q));

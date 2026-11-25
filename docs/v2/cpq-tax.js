@@ -93,13 +93,13 @@ function reviewIssues(q,result){
 function editor(q,result){
  if(!enabled(q))return '<div class="cpq-price-help"><b>Legacy quotation:</b> original single tax assumption retained. <button type="button" class="btn" data-action="price-enable-item-tax">Switch draft to item-wise GST</button></div>';
  const d=result.gst, row=(id,label,raw,kind,sourceType)=>{
- const t=normalize(raw,kind),a='data-tax-id="'+esc(id)+'" data-tax-source="'+sourceType+'" ',sel=(key,list,v)=>'<select '+a+'data-tax-field="'+key+'">'+opts(list,v)+'</select>';
- return '<tr><td><b>'+esc(label)+'</b><small>'+esc(raw?.source||"Not configured")+'</small></td><td><input '+a+'data-tax-field="code" aria-label="'+(kind==="service"?"SAC":"HSN")+' '+esc(label)+'" value="'+esc(t.code)+'" inputmode="numeric" maxlength="8"></td><td>'+sel("category",categories,t.category)+'</td><td><input '+a+'data-tax-field="rate" type="number" min="0" max="100" step="0.01" value="'+esc(t.rate??"")+'" aria-label="GST percentage '+esc(label)+'"'+(t.category!=="taxable"?' disabled':'')+'></td><td>'+ (complete(t)?"Configured":"Review needed")+'</td></tr>';
+ const t=normalize(raw,kind),calculated=d.rows.find(x=>x.id===id),a='data-tax-id="'+esc(id)+'" data-tax-source="'+sourceType+'" ',sel=(key,list,v)=>'<select '+a+'data-tax-field="'+key+'">'+opts(list,v)+'</select>';
+ return '<tr><td><b>'+esc(label)+'</b><small>'+esc(raw?.source||"Not configured")+'</small></td><td><input '+a+'data-tax-field="code" aria-label="'+(kind==="service"?"SAC":"HSN")+' '+esc(label)+'" value="'+esc(t.code)+'" inputmode="numeric" maxlength="8"></td><td>'+sel("category",categories,t.category)+'</td><td><input '+a+'data-tax-field="rate" type="number" min="0" max="100" step="0.01" value="'+esc(t.rate??"")+'" aria-label="GST percentage '+esc(label)+'"'+(t.category!=="taxable"?' disabled':'')+'></td><td>'+money(calculated?.base)+'</td><td>'+(complete(t)?money(calculated?.gst):"Pending")+'</td><td>'+ (complete(t)?"Configured":"Review needed")+'</td></tr>';
  };
  return '<section class="cpq-price-section"><div class="cpq-price-heading"><div><h4>Item-wise GST &amp; HSN/SAC</h4><p>Captured from master data; editable only for this draft. Offered rates in this workspace exclude GST. Inclusive master rates are converted when first captured. No statutory rate is preselected.</p></div></div>'+
  '<div class="cpq-price-settings"><label>GST treatment<select data-tax-region>'+opts(jurisdictions,q.taxRegion||"")+'</select></label></div>'+
  '<p class="cpq-price-help">Choose treatment using the actual supplier location and applicable place of supply. This public wireframe does not determine tax law.</p>'+
- '<div class="cpq-price-scroll"><table><thead><tr><th>Billable item / charge</th><th>HSN / SAC</th><th>Category</th><th>GST %</th><th>Status</th></tr></thead><tbody>'+
+ '<div class="cpq-price-scroll"><table><thead><tr><th>Billable item / charge</th><th>HSN / SAC</th><th>Category</th><th>GST %</th><th>Net after discount</th><th>GST amount</th><th>Status</th></tr></thead><tbody>'+
  (q.lines||[]).filter(l=>!l.includedInParent).map(l=>row(l.id,l.description,l.taxSnapshot,l.taxSnapshot?.kind||l.customItem?.kind||((l.serviceId||l.type==="service")?"service":"product"),"line")).join("")+
  (result.publicRows||[]).map(c=>row(c.id,c.label,chargeTax(q.pricing?.costs?.find(x=>x.id===c.id)),"service","charge")).join("")+
  '</tbody></table></div><p class="cpq-price-help">Included sub-services are not charged again. Tax edits here do not update the Product or Service Master.</p>'+
@@ -112,7 +112,9 @@ function update(q,target){
  const prev=source.taxSnapshot||empty(target.dataset.taxSource==="charge"?"service":source.customItem?.kind||((source.serviceId||source.type==="service")?"service":"product"));
  const k=target.dataset.taxField;if(!["code","category","rate"].includes(k))return;
  // Quote rates are already net; never reinterpret them when a tax assumption changes.
- const t=normalize({...prev,[k]:target.value,sellBasis:"exclusive",costBasis:"exclusive",source:"Quote-specific assumption"},prev.kind);
+ const next={...prev,[k]:target.value,sellBasis:"exclusive",costBasis:"exclusive",source:"Quote-specific assumption",capturedSellBasis:prev.capturedSellBasis||prev.sellBasis,capturedCostBasis:prev.capturedCostBasis||prev.costBasis};
+ if(k==="category"&&target.value==="taxable"&&prev.category!=="taxable")next.rate=null;
+ const t=normalize(next,prev.kind);
  const issue=invalid(t);if(issue)throw Error(issue);source.taxSnapshot=t;
 }
 function breakdown(result,cls="ma6-price-row"){

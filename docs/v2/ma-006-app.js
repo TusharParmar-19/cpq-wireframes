@@ -213,7 +213,7 @@ function financialRows(q){
  (t.charges?'<div class="ma6-price-row"><span>Separate customer charges</span><strong>'+money(t.charges)+'</strong></div>':'')+
  '<div class="ma6-price-row"><span>Offer subtotal before discount</span><strong>'+money(t.subtotal)+'</strong></div>'+
  '<div class="ma6-price-row"><span>Sample discount ('+esc(q.discount)+'%)</span><strong>− '+money(t.discount)+'</strong></div>'+
- '<div class="ma6-price-row"><span>Illustrative taxable base</span><strong>'+money(t.taxable)+'</strong></div>'+
+ '<div class="ma6-price-row"><span>Net before GST</span><strong>'+money(t.taxable)+'</strong></div>'+
  '<div class="ma6-price-row"><span>'+(t.gst?"Total GST (demo)":"Illustrative tax ("+esc(q.taxRate)+"%)")+'</span><strong>'+money(t.tax)+'</strong></div>'+window.CPQ_TAX.breakdown(t)+
  '<div class="ma6-price-row final"><span>Illustrative quote total</span><strong>'+money(t.total)+'</strong></div></div>';
 }
