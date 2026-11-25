@@ -146,3 +146,6 @@ This extension adds information to the existing Product Master; it does **not** 
 
 ### One-off configuration items (Phase 1)
 Add Custom Item records product/service name, whole quantity (1–100,000), unit, optional customer-facing specification and internal notes. No product/SKU or service master record is created. Edit/remove like other technical lines. Custom lines do not contribute to automatic solar engineering checks; required catalog-based solar checks remain intact. The existing 25-item demo handoff limit applies. Save a configuration before handoff; quotation must validate and copy the saved custom item. Customer quote edits must not rewrite the configuration. No actual engineering verification.
+
+### Customer requirement documents and scope (Phase 1)
+See [Customer BOQ and scope contract](customer-boq-scope-contract.md). The optional section captures independent customer requirement snapshots. Existing pricing, BOQ and approval rules remain unchanged; scope and exclusions are customer-facing, technical instructions and source document references are internal.

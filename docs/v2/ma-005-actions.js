@@ -20,7 +20,8 @@ const contactFor=(id,bid)=>master.contacts.filter(x=>x.customerId===id&&x.compan
 const siteFor=(id,bid)=>master.sites.filter(x=>x.customerId===id&&x.companyId===bid&&x.status==="Active");
 const projectFor=(id,bid)=>master.projects.filter(x=>x.customerId===id&&x.companyId===bid);
 const linkedScopes=id=>customer(id)?.links||[];
-const scopeDefaults=window.CPQ_SCOPE_DEFAULTS;
+const scopeDefaults=window.CPQ_SCOPE_DEFAULTS,req=window.CPQ_REQUIREMENTS;
+let reqDraft={},reqIdentity={customerId:'',buyerId:''};
 let submit=null,focusBefore=null,toastHandle=null;
 function open(title,description,content,callback=null,label="Save demo"){
  focusBefore=document.activeElement;submit=callback;
@@ -40,6 +41,7 @@ function refList(){
  return '<span class="ma5-form-help">Select an existing customer from MA-004. <a href="ma-004-customers.html" target="_blank" rel="noopener" style="color:#1c729b;text-decoration:underline">Open Customer Master</a> to review the directory. Saved demo records synchronize between CPQ pages in this browser; production requires a secure shared database and quick prospect creation.</span>';
 }
 function createForm(){
+ reqDraft={};reqIdentity={customerId:'',buyerId:''};
  const f=wrap(
  section("1 · Customer and ownership")+
  select("customerId","Customer account",master.customers.filter(c=>c.status!=="Archived").map(c=>[c.id,c.name+" ("+c.type+")"]),"",true,"Choose customer account",true)+
@@ -62,7 +64,7 @@ function createForm(){
  select("priority","Priority",db.priorities.map(x=>[x,x]),"Medium")+
  field("received","Enquiry received on",todayInput(),true,"date")+
  field("needBy","Customer required-by date (optional)","",false,"date")+
- area("summary","Customer requirement summary","",true,true)+
+ area("summary","Customer requirement summary","",true,true)+req.form(reqDraft)+
  section("3 · Next action")+
  field("nextFollowUp","Next follow-up date (optional)","",false,"date")+
  field("nextAction","Next action / owner task (optional)","",false,"text",true)+
@@ -87,7 +89,10 @@ function createForm(){
   const nextIndex=Math.max(17,...db.opportunities.map(x=>Number(x.id.split("-").at(-1))||0))+1;
   const id="OP-2026-"+String(nextIndex).padStart(3,"0");
   const record={id,title,customerId,buyerId,contactId,siteId,projectId,companyId,branchId,ownerId,serviceIds,stage:"New",priority:v(fd,"priority")||"Medium",source:v(fd,"source")||"Direct Enquiry",kind:v(fd,"kind")||"Mixed Requirement",summary,requirements:v(fd,"requirements").split(/\n/).map(x=>x.trim()).filter(Boolean),received:dateText(v(fd,"received"))||today(),needBy:dateText(v(fd,"needBy")),expectedClose:"",nextFollowUp:dateText(v(fd,"nextFollowUp")),nextAction:v(fd,"nextAction"),remarks:v(fd,"remarks"),lostReason:"",linkedQuotes:[],lastUpdated:"07 Nov 2026 (demo)"};
-  db.opportunities.unshift(record);
+  Object.assign(reqDraft,{customerId,buyerId});
+   const issues=req.errors(reqDraft);if(issues.length){error(issues[0]);return;}
+   record.requirementPack=JSON.parse(JSON.stringify(req.read(reqDraft)));record.exclusions=reqDraft.exclusions||"";
+   db.opportunities.unshift(record);
   state.company="all";state.branch="all";state.stage="all";state.owner="all";state.priority="all";state.query="";state.selected=id;
   done(record,"Enquiry created: "+id,title,"overview");window.CPQ_QUICK_CREATE?.saved("enquiry",id);
  },"Create enquiry (demo)");
@@ -126,6 +131,7 @@ function updateOwners(){
 }
 function editEnquiry(){
  const o=opp(state.selected);if(!o)return;
+ reqDraft=req.opportunity(o);reqIdentity={customerId:o.customerId,buyerId:o.buyerId};
  const f=wrap(
  section("Customer & ownership")+
  '<div class="ma5-field full"><div class="ma5-dialog-message"><b>'+esc(o.id)+'</b> · '+esc(customer(o.customerId)?.name||"Customer")+' → '+esc(buyer(o.buyerId)?.name||"Buyer")+'<br>Buyer and internal company/branch stay fixed in this demo; reassignment needs a controlled workflow.</div></div>'+
@@ -141,7 +147,7 @@ function editEnquiry(){
  select("source","Source",db.sources.map(x=>[x,x]),o.source)+
  select("priority","Priority",db.priorities.map(x=>[x,x]),o.priority)+
  field("needBy","Customer required-by date",dateValue(o.needBy),false,"date")+
- area("summary","Customer requirement summary",o.summary)+
+ area("summary","Customer requirement summary",o.summary)+req.form(reqDraft)+
  area("requirements","Requirement lines (one per line)",o.requirements.join("\n"))+
  field("nextFollowUp","Next follow-up date",dateValue(o.nextFollowUp),false,"date")+
  field("nextAction","Next action",o.nextAction,false,"text",true)+area("remarks","Internal notes",o.remarks),
@@ -153,7 +159,9 @@ function editEnquiry(){
   if(contactId&&!contactFor(o.customerId,o.buyerId).some(x=>x.id===contactId)){error("Contact must belong to the selected buyer.");return;}
   if(siteId&&!siteFor(o.customerId,o.buyerId).some(x=>x.id===siteId)){error("Site must belong to the selected buyer.");return;}
   if(projectId&&!projectFor(o.customerId,o.buyerId).some(x=>x.id===projectId)){error("Project must belong to the selected buyer.");return;}
-  const existingInactive=(o.serviceIds||[]).filter(id=>window.CPQ_FLOW.service(id)?.status!=="Active");
+  const issues=req.errors(reqDraft);if(issues.length){error(issues[0]);return;}
+   o.requirementPack=JSON.parse(JSON.stringify(req.read(reqDraft)));o.exclusions=reqDraft.exclusions||"";
+   const existingInactive=(o.serviceIds||[]).filter(id=>window.CPQ_FLOW.service(id)?.status!=="Active");
   const serviceIds=window.CPQ_FLOW.normalized([...fd.getAll("serviceIds"),...existingInactive],true);
   Object.assign(o,{title,summary,contactId,siteId,projectId,ownerId,serviceIds,kind:v(fd,"kind")||o.kind,source:v(fd,"source")||o.source,priority:v(fd,"priority")||o.priority,needBy:dateText(v(fd,"needBy")),requirements:v(fd,"requirements").split(/\n/).map(x=>x.trim()).filter(Boolean),nextFollowUp:dateText(v(fd,"nextFollowUp")),nextAction:v(fd,"nextAction"),remarks:v(fd,"remarks")});
   done(o,"Enquiry updated",title);
@@ -215,7 +223,7 @@ function handleAction(name){
  else if(name==="stage")stageForm();
  else if(name==="followup")addFollowup();
  else if(name==="prepare")handoff();
- else if(name==="files")help("Document workflow planned","A future documents module will accept files, evidence status, version and access controls. No files are uploaded or downloaded in MA-005.");
+ else if(name==="files"){editEnquiry();const p=$("modal-body").querySelector("[data-req-panel]");if(p){p.open=true;p.scrollIntoView({block:"start"});}}
 }
 document.addEventListener("click",e=>{
  const t=e.target.closest("[data-opp],[data-tab],[data-stage],[data-action],[data-quote],[data-planned]");
@@ -235,8 +243,19 @@ $("priority-filter").addEventListener("change",e=>{state.priority=e.target.value
 $("owner-filter").addEventListener("change",e=>{state.owner=e.target.value;render();});
 $("clear-stage").addEventListener("click",()=>{state.stage="all";render();});
 $("reset-all").addEventListener("click",()=>{state.company="all";state.branch="all";state.stage="all";state.priority="all";state.owner="all";state.query="";render();});
+req.bind($("modal-body"),()=>document.getElementById("op-form")?reqDraft:null);
 $("modal-body").addEventListener("change",e=>{
- const id=e.target.id;
+ const id=e.target.id,t=e.target;
+ if(id==="f-customerId"||id==="f-buyerId"){
+  const k=id==="f-customerId"?"customerId":"buyerId";
+  if(reqIdentity[k]&&reqIdentity[k]!==t.value&&req.has(reqDraft)){
+   if(!req.confirmReplace(reqDraft)){t.value=reqIdentity[k];return;}
+   req.clear(reqDraft);
+   const old=$("modal-body").querySelector("[data-req-panel]");if(old)old.outerHTML=req.form(reqDraft);
+  }
+  reqIdentity[k]=t.value;
+  if(k==="customerId")reqIdentity.buyerId="";
+ }
  if(id==="f-customerId")updateCustomerBuyers();
  if(id==="f-buyerId")updateBuyerLinks();
  if(id==="f-companyId")updateInternalBranches();

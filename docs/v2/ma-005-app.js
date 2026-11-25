@@ -98,7 +98,7 @@ function requirements(o){
  '<div class="ma5-subhead"><h4>Requirement checklist / line items (initial)</h4></div>'+
  (o.requirements.length?'<ul class="ma5-req-list">'+o.requirements.map(r=>'<li>◇ &nbsp; '+esc(r)+'</li>').join("")+'</ul>':'<div class="ma5-empty">No requirements captured yet.</div>')+
  '<div class="ma5-subhead"><h4>Internal context / qualification notes</h4></div><div class="ma5-summary">'+text(o.remarks,"No notes recorded")+'</div>'+
- note('<b>Boundary:</b> These are discovery notes, not an approved technical specification, formal BOQ, product price, discount, tax calculation or legal customer offer.');
+ window.CPQ_REQUIREMENTS.detail(window.CPQ_REQUIREMENTS.opportunity(o))+note('<b>Boundary:</b> These are discovery notes, not an approved technical specification, formal BOQ, product price, discount, tax calculation or legal customer offer.');
 }
 function stakeholders(o){
  const c=customer(o.customerId),b=buyer(o.buyerId),p=person(o.contactId),si=site(o.siteId),pr=project(o.projectId);
@@ -126,17 +126,14 @@ function quotations(o){
   const fallback=quoteData.find(q=>q[0]===id);
   return {id,status:live?.status||fallback?.[4]||"Unverified",revision:live?.rev||fallback?.[5]||"Not supplied",serviceIds:live?.serviceIds||[]};
  });
- const files=db.documents.filter(f=>f.opportunityId===o.id);
+ const captured=window.CPQ_REQUIREMENTS.opportunity(o),files=captured.requirementPack.documents;
  return panel("Linked quotations and evidence","Quotation drafts saved in this browser are linked automatically; PDF issue and verified acceptance are separate.","prepare","Prepare quotation")+
  (o.demoQuoteOutcome?note('<b>Most recent simulated response:</b> '+esc(o.demoQuoteOutcome.decision)+' for '+esc(o.demoQuoteOutcome.quoteId)+'. No official status change or order is created by the demo.'):"")+
  '<div class="ma5-subhead"><h4>Quotation references ('+qs.length+')</h4></div>'+
  (qs.length?'<div class="ma5-table-wrap"><table class="ma5-table"><thead><tr><th>Quotation</th><th>Status</th><th>Revision</th><th>Action</th></tr></thead><tbody>'+qs.map(q=>
  '<tr><td><strong>'+esc(q.id)+'</strong><small>'+window.CPQ_FLOW.summary(q.serviceIds,2)+'</small></td><td>'+esc(q.status)+'</td><td>'+esc(q.revision)+'</td><td><a class="btn" href="ma-006-quotations.html?quote='+encodeURIComponent(q.id)+'">View MA-006</a></td></tr>').join("")+'</tbody></table></div>':
  '<div class="ma5-empty">No quotation has been specifically linked to this opportunity.</div>')+
- '<div class="ma5-subhead"><h4>Requirement documents / source evidence ('+files.length+')</h4><button class="btn" type="button" data-action="files">Document workflow</button></div>'+
- (files.length?'<div class="ma5-cards">'+files.map(f=>
- '<article class="ma5-mini"><h4>'+esc(f.title)+'</h4><p>Type: '+esc(f.type)+'</p><p>Status: '+esc(f.state)+'</p><span class="ma5-tag">Sample metadata only</span></article>').join("")+'</div>':
- '<div class="ma5-empty">No sample evidence is attached. This wireframe does not upload or store files.</div>')+
+ '<div class="ma5-subhead"><h4>Requirement documents / source evidence ('+files.length+')</h4><button class="btn" type="button" data-action="files">Manage requirements</button></div>'+window.CPQ_REQUIREMENTS.detail(captured)+
  note('A single opportunity may have multiple quotations or revisions. Quote pricing, internal costs, approval, issue and customer response are handled by the dedicated quotation workflow.');
 }
 function activity(o){

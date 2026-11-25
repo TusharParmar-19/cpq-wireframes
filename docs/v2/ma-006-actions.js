@@ -5,7 +5,7 @@ const a=window.CPQ_MA006;
 const {$,esc,db,master,org,staff,enquiries,state,quote,customer,buyer,contact,site,project,employee,entity,branch,opportunity,product,configCheck,configUnit,numeric,render,renderBuilder,paper,note}=a;
 let toastTimer=null,priorFocus=null;
 const copy=x=>JSON.parse(JSON.stringify(x));
-const flow=window.CPQ_FLOW,custom=window.CPQ_CUSTOM_BOQ;
+const flow=window.CPQ_FLOW,custom=window.CPQ_CUSTOM_BOQ,req=window.CPQ_REQUIREMENTS;
 const pricing=window.CPQ_PRICING;
 const demoDate=()=>new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"});
 const statusDraft="Draft";
@@ -50,6 +50,7 @@ function newBuilder(sourceId=""){
   q.customerId=src.customerId;q.buyerId=src.buyerId;q.contactId=src.contactId;q.siteId=src.siteId;
   q.projectId=src.projectId;q.companyId=src.companyId;q.branchId=src.branchId;q.ownerId=src.ownerId;
   q.opportunityId=src.id;q.title="Quotation — "+src.title;q.notes="Source enquiry: "+src.summary;
+  req.transfer(q,req.opportunity(src),src.id);
    q.enquiryServiceIds=flow.normalized(src.serviceIds||[],true);
    q.lines=flow.serviceLines(q.enquiryServiceIds,1,src.id);
    q.serviceIds=q.lines.map(l=>l.serviceId);
@@ -102,6 +103,7 @@ function saveBuilder(){
  else if(q.ownerId&&!validOwner)error="The responsible employee must be active and assigned to this company and branch.";
  else if(!contactOK||!siteOK||!projectOK)error="Contact, delivery site and project must belong to the selected buyer.";
  else if(!sourceOK)error="The selected enquiry must belong to the customer and buyer.";
+ else if(req.errors(q).length)error=req.errors(q)[0];
  else if(!linesOK)error="Check BOQ item quantities, rates and configured options; quantities must be whole numbers from 1 to 100,000.";
  else if(!percentOK)error="Sample discount and tax percentages must be between 0 and 100.";
  else if(pricing.errors(q).length)error=pricing.errors(q)[0];
@@ -115,7 +117,7 @@ function saveBuilder(){
   const idx=db.quotations.findIndex(x=>x.id===q.id);
   if(idx<0||db.quotations[idx].status!=="Draft"){explain("Draft not available","This sample quotation is no longer an editable draft.");return;}
   const before=db.quotations[idx];
-   const material=["title","customerId","buyerId","contactId","siteId","projectId","opportunityId","companyId","branchId","ownerId","validUntil","discount","taxRate","payment","delivery","warranty","exclusions","notes","lines","pricing"];
+   const material=["title","customerId","buyerId","contactId","siteId","projectId","opportunityId","companyId","branchId","ownerId","validUntil","discount","taxRate","payment","delivery","warranty","exclusions","notes","requirementPack","lines","pricing"];
    if(before.demoApproval&&material.some(k=>JSON.stringify(before[k])!==JSON.stringify(q[k]))){
     const previous=before.demoApproval;
     q.demoApproval={state:"Needs resubmission",technical:"Not requested",commercial:"Not requested",
@@ -193,11 +195,13 @@ function updateBuilderField(field,value){
   b.options[field.slice(7)]=value;renderBuilder();return;
  }
  if(field==="customerId"){
+  if(q.customerId&&q.customerId!==value){if(!req.confirmReplace(q)){renderBuilder();return;}req.clear(q);}
   q.customerId=value;q.buyerId="";q.contactId="";q.siteId="";q.projectId="";q.opportunityId="";
   q.lines=q.lines.filter(l=>!l.importedFromOpportunity);q.enquiryServiceIds=[];syncPackageBilling(q);
   Object.assign(q,window.CPQ_SCOPE_DEFAULTS.choose(org,customer(value)?.links||[]));q.ownerId="";renderBuilder();return;
  }
  if(field==="buyerId"){
+  if(q.buyerId&&q.buyerId!==value){if(!req.confirmReplace(q)){renderBuilder();return;}req.clear(q);}
   q.buyerId=value;q.contactId="";q.siteId="";q.projectId="";q.opportunityId="";
   q.lines=q.lines.filter(l=>!l.importedFromOpportunity);q.enquiryServiceIds=[];syncPackageBilling(q);
   renderBuilder();return;
@@ -209,7 +213,10 @@ function updateBuilderField(field,value){
   q.branchId=value;q.ownerId="";renderBuilder();return;
  }
  if(field==="opportunityId"){
+  if(q.opportunityId===value)return;
+  if(!req.confirmReplace(q)){renderBuilder();return;}
   q.opportunityId=value;const src=opportunity(value);
+  req.transfer(q,src&&src.customerId===q.customerId&&src.buyerId===q.buyerId?req.opportunity(src):null,src?.id||"");
   q.lines=q.lines.filter(l=>!l.importedFromOpportunity);
   q.enquiryServiceIds=[];
   if(src&&src.customerId===q.customerId&&src.buyerId===q.buyerId){
@@ -496,6 +503,7 @@ function changedInput(e,commit=true){
   const l=q.lines.find(x=>x.id===t.dataset.lineRate);if(l&&!l.includedInParent){pricing.setRate(q,l,Math.max(0,Number(t.value)||0));if(commit)renderBuilder();}return;
  }
 }
+req.bind($("builder-body"),()=>state.builder?.quote);
 $("builder-body").addEventListener("change",e=>changedInput(e,true));
 $("builder-body").addEventListener("input",e=>{
  const t=e.target;
@@ -565,6 +573,7 @@ function openConfigurationHandoff(raw,fromSaved=false){
  typeof c.name!=="string"||!Array.isArray(c.items)||c.items.length<1||c.items.length>25)return false;
  const lines=[],catalog=window.CPQ_MA006A_CATALOG;
  const storedConfig=window.CPQ_MA006A_DATA?.configurations?.find(x=>x.id===c.configId&&x.revision===c.revision);
+ if(fromSaved&&storedConfig&&req.errors(storedConfig).length)return false;
  const quotedServices=flow.normalized(storedConfig?.serviceIds||c.serviceIds||[],false);
  if(c.serviceIds&&(!Array.isArray(c.serviceIds)||quotedServices.length!==c.serviceIds.length))return false;
  for(let i=0;i<c.items.length;i++){
@@ -649,6 +658,9 @@ function openConfigurationHandoff(raw,fromSaved=false){
    if(u&&u.status==="Active"&&(u.assignments||[]).some(a=>a.companyId===scope.companyId&&a.branches.includes(scope.branchId)))q.ownerId=u.id;
   }
  }
+ // Customer requirements are taken only from the saved configuration snapshot, never URL payload text.
+ if(fromSaved&&storedConfig&&String(storedConfig.customerId||"")===String(q.customerId||"")&&String(storedConfig.buyerId||"")===String(q.buyerId||""))req.transfer(q,storedConfig,c.configId+" / "+c.revision);
+ else req.clear(q);
  q.title="Quotation — "+c.name.slice(0,140);
   q.sourceConfigId=c.configId;q.sourceConfigName=c.name.slice(0,160);
   q.sourceConfigRevision=typeof c.revision==="string"?c.revision.slice(0,16):"C0";

@@ -6,7 +6,7 @@ const $=id=>document.getElementById(id);
 const esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const clone=x=>JSON.parse(JSON.stringify(x));
 const records=clone(window.CPQ_MA006A_DATA.configurations);
-const flow=window.CPQ_FLOW,custom=window.CPQ_CUSTOM_BOQ;
+const flow=window.CPQ_FLOW,custom=window.CPQ_CUSTOM_BOQ,req=window.CPQ_REQUIREMENTS;
 const products=window.CPQ_MA006_DATA.products,org=window.CPQ_MA002_DATA,staff=window.CPQ_MA003_USERS,master=window.CPQ_MA004_DATA,opps=window.CPQ_MA005_DATA.opportunities;
 const state={selected:"CF-2026-003",tab:"overview",mode:"register",company:"all",branch:"all",search:"",status:"all",builder:null};
 const catalog=()=>window.CPQ_MA006A_CATALOG_UI?.db||window.CPQ_MA006A_CATALOG;
@@ -83,7 +83,7 @@ function solarWarnings(c){
  return a;
 }
 function review(c){
- const errors=[];
+ const errors=[...req.errors(c)];
  if(!String(c.name||"").trim())errors.push("Enter a configuration name");
  if(!c.items.length)errors.push("Add at least one product or service");
  if(c.items.length>25)errors.push("This demo supports up to 25 configuration items per handoff.");
@@ -187,7 +187,7 @@ function overview(c){
  kv("Basic sample check",status(c))+kv("Updated",c.updated)+'</div>'+
  '<div class="cpq-scope-panel"><h4>Selected services &amp; sub-services</h4>'+flow.summary(c.serviceIds||[])+
   '<p>References from Service Master. Charges are created only in the quotation.</p></div>'+
-  (c.solutionType==="solar"?solarOverview(c):"")+
+  req.detail(c)+(c.solutionType==="solar"?solarOverview(c):"")+
  '<details class="ma6a-builder-details"><summary>Project notes and linked quotation</summary><p>'+esc(c.notes||"No notes")+'</p>'+
  '<p>Quotation: '+esc(c.quoteId||"Not linked")+'</p></details>'+
  '<details class="ma6a-builder-details"><summary>Previous versions ('+(c.history?.length||0)+')</summary>'+
@@ -311,7 +311,7 @@ function renderContext(c){
  select("branchId","Our branch",branches,c.branchId,"Not assigned")+
  select("ownerId","Responsible employee",users,c.ownerId,"Not assigned")+
  area("notes","Internal project notes",c.notes)+'</div></details>'+
- note('Site inputs are project-specific. The commercial quotation requires an exact buyer and authorized selling entity; technical engineering approval remains separate.');
+ req.form(c)+note('Site inputs are project-specific. The commercial quotation requires an exact buyer and authorized selling entity; technical engineering approval remains separate.');
 }
 function renderProduct(c,b){
  const p=itemProduct(b.productId)||itemProduct("VAR-009")||products[0];
@@ -434,6 +434,7 @@ function closeDialog(){
 function save(){
  const b=state.builder;if(!b)return;const c=b.value,r=review(c);
  if(!String(c.name||"").trim()){dialog("Name needed","Enter a configuration name to save this draft.");return;}
+ const requirementsIssues=req.errors(c);if(requirementsIssues.length){dialog("Check customer requirements",esc(requirementsIssues[0]));return;}
  c.updated=new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})+" (demo)";
  if(b.isNew){
   const next=Math.max(6,...records.map(x=>Number(x.id.split("-").at(-1))||0))+1;
@@ -488,21 +489,27 @@ function updateContext(field,value){
   renderBuilder();return;
  }
  if(field==="customerId"){
+  if(c.customerId&&c.customerId!==value){if(!req.confirmReplace(c)){renderBuilder();return;}req.clear(c);}
   c.customerId=value;c.buyerId="";c.contactId="";c.siteId="";c.projectId="";c.opportunityId="";c.serviceIds=[];c.companyId="";c.branchId="";c.ownerId="";
   const buyers=master.companies.filter(x=>x.customerId===value);
   if(buyers.length===1)c.buyerId=buyers[0].id;
   Object.assign(c,window.CPQ_SCOPE_DEFAULTS.choose(org,customer(value)?.links||[]));
   renderBuilder();return;
  }
- if(field==="buyerId"){c.buyerId=value;c.contactId="";c.siteId="";c.projectId="";c.opportunityId="";c.serviceIds=[];renderBuilder();return;}
+ if(field==="buyerId"){if(c.buyerId&&c.buyerId!==value){if(!req.confirmReplace(c)){renderBuilder();return;}req.clear(c);}c.buyerId=value;c.contactId="";c.siteId="";c.projectId="";c.opportunityId="";c.serviceIds=[];renderBuilder();return;}
  if(field==="opportunityId"){
+  if(c.opportunityId===value)return;
+  if(!req.confirmReplace(c)){renderBuilder();return;}
   c.opportunityId=value;
   const src=opportunity(value);
+  req.transfer(c,src&&src.customerId===c.customerId&&src.buyerId===c.buyerId?req.opportunity(src):null,src?.id||"");
   c.serviceIds=src&&src.customerId===c.customerId&&src.buyerId===c.buyerId?
    flow.normalized(src.serviceIds||[],true):[];
   renderBuilder();return;
  }
  if(field==="kind"&&value==="Reusable template"){
+  if((c.customerId||req.read(c).documents.length)&&!req.confirmReplace(c)){renderBuilder();return;}
+  if(c.customerId||req.read(c).documents.length)req.clear(c);
   c.kind=value;c.customerId="";c.buyerId="";c.contactId="";c.siteId="";c.projectId="";c.opportunityId="";
   renderBuilder();return;
  }
@@ -526,6 +533,7 @@ document.addEventListener("click",e=>{
  if(d.action==="edit"){const c=record(state.selected);if(c)newBuilder(c);return;}
  if(d.action==="duplicate"){const c=record(state.selected);if(c)newBuilder(c,true);return;}
 });
+req.bind($("config-builder-body"),()=>state.builder?.value);
 $("config-builder-body").addEventListener("change",e=>{
  if(!state.builder)return;const t=e.target,b=state.builder;
  if(custom.update(b,t))return;
@@ -589,6 +597,7 @@ else if(opRef&&opportunity(opRef)){
  newBuilder();
  const c=state.builder.value;
  Object.assign(c,{kind:"Customer configuration",customerId:o.customerId,buyerId:o.buyerId,opportunityId:o.id,serviceIds:flow.normalized(o.serviceIds||[],true),companyId:o.companyId,branchId:o.branchId,ownerId:o.ownerId,contactId:o.contactId||"",siteId:o.siteId||"",projectId:o.projectId||"",name:"Configuration — "+o.title,notes:"From sample enquiry "+o.id+": "+o.summary});
+ req.transfer(c,req.opportunity(o),o.id);
  renderBuilder();
 }else render();
 window.CPQ_MA006A={state,records,products,review,record,visible,quotationLink,payload,save,newBuilder,addItem,quickSelectProduct:id=>{if(!state.builder)return;state.builder.productGroup="all";state.builder.catalogSearch="";setProduct(state.builder,id);renderBuilder();}};

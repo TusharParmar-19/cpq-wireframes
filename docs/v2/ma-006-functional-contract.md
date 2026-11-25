@@ -121,3 +121,6 @@ On customer creation, default to the only active internal company with an active
 
 ### Manual/custom BOQ items (Phase 1)
 Select Add Custom Item in BOQ or import the same data from saved MA-006A. Custom products/services have no catalog identifiers, no master pricing, no included-package billing, and no automatic supplier SKU rate match. Enter unit purchase cost, offered rate and manual rate reason in Pricing & Costing. Edit quantity or notes without overwriting pricing; material changes to type/name/unit/specification clear prior rates after confirmation and record the reset. Customer preview includes name and customer-facing specification, not internal notes. Validation checks saved line shape/quantity and existing review workflow. All records remain demo-only. Decimal quantities, HSN/SAC, item tax, discounts, subsidies and production permissions are separate improvements.
+
+### Customer requirement documents and scope (Phase 1)
+See [Customer BOQ and scope contract](customer-boq-scope-contract.md). The optional section captures independent customer requirement snapshots. Existing pricing, BOQ and approval rules remain unchanged; scope and exclusions are customer-facing, technical instructions and source document references are internal.
