@@ -458,7 +458,7 @@ function boqBuilder(q,b){
  '<div class="ma6-note">Add catalog models or services directly, or begin with a saved technical configuration from MA-006A.</div>';
  const lineTable=q.lines.length?table(["BOQ item / specification","Qty","Unit","Captured selling rate","Current offered amount",""],
  q.lines.map(l=>'<tr><td><strong>'+esc(l.description)+'</strong><small>'+esc(lineConfig(l))+'</small>'+
- (l.pricingReview?'<small>'+(custom.is(l)?'Manual cost and rate required':'Catalog rate requires approval')+'</small>':'')+
+ (l.pricingReview?'<small>'+(custom.is(l)?'Custom line · manual pricing':'Catalog rate requires approval')+'</small>':'')+
  (l.technicalReview?'<small>Technical variation needs review</small>':'')+
  (l.includedInParent?'<small class="cpq-quote-service-included">Included in parent package (₹0 extra)</small>':'')+'</td>'+
  '<td><input class="ma6-qty" type="number" min="1" step="1" data-line-qty="'+esc(l.id)+'" value="'+esc(l.quantity)+'" aria-label="Quantity '+esc(l.description)+'"></td>'+
@@ -466,12 +466,12 @@ function boqBuilder(q,b){
  '<td class="ma6-money">'+money(extended(l))+'</td><td>'+custom.editButton(l)+'<button type="button" class="btn" data-remove-line="'+esc(l.id)+'" aria-label="Remove '+esc(l.description)+'">Remove</button></td></tr>')):
  blank("No BOQ items yet. Add a catalog product, service or custom item, or import a configuration.");
  return panel("2 · Products & BOQ",q.sourceConfigId?"Review imported configuration items and quantities. Pricing is handled separately.":"Select products and services, confirm quantities, then continue to Pricing & Costing.")+
- source+lineTable+
+ source+lineTable+custom.form(b)+
  '<div class="ma6-section-sub ma6a-quote-add"><h4>'+q.lines.length+' BOQ item(s) · Current offered BOQ '+money(totals(q).boqSubtotal)+'</h4>'+
  '<button type="button" class="btn'+(b.addPickerOpen?'':' primary')+'" data-action="toggle-add-product">'+
  (b.addPickerOpen?'Close Product / Service Picker':'+ Add Product or Service')+'</button></div>'+
  (b.addPickerOpen?'<div class="ma6a-quote-catalog-picker">'+catalogPicker(q,b)+'</div>':"")+
- custom.form(b)+note('Confirm technical scope here. Open the next Pricing &amp; Costing stage to change selling rates, add expenses, set profit and check totals. Product Master and saved source configurations remain unchanged.');
+ note('Confirm technical scope here. Open the next Pricing &amp; Costing stage to change selling rates, add expenses, set profit and check totals. Product Master and saved source configurations remain unchanged.');
 }
 function isoDate(v){
  if(/^\d{4}-\d{2}-\d{2}$/.test(String(v||"")))return v;

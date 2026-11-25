@@ -200,7 +200,7 @@ function items(c){
  return panel("Selected technical items","Product attributes, service scope and quantities; pricing happens only in MA-006.")+
  (c.items.length?c.items.map((l,i)=>{
   const p=custom.is(l)?custom.productView(l):itemProduct(l.productId),issues=lineErrors(l);
-  return '<div class="ma6a-config-item"><div class="ma6a-config-item-head"><div><strong>'+(i+1)+'. '+esc(p?.name||l.productId)+'</strong><small>'+esc(l.productId)+' · '+esc(typeLabel(p?.type))+'</small></div>'+
+  return '<div class="ma6a-config-item"><div class="ma6a-config-item-head"><div><strong>'+(i+1)+'. '+esc(p?.name||l.productId)+'</strong><small>'+esc(custom.is(l)?custom.label(l):l.productId+' · '+typeLabel(p?.type))+'</small></div>'+
   '<span class="ma6-tag">'+esc(l.quantity)+' '+esc(p?.unit||"unit")+'</span></div>'+
   '<div class="ma6a-config-options"><span>'+esc(l.modelSnapshot?
  [l.modelSnapshot.manufacturer,l.modelSnapshot.model||l.modelSnapshot.variantLabel||l.modelSnapshot.capacity,l.modelSnapshot.sku,l.customSpec].filter(Boolean).join(" · "):optionText(l))+'</span></div>'+
@@ -322,7 +322,7 @@ function renderProduct(c,b){
  (b.productGroup==="other"&&(!x.variant||x.solarKind==="general"))).filter(x=>
  !b.catalogSearch||[x.name,x.model,x.sku,x.manufacturer,x.capacity].join(" ").toLowerCase().includes(b.catalogSearch.toLowerCase())).sort((a,b)=>Number(suggested.has(b.id))-Number(suggested.has(a.id)));
  const errors=lineErrors({productId:p.id,quantity:b.quantity,options:b.options}),v=p.variant,d=v?.dimensions||{};
- return panel("2 · Select Products & Models","Select an existing manufacturer model, specify quantity and add a project-specific note only when necessary.")+
+ return panel("2 · Select Products & Models","Choose an existing model or add a one-off product or service. Confirm quantities and technical details.")+custom.form(b)+
  '<div class="ma6a-product-picker-toolbar"><div class="ma6-field"><label>Show product type</label><select data-product-group>'+
  opts([["solar","Solar equipment"],["other","Other / standard products"],["all","All products"]],b.productGroup)+
  '</select></div><div class="ma6-field"><label for="cfg-product-search">Find a model or SKU</label>'+
@@ -361,7 +361,7 @@ function renderProduct(c,b){
  '<div class="ma6-field"><label>Internal item notes</label><textarea data-item-note rows="2">'+esc(b.itemNote||"")+'</textarea></div></details>'+
  (errors.length?'<div class="ma6-validation">'+errors.map(esc).join("; ")+'</div>':"")+
  '<button class="btn primary" type="button" data-action="add-item">+ Add to Configuration</button></div></div>'+
- custom.form(b)+'<div class="ma6a-selected-lines"><div class="ma6-section-sub"><h4>Technical items selected ('+c.items.length+')</h4></div>'+itemsCompact(c,true)+'</div>'+
+ '<div class="ma6a-selected-lines"><div class="ma6-section-sub"><h4>Technical items selected ('+c.items.length+')</h4></div>'+itemsCompact(c,true)+'</div>'+
  note('This is a technical selection, not a certified design or priced quotation. Cost, margin, tax and commercial terms are handled in MA-006.');
 }
 function itemsCompact(c,edit=false){
@@ -383,7 +383,7 @@ function renderReview(c){
  return panel("3 · Review & Save","Check the product list and save this draft. Pricing follows in Quotations.")+
  '<div class="ma6-kvs">'+kv("Configuration name",c.name||"Required")+
  kv("Customer",customer(c.customerId)?.name||"Reusable / not selected")+
- kv("Selected product lines",String(c.items.length))+kv("Selected services / sub-services",String((c.serviceIds||[]).length))+
+ kv("Technical / custom items",String(c.items.length))+kv("Selected services / sub-services",String((c.serviceIds||[]).length))+
  kv("Project type",c.solutionType==="solar"?"Solar system":"Single product / other")+
  (c.solutionType==="solar"?kv("Target DC",c.solar?.targetDcKwp?c.solar.targetDcKwp+" kWp":"Not entered")+
  kv("Proposed module DC",m.modules?m.dcKwp.toFixed(2)+" kWp":"Not calculated")+
