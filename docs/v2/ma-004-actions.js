@@ -28,8 +28,9 @@ function toast(text){const n=$("toast");n.hidden=false;n.textContent=text;if(toa
 function saved(c,text,tab=""){
  audit(c,text);if(tab)state.tab=tab;close();render();toast(text+" · demo only");
 }
-const companyOptions=()=>own.map(x=>[x.id,x.name]);
-const branchOptions=companyId=>(ent(companyId)?.branches||[]).map(x=>[x.id,x.name+" · "+x.city]);
+const availableScope=x=>!!x&&!["Inactive","Archived"].includes(x.status);
+const companyOptions=(activeOnly=false)=>own.filter(x=>!activeOnly||availableScope(x)&&(x.branches||[]).some(availableScope)).map(x=>[x.id,x.name]);
+const branchOptions=(companyId,activeOnly=false)=>(ent(companyId)?.branches||[]).filter(x=>!activeOnly||availableScope(x)).map(x=>[x.id,x.name+" · "+x.city]);
 /* Demo-only shortlist. The real backend must check user status, role grants and scopes again. */
 const staff=Array.isArray(window.CPQ_MA003_USERS)?window.CPQ_MA003_USERS:[];
 const assignedTo=(u,companyId,branchId)=>u.status==="Active"&&!!companyId&&!!branchId&&
@@ -42,9 +43,9 @@ function ownerField(names=[],selected=""){
  return '<div class="ma4-form-item full"><label for="f-owner">Relationship owner (optional)</label><select id="f-owner" name="owner">'+ownerOptions(names,selected)+'</select>'+
  '<p class="ma4-form-help">Choose an active MA-003 employee assigned to the selected internal company/branch. This does not grant permissions.</p></div>';
 }
-function ownFields(companyId="",branchId=""){
- return '<div class="ma4-form-item"><label for="ma4-own-company">Our internal company *</label><select id="ma4-own-company" name="ourCompany" required><option value="">Select internal company</option>'+options(companyOptions(),companyId)+'</select></div>'+
- '<div class="ma4-form-item"><label for="ma4-own-branch">Our internal branch *</label><select id="ma4-own-branch" name="ourBranch" required><option value="">Select internal branch</option>'+options(branchOptions(companyId),branchId)+'</select></div>';
+function ownFields(companyId="",branchId="",activeOnly=false){
+ return '<div class="ma4-form-item"><label for="ma4-own-company">Our internal company *</label><select id="ma4-own-company" name="ourCompany"'+(activeOnly?' data-active-scope="yes"':'')+' required><option value="">Select internal company</option>'+options(companyOptions(activeOnly),companyId)+'</select></div>'+
+ '<div class="ma4-form-item"><label for="ma4-own-branch">Our internal branch *</label><select id="ma4-own-branch" name="ourBranch" required><option value="">Select internal branch</option>'+options(branchOptions(companyId,activeOnly),branchId)+'</select></div>';
 }
 function updateOwners(){
  const company=$("ma4-own-company"),branch=$("ma4-own-branch"),owner=$("f-owner");
@@ -55,7 +56,7 @@ function updateOwners(){
 }
 function updateOwnBranches(){
  const company=$("ma4-own-company"),br=$("ma4-own-branch");if(!company||!br)return;
- br.innerHTML='<option value="">Select internal branch</option>'+options(branchOptions(company.value),"");
+ br.innerHTML='<option value="">Select internal branch</option>'+options(branchOptions(company.value,company.dataset.activeScope==="yes"),"");
  br.value="";
  updateOwners();
 }
@@ -137,7 +138,7 @@ function editCustomer(){
 
 function linkScope(quick=false){
  const c=cust(state.selected);if(!c||c.status==="Archived")return;
- const f=wrap(ownFields()+(quick?'<div class="ma4-form-item full"><p class="ma4-form-help">This will save the company/branch association to the existing customer, then select that selling scope in your current quotation. No new customer or company will be created.</p></div>':""),"Link the customer to another INTERNAL company and branch. This does not grant permissions to employees, and cross-company record access must be checked by the backend.");
+ const f=wrap(ownFields("","",true)+(quick?'<div class="ma4-form-item full"><p class="ma4-form-help">This will save the company/branch association to the existing customer, then select that selling scope in your current quotation. No new customer or company will be created.</p></div>':""),"Link the customer to another INTERNAL company and branch. This does not grant permissions to employees, and cross-company record access must be checked by the backend.");
  show(quick?"Choose another selling company / branch":"Link Internal Company & Branch",c.name+" · relationship scope",f,fd=>{
   const co=v(fd,"ourCompany"),br=v(fd,"ourBranch");
   const company=ent(co),site=company?.branches?.find(x=>x.id===br);
