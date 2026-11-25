@@ -277,9 +277,9 @@ function renderContext(c){
  const contactOptions=master.contacts.filter(x=>x.customerId===c.customerId&&x.companyId===c.buyerId).map(x=>[x.id,x.name]);
  const siteOptions=master.sites.filter(x=>x.customerId===c.customerId&&x.companyId===c.buyerId).map(x=>[x.id,x.name]);
  const projectOptions=master.projects.filter(x=>x.customerId===c.customerId&&x.companyId===c.buyerId).map(x=>[x.id,x.name]);
- const links=customer(c.customerId)?.links||[];
- const companies=org.filter(x=>!c.customerId||links.some(l=>l.companyId===x.id)).map(x=>[x.id,x.name]);
- const branches=(entity(c.companyId)?.branches||[]).filter(x=>!c.customerId||links.some(l=>l.companyId===c.companyId&&l.branchId===x.id)).map(x=>[x.id,x.name]);
+ const links=c.customerId?(customer(c.customerId)?.links||[]):null;
+ const companies=window.CPQ_SCOPE_DEFAULTS.companies(org,links).map(x=>[x.id,x.name]);
+ const branches=window.CPQ_SCOPE_DEFAULTS.branches(org,c.companyId,links).map(x=>[x.id,x.name]);
  const users=staff.filter(x=>x.status==="Active"&&(x.assignments||[]).some(a=>a.companyId===c.companyId&&a.branches.includes(c.branchId))).map(x=>[x.id,x.name]);
  const enq=opps.filter(x=>x.customerId===c.customerId&&x.buyerId===c.buyerId).map(x=>[x.id,x.title+" · "+x.id]);
  return panel("1 · Project & Configuration Basics","Start with the essentials. Optional site, electricity and engineering details are expandable.")+
@@ -471,12 +471,7 @@ function updateContext(field,value){
   c.customerId=value;c.buyerId="";c.contactId="";c.siteId="";c.projectId="";c.opportunityId="";c.serviceIds=[];c.companyId="";c.branchId="";c.ownerId="";
   const buyers=master.companies.filter(x=>x.customerId===value);
   if(buyers.length===1)c.buyerId=buyers[0].id;
-  const links=customer(value)?.links||[],companies=[...new Set(links.map(x=>x.companyId))];
-  if(companies.length===1){
-   c.companyId=companies[0];
-   const branches=[...new Set(links.filter(x=>x.companyId===c.companyId).map(x=>x.branchId))];
-   if(branches.length===1)c.branchId=branches[0];
-  }
+  Object.assign(c,window.CPQ_SCOPE_DEFAULTS.choose(org,customer(value)?.links||[]));
   renderBuilder();return;
  }
  if(field==="buyerId"){c.buyerId=value;c.contactId="";c.siteId="";c.projectId="";c.opportunityId="";c.serviceIds=[];renderBuilder();return;}
@@ -491,7 +486,7 @@ function updateContext(field,value){
   c.kind=value;c.customerId="";c.buyerId="";c.contactId="";c.siteId="";c.projectId="";c.opportunityId="";
   renderBuilder();return;
  }
- if(field==="companyId"){c.companyId=value;c.branchId="";c.ownerId="";renderBuilder();return;}
+ if(field==="companyId"){c.companyId=value;c.branchId=window.CPQ_SCOPE_DEFAULTS.sole(window.CPQ_SCOPE_DEFAULTS.branches(org,value,c.customerId?(customer(c.customerId)?.links||[]):null));c.ownerId="";renderBuilder();return;}
  if(field==="branchId"){c.branchId=value;c.ownerId="";renderBuilder();return;}
  if(field.startsWith("opt-")){b.options[field.slice(4)]=value;renderBuilder();return;}
  c[field]=value;

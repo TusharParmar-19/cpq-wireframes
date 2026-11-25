@@ -28,7 +28,8 @@ function toast(text){const n=$("toast");n.hidden=false;n.textContent=text;if(toa
 function saved(c,text,tab=""){
  audit(c,text);if(tab)state.tab=tab;close();render();toast(text+" · demo only");
 }
-const availableScope=x=>!!x&&!["Inactive","Archived"].includes(x.status);
+const scopeDefaults=window.CPQ_SCOPE_DEFAULTS;
+const availableScope=scopeDefaults.available;
 const companyOptions=(activeOnly=false)=>own.filter(x=>!activeOnly||availableScope(x)&&(x.branches||[]).some(availableScope)).map(x=>[x.id,x.name]);
 const branchOptions=(companyId,activeOnly=false)=>(ent(companyId)?.branches||[]).filter(x=>!activeOnly||availableScope(x)).map(x=>[x.id,x.name+" · "+x.city]);
 /* Demo-only shortlist. The real backend must check user status, role grants and scopes again. */
@@ -56,8 +57,10 @@ function updateOwners(){
 }
 function updateOwnBranches(){
  const company=$("ma4-own-company"),br=$("ma4-own-branch");if(!company||!br)return;
- br.innerHTML='<option value="">Select internal branch</option>'+options(branchOptions(company.value,company.dataset.activeScope==="yes"),"");
- br.value="";
+ const rows=branchOptions(company.value,company.dataset.activeScope==="yes");
+ const selected=rows.length===1?rows[0][0]:"";
+ br.innerHTML='<option value="">Select internal branch</option>'+options(rows,selected);
+ br.value=selected;
  updateOwners();
 }
 function allowedLink(companyId,branchId){return !!ent(companyId)?.branches.some(x=>x.id===branchId);}
@@ -82,6 +85,7 @@ function updateCreateType(){
 }
 
 function createCustomer(){
+ const initial=scopeDefaults.choose(own);
  const nameField=field("name","Customer / company name","",true,"text",true).replace('for="f-name"','id="ma4-customer-name-label" for="f-name"');
  const industryField=field("industry","Industry / segment (optional)").replace('for="f-industry"','id="ma4-industry-label" for="f-industry"');
  const buyerField=field("buyerName","Buyer legal name (only if different)","",false,"text",true)
@@ -91,7 +95,7 @@ function createCustomer(){
  const f=wrap(select("type","1. Customer type",typeOptions,"Company",true)+
   '<div class="ma4-form-item full ma4-type-explanation" id="ma4-account-type-help" role="status">'+esc(customerTypeHelp.Company)+'</div>'+
   nameField+buyerField+personalFields+select("status","Relationship status",statusOptions,"Prospect")+
-  industryField+ownFields()+ownerField()+area("notes","Relationship notes"),
+  industryField+ownFields(initial.companyId,initial.branchId,true)+ownerField(scopedOwners(initial.companyId,initial.branchId))+area("notes","Relationship notes"),
   "Individual, Company and Group customers are supported. Only fictional names and details belong in this public wireframe.");
  show("Add Customer","Choose customer type first, then enter only the relevant details",f,fd=>{
   const type=v(fd,"type"),name=v(fd,"name"),enteredBuyer=v(fd,"buyerName"),ourCompany=v(fd,"ourCompany"),ourBranch=v(fd,"ourBranch");
@@ -103,7 +107,7 @@ function createCustomer(){
   if(db.customers.some(x=>x.name.toLowerCase()===name.toLowerCase())||db.companies.some(x=>x.name.toLowerCase()===buyerName.toLowerCase())){
    invalid("A matching customer or buyer identity already exists. Review the directory before creating a duplicate.");return;
   }
-  if(!allowedLink(ourCompany,ourBranch)){invalid("Choose a valid internal legal entity and branch.");return;}
+  if(!scopeDefaults.branches(own,ourCompany).some(b=>b.id===ourBranch)){invalid("Choose an active internal legal entity and branch.");return;}
   const owner=v(fd,"owner");
   if(owner&&!scopedOwners(ourCompany,ourBranch).includes(owner)){invalid("Select an active relationship owner assigned to this internal company and branch.");return;}
   const id=next("CU-",db.customers),buyerId=next("CC-",db.companies);
