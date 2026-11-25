@@ -14,6 +14,7 @@ const sources={
  employee:["Employee","ma-003-users-roles.html","users"],
  role:["Role","ma-003-users-roles.html","roles"],
  customer:["Customer","ma-004-customers.html","customers","customers"],
+ customerScope:["Selling Company / Branch","ma-004-customers.html","customers","customers"],
  buyer:["Buyer Company","ma-004-customers.html","customers","companies"],
  contact:["Contact","ma-004-customers.html","customers","contacts"],
  site:["Site","ma-004-customers.html","customers","sites"],
@@ -169,6 +170,7 @@ function resolve(el){
  return ({customerId:"customer",buyerId:"buyer",companyId:"company",branchId:"branch",ownerId:"employee",contactId:"contact",siteId:"site",projectId:"project",opportunityId:"enquiry"})[field]||"";
 }
 function allowed(type,ctx){
+ if(type==="customerScope")return !!ctx.customerId&&row("customer",ctx.customerId)?.status!=="Archived"&&!!row("customer",ctx.customerId);
  if(type==="branch")return !!ctx.companyId;
  if(type==="buyer")return row("customer",ctx.customerId)?.type==="Group";
  if(["contact","site","project","enquiry"].includes(type))return !!ctx.customerId&&!!ctx.buyerId;
@@ -200,7 +202,9 @@ function close(cancel=false,result=null){
  if($("cpq-qc-content"))$("cpq-qc-content").replaceChildren();
  if(result?.id){
   const r=row(task.type,result.id);
-  const issue=result.error||eligible(task.type,r,task.ctx,task.activeOnly);
+  const scope=result.scope;
+  const scopeIssue=task.type==="customerScope"&&(!scope||r?.id!==task.ctx.customerId||!r?.links?.some(l=>l.companyId===scope.companyId&&l.branchId===scope.branchId))?"Customer scope could not be verified. Check the customer master before selecting the company.":"";
+  const issue=result.error||scopeIssue||eligible(task.type,r,task.ctx,task.activeOnly);
   if(issue){notice(issue);}
   else{try{
    // Refresh any already open compatible selectors, preserving their current values.
@@ -208,7 +212,7 @@ function close(cancel=false,result=null){
     if(resolve(el)!==task.type||!allowed(task.type,context(el))||eligible(task.type,r,context(el)))continue;
     insertOption(el,task.type==="employee"&&el.id==="f-owner"?r.name:r.id,label(task.type,r));
    }
-   task.onSave?.(r);notice(label(task.type,r)+" saved and selected.");}catch(e){notice("Saved to master. Please reopen the selector to select it. "+e.message);}}
+   task.onSave?.(r,scope);notice(task.type==="customerScope"?"Selling company and branch linked and selected.":label(task.type,r)+" saved and selected.");}catch(e){notice("Saved to master. Please reopen the selector to select it. "+e.message);}}
  }else if(result?.value){
   try{task.onSave?.(result.value);notice(result.value+(task.onSave?" saved and selected.":" saved to master."));}catch(e){notice(result.value+" saved to master. "+e.message);}
  }else if(result?.error)notice(result.error);
@@ -221,12 +225,12 @@ function open(type,ctx={},onSave=null,anchor=null,activeOnly=false){
  if(!sources[type]&&!lists[type])return;
  const host=ensureHost(),content=$("cpq-qc-content");
  current={type,ctx,onSave,anchor,activeOnly,before:copy(store()),token:W.crypto?.randomUUID?.()||"qc-"+Date.now()+"-"+Math.random()};
- $("cpq-qc-title").textContent="Add New "+(sources[type]?.[0]||lists[type][0]);
+ $("cpq-qc-title").textContent=type==="customerScope"?"Link selling company / branch":"Add New "+(sources[type]?.[0]||lists[type][0]);
  host.classList.toggle("qc-compact",!!lists[type]);content.replaceChildren();
  host.showModal();
  if(lists[type]){openList(type);return;}
  const frame=D.createElement("iframe");
- frame.title="Add New "+sources[type][0];frame.className="qc-frame";
+ frame.title=type==="customerScope"?"Link selling company / branch":"Add New "+sources[type][0];frame.className="qc-frame";
  const url=new URL(sources[type][1],W.location.href);
  url.searchParams.set("quickCreate",type);url.searchParams.set("qcToken",current.token);
  for(const key of ["customerId","buyerId","companyId","branchId","solarKind","parentId"])if(ctx[key])url.searchParams.set("qc_"+key,ctx[key]);
@@ -348,16 +352,18 @@ function send(result){
  if(embeddedDone)return;embeddedDone=true;
  W.parent.postMessage({type:"cpq-quick-create-result",token:params.get("qcToken"),...result},W.location.origin);
 }
-function saved(type,id){
+function saved(type,id,scope=null){
  if(W.parent===W||params.get("quickCreate")!==type)return;
  const entry=sources[type],persisted=store()[entry[2]];
- if(persisted&&getRecords(type,{[entry[2]]:persisted}).some(x=>x.id===id))send({id});
+ const record=persisted&&getRecords(type,{[entry[2]]:persisted}).find(x=>x.id===id);
+ const scopeOK=type!=="customerScope"||!!(scope&&id===params.get("qc_customerId")&&record?.links?.some(l=>l.companyId===scope.companyId&&l.branchId===scope.branchId));
+ if(record&&scopeOK)send(type==="customerScope"?{id,scope:{companyId:scope.companyId,branchId:scope.branchId}}:{id});
  else send({error:"The master form closed but the record could not be verified in browser storage. Please check storage and try again."});
 }
 W.addEventListener("message",e=>{
  if(!current?.frame||e.origin!==W.location.origin||e.source!==current.frame.contentWindow||
  e.data?.type!=="cpq-quick-create-result"||e.data.token!==current.token)return;
- close(false,{id:e.data.id,error:e.data.error});
+ close(false,{id:e.data.id,error:e.data.error,scope:e.data.scope});
 });
 function embedded(){
  const type=params.get("quickCreate");if(!sources[type]||W.parent===W)return;
