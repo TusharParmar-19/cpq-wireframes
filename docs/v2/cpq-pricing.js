@@ -16,16 +16,16 @@ const defaultPricing=()=>({version:1,method:"standard",markup:20,costs:[],histor
 const variant=id=>window.CPQ_MA006A_CATALOG?.variants?.find(v=>v.id===id);
 function captureLine(line,fresh=false){
  if(line.pricing)return line.pricing;
- const v=variant(line.sourceVariantId||line.productId),p=v?.price||{};
+ const v=window.CPQ_CUSTOM_BOQ?.is(line)?null:variant(line.sourceVariantId||line.productId),p=v?.price||{};
  const isMasterService=Boolean(line.serviceId);
  const original=n(line.unitPrice);
  const validCurrency=!p.currency||p.currency==="INR";
  const knownCatalogPrice=fresh&&v&&validCurrency&&pricePositive(p.sell);
- const knownLegacyPrice=fresh&&!v&&!isMasterService&&original>0;
+ const knownLegacyPrice=fresh&&!v&&!isMasterService&&!window.CPQ_CUSTOM_BOQ?.is(line)&&original>0;
  const base=fresh?(knownCatalogPrice?round(p.sell):knownLegacyPrice?round(original):null):(original>0?round(original):null);
  const cost=fresh&&v&&validCurrency&&pricePositive(p.cost)?round(p.cost):null;
  const source=fresh?(v?(knownCatalogPrice?(p.list||"Sample Product Master"):(validCurrency?"Catalog rate unavailable":"Catalog currency mismatch")):
-  isMasterService?"Service Master — manual rate":knownLegacyPrice?"Legacy sample rate":"Manual rate required"):
+  window.CPQ_CUSTOM_BOQ?.is(line)?"Custom item — manual rate":isMasterService?"Service Master — manual rate":knownLegacyPrice?"Legacy sample rate":"Manual rate required"):
   "Existing draft rate retained — original list not captured";
  line.pricing={defaultRate:base,unitCost:cost,source,currency:"INR",effectiveFrom:fresh&&v?String(p.from||""):"",
   effectiveTo:fresh&&v?String(p.to||""):"",capturedAt:new Date().toISOString(),overrideReason:""};
@@ -207,6 +207,7 @@ function offerLink(q,l){
  return "vendor-quotations.html?"+p.toString();
 }
 function vendorRatePicker(q,l){
+ if(window.CPQ_CUSTOM_BOQ?.is(l))return '<small>Custom item: enter a manually reviewed purchase cost. No automatic SKU rate matching.</small>';
  const s=l.pricing?.vendorRate,choices=window.CPQ_VENDOR_QUOTE?.choices(q,l)||[],issue=window.CPQ_VENDOR_QUOTE?.snapshotIssues(q,l,true)||"";
  if(l.includedInParent&&!s)return "";
  return '<details class="cpq-vendor-rate"'+(s||choices.length?' open':'')+'><summary>Supplier rate'+(s?' · captured':choices.length?' · available':'')+'</summary>'+(s?'<small><b>Supplier source:</b> '+esc(s.vendorName)+" · "+esc(s.reference)+'<br>Valid until '+esc(s.validUntil)+' · '+fmt(s.rate)+' before GST</small>'+(issue?'<small class="cpq-price-warning">'+esc(issue)+'</small>':"")+'<button type="button" class="btn cpq-price-small" data-action="price-clear-vendor" data-price-line="'+esc(l.id)+'">Clear supplier source</button>':"")+
@@ -224,7 +225,7 @@ function pricingView(q,financialRows){
  const defaultRows=(q.lines||[]).map(l=>{
   const x=l.pricing,attr='data-price-line="'+esc(l.id)+'" ',included=l.includedInParent;
   const changed=requiresReason(l);
-  return '<tr><td><strong>'+esc(l.description)+'</strong><small>'+esc(l.modelSnapshot?.sku||l.serviceSnapshot?.code||l.productId)+'</small>'+
+  return '<tr><td><strong>'+esc(l.description)+'</strong><small>'+esc(window.CPQ_CUSTOM_BOQ?.is(l)?window.CPQ_CUSTOM_BOQ.label(l):l.modelSnapshot?.sku||l.serviceSnapshot?.code||l.productId)+'</small>'+
    (included?'<small class="cpq-price-included">Included in parent package — no additional revenue</small>':'')+'</td><td>'+esc(l.quantity)+' '+esc(l.unit)+'</td>'+
    '<td>'+ (x.defaultRate==null?'<span class="cpq-price-warning">Not available</span>':fmt(x.defaultRate))+
    '<small>'+esc(x.source)+'</small>'+

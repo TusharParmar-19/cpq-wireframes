@@ -143,3 +143,6 @@ This extension adds information to the existing Product Master; it does **not** 
 19. Archive a document reference, verify it is retained under previous/archived records, and verify product/master lifecycle records still exist.
 20. Change a model's technical value; verify the previous value appears in its model edit history and existing quotation snapshots are not overwritten by master edits.
 21. Confirm Service Master optional link to a model is visible in Product Management, and manufacturer/multiple-variant associations are preserved.
+
+### One-off configuration items (Phase 1)
+Add Custom Item records product/service name, whole quantity (1–100,000), unit, optional customer-facing specification and internal notes. No product/SKU or service master record is created. Edit/remove like other technical lines. Custom lines do not contribute to automatic solar engineering checks; required catalog-based solar checks remain intact. The existing 25-item demo handoff limit applies. Save a configuration before handoff; quotation must validate and copy the saved custom item. Customer quote edits must not rewrite the configuration. No actual engineering verification.
