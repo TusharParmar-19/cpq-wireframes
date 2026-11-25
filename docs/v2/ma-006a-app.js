@@ -6,7 +6,7 @@ const $=id=>document.getElementById(id);
 const esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const clone=x=>JSON.parse(JSON.stringify(x));
 const records=clone(window.CPQ_MA006A_DATA.configurations);
-const flow=window.CPQ_FLOW;
+const flow=window.CPQ_FLOW,custom=window.CPQ_CUSTOM_BOQ;
 const products=window.CPQ_MA006_DATA.products,org=window.CPQ_MA002_DATA,staff=window.CPQ_MA003_USERS,master=window.CPQ_MA004_DATA,opps=window.CPQ_MA005_DATA.opportunities;
 const state={selected:"CF-2026-003",tab:"overview",mode:"register",company:"all",branch:"all",search:"",status:"all",builder:null};
 const catalog=()=>window.CPQ_MA006A_CATALOG_UI?.db||window.CPQ_MA006A_CATALOG;
@@ -34,6 +34,7 @@ const note=message=>'<div class="ma6-note">'+message+'</div>';
 const empty=message=>'<div class="ma6-empty">'+esc(message)+'</div>';
 const typeLabel=type=>({config:"Configurable product",standard:"Standard product",service:"Service / Project"})[type]||type;
 function optionText(line){
+ if(custom.is(line))return custom.details(line);
  const p=itemProduct(line.productId);if(!p)return "Product unavailable";
  if(p.variant){
   const d=p.variant.dimensions||{},size=d.width&&d.height&&d.depth?[d.width,d.height,d.depth].join(" × ")+" "+(d.unit||"mm"):"";
@@ -43,6 +44,7 @@ function optionText(line){
  return Object.entries(p.options).map(([k,v])=>v.label+": "+(line.options?.[k]||"Not selected")).join(" · ");
 }
 function lineErrors(item){
+ if(custom.is(item))return custom.errors(item);
  const p=itemProduct(item.productId),errors=[];
  if(!p){errors.push("Product not found in catalog");return errors;}
  if(!Number.isInteger(Number(item.quantity))||Number(item.quantity)<=0||Number(item.quantity)>100000)errors.push("Quantity must be an integer from 1 to 100,000");
@@ -84,6 +86,7 @@ function review(c){
  const errors=[];
  if(!String(c.name||"").trim())errors.push("Enter a configuration name");
  if(!c.items.length)errors.push("Add at least one product or service");
+ if(c.items.length>25)errors.push("This demo supports up to 25 configuration items per handoff.");
  c.items.forEach((line,i)=>lineErrors(line).forEach(e=>errors.push("Item "+(i+1)+": "+e)));
  const validCustomer=customer(c.customerId);
  if(c.kind==="Customer configuration"){
@@ -113,7 +116,7 @@ function review(c){
   if(!(m.acKw>0))errors.push("Select an active inverter and quantity");
   if(c.solar?.batteriesNeeded==="Yes"&&!(m.batteryKwh>0))errors.push("Storage requested: choose a battery model");
  }
- return {ok:errors.length===0,errors,warnings:solarWarnings(c),solar:m};
+ return {ok:errors.length===0,errors,warnings:[...solarWarnings(c),...c.items.filter(custom.is).map(l=>(l.customItem?.name||"Custom item")+" — specification, sourcing and pricing require review.")],solar:m};
 }
 const status=c=>review(c).ok?"Demo check passed":"Needs changes";
 const badge=c=>review(c).ok?'<span class="ma6a-chip-ok">Demo check passed</span>':'<span class="ma6a-chip-bad">Needs changes</span>';
@@ -125,7 +128,7 @@ function visible(){
  const term=state.search.trim().toLowerCase();
  return records.filter(c=>scopeMatch(c)&&
  (state.status==="all"||(state.status==="passed"?review(c).ok:!review(c).ok))&&
- (!term||[c.id,c.name,c.kind,c.notes,customer(c.customerId)?.name,buyer(c.buyerId)?.name,c.items.map(i=>itemProduct(i.productId)?.name).join(" ")].some(v=>String(v||"").toLowerCase().includes(term))));
+ (!term||[c.id,c.name,c.kind,c.notes,customer(c.customerId)?.name,buyer(c.buyerId)?.name,c.items.map(i=>custom.is(i)?i.customItem?.name:itemProduct(i.productId)?.name).join(" ")].some(v=>String(v||"").toLowerCase().includes(term))));
 }
 function renderFilters(){
  $("cfg-company-filter").innerHTML='<option value="all">All internal companies / unassigned</option>'+opts(org.map(x=>[x.id,x.name]),state.company);
@@ -153,6 +156,7 @@ function payload(c){
   solutionType:c.solutionType||"general",solar:c.solutionType==="solar"?c.solar||{}:{},
   serviceIds:flow.normalized(c.serviceIds||[],true),
   items:c.items.map(l=>{
+   if(custom.is(l))return {id:l.id,type:"custom",productId:"",quantity:l.quantity,customItem:clone(l.customItem)};
    const v=catalogVariant(l.productId),f=v?catalogFamily(v.familyId):null;
    return {productId:l.productId,variantId:v?.id||"",quantity:l.quantity,options:l.options||{},note:l.note||"",customSpec:l.customSpec||"",
    model:v?{sku:v.sku,model:v.model,manufacturer:catalogMaker(v.manufacturerId)?.brand||"",unit:f?.unit||"Nos",name:f?.name||"",solarKind:f?.solarKind||"general"}:null,
@@ -195,13 +199,13 @@ function overview(c){
 function items(c){
  return panel("Selected technical items","Product attributes, service scope and quantities; pricing happens only in MA-006.")+
  (c.items.length?c.items.map((l,i)=>{
-  const p=itemProduct(l.productId),issues=lineErrors(l);
+  const p=custom.is(l)?custom.productView(l):itemProduct(l.productId),issues=lineErrors(l);
   return '<div class="ma6a-config-item"><div class="ma6a-config-item-head"><div><strong>'+(i+1)+'. '+esc(p?.name||l.productId)+'</strong><small>'+esc(l.productId)+' · '+esc(typeLabel(p?.type))+'</small></div>'+
   '<span class="ma6-tag">'+esc(l.quantity)+' '+esc(p?.unit||"unit")+'</span></div>'+
   '<div class="ma6a-config-options"><span>'+esc(l.modelSnapshot?
  [l.modelSnapshot.manufacturer,l.modelSnapshot.model||l.modelSnapshot.variantLabel||l.modelSnapshot.capacity,l.modelSnapshot.sku,l.customSpec].filter(Boolean).join(" · "):optionText(l))+'</span></div>'+
  (l.modelSnapshot?.documentRefs?.length?'<p class="cpq-scope-caption">'+l.modelSnapshot.documentRefs.length+' product document reference(s) captured when this line was added.</p>':"")+
-  (l.note?'<p class="ma6a-table-foot">'+esc(l.note)+'</p>':'')+
+  ((custom.is(l)?l.customItem?.notes:l.note)?'<p class="ma6a-table-foot">'+esc(custom.is(l)?l.customItem?.notes:l.note)+'</p>':'')+
   (issues.length?'<div class="ma6-validation">'+issues.map(esc).join("; ")+'</div>':'')+'</div>';
  }).join(""):empty("No selected items. Open the builder to add products."))+
  note('This is not a generated manufacturer BOM or priced BOQ. Engineering will approve the options and component breakdown; quotations will display the commercial quantities, rates and terms.');
@@ -357,13 +361,13 @@ function renderProduct(c,b){
  '<div class="ma6-field"><label>Internal item notes</label><textarea data-item-note rows="2">'+esc(b.itemNote||"")+'</textarea></div></details>'+
  (errors.length?'<div class="ma6-validation">'+errors.map(esc).join("; ")+'</div>':"")+
  '<button class="btn primary" type="button" data-action="add-item">+ Add to Configuration</button></div></div>'+
- '<div class="ma6a-selected-lines"><div class="ma6-section-sub"><h4>Technical items selected ('+c.items.length+')</h4></div>'+itemsCompact(c,true)+'</div>'+
+ custom.form(b)+'<div class="ma6a-selected-lines"><div class="ma6-section-sub"><h4>Technical items selected ('+c.items.length+')</h4></div>'+itemsCompact(c,true)+'</div>'+
  note('This is a technical selection, not a certified design or priced quotation. Cost, margin, tax and commercial terms are handled in MA-006.');
 }
 function itemsCompact(c,edit=false){
  return c.items.length?c.items.map((l,i)=>{
-  const p=itemProduct(l.productId);return '<div class="ma6a-line-row"><div><h4>'+(i+1)+'. '+esc(p?.name||l.productId)+'</h4><p>'+esc(optionText(l))+'</p>'+(l.note?'<p>'+esc(l.note)+'</p>':'')+(p?.variant?.demoReview?.state==="Enabled for demo"?'<p><b>Demo-enabled model · technical and price verification pending.</b></p>':'')+'</div>'+
-  (edit?'<div class="ma6a-line-row-actions"><div class="ma6-field"><label for="config-qty-'+esc(l.id)+'">Qty ('+esc(p?.unit||"unit")+')</label><input class="ma6a-line-qty" id="config-qty-'+esc(l.id)+'" data-line-qty="'+esc(l.id)+'" type="number" min="1" step="1" value="'+esc(l.quantity)+'"></div><button type="button" class="btn" data-remove="'+esc(l.id)+'">Remove</button></div>':
+  const p=custom.is(l)?custom.productView(l):itemProduct(l.productId);return '<div class="ma6a-line-row"><div><h4>'+(i+1)+'. '+esc(p?.name||l.productId)+'</h4><p>'+esc(optionText(l))+'</p>'+((custom.is(l)?l.customItem?.notes:l.note)?'<p>'+esc(custom.is(l)?l.customItem?.notes:l.note)+'</p>':'')+(p?.variant?.demoReview?.state==="Enabled for demo"?'<p><b>Demo-enabled model · technical and price verification pending.</b></p>':'')+'</div>'+
+  (edit?'<div class="ma6a-line-row-actions"><div class="ma6-field"><label for="config-qty-'+esc(l.id)+'">Qty ('+esc(p?.unit||"unit")+')</label><input class="ma6a-line-qty" id="config-qty-'+esc(l.id)+'" data-line-qty="'+esc(l.id)+'" type="number" min="1" step="1" value="'+esc(l.quantity)+'"></div>'+custom.editButton(l)+'<button type="button" class="btn" data-remove="'+esc(l.id)+'">Remove</button></div>':
   '<span class="ma6-tag">'+esc(l.quantity)+' '+esc(p?.unit||"unit")+'</span>')+'</div>';
  }).join(""):empty("No items yet. Add the first product in Select & Configure.");
 }
@@ -450,6 +454,7 @@ function save(){
 }
 function addItem(){
  const b=state.builder;if(!b)return;
+ if(b.value.items.length>=25){dialog("Configuration item limit","This demo supports up to 25 items per configuration handoff.");return;}
  const p=itemProduct(b.productId);if(!p)return;
  const line={id:"I"+String(Math.max(0,...b.value.items.map(x=>Number(x.id.replace(/\D/g,""))||0))+1).padStart(2,"0"),
   productId:p.id,variantId:p.variant?.id||"",quantity:Number(b.quantity),
@@ -459,6 +464,21 @@ function addItem(){
  if(errors.length){dialog("Product selection needs correction",errors.map(x=>esc(x)).join("<p>")+"</p>");return;}
  b.value.items.push(line);b.itemNote="";b.customSpec="";b.quantity=1;
  renderBuilder();toast("Catalog model added to configuration (demo)");
+}
+function handleCustom(action,target){
+ const b=state.builder;if(!b)return;
+ if(action==="cancel-custom-boq"){custom.clear(b);renderBuilder();return;}
+ if(action==="edit-custom-boq"){const l=b.value.items.find(x=>x.id===target.dataset.customId);if(custom.is(l)){custom.start(b,l);b.step=1;renderBuilder();custom.focusEditor();}return;}
+ if(action==="save-custom-boq"){
+  try{
+   const index=b.value.items.findIndex(x=>x.id===b.customEdit&&custom.is(x));
+   if(index<0&&b.customEdit)throw Error("Item is no longer available.");
+   if(index<0&&b.value.items.length>=25)throw Error("This demo supports up to 25 items per configuration handoff.");
+   const l=custom.make(b.customDraft||custom.blank(),index>=0?b.value.items[index].id:custom.nextId(b.value.items,"I"));
+   if(index>=0)b.value.items[index]=l;else b.value.items.push(l);
+   custom.clear(b);renderBuilder();toast("Custom item saved in configuration only (demo).");
+  }catch(e){dialog("Check custom item",esc(e.message));}
+ }
 }
 function updateContext(field,value){
  const b=state.builder;if(!b)return;const c=b.value;
@@ -499,14 +519,16 @@ document.addEventListener("click",e=>{
  if(d.tab){state.tab=d.tab;render();return;}
  if(d.step!==undefined){const step=Number(d.step);if(state.builder&&step>=0&&step<=2){state.builder.step=step;renderBuilder();}return;}
  if(d.product){if(state.builder){setProduct(state.builder,d.product);renderBuilder();}return;}
- if(d.remove){if(state.builder){state.builder.value.items=state.builder.value.items.filter(x=>x.id!==d.remove);renderBuilder();}return;}
+ if(d.remove){if(state.builder){if(state.builder.customEdit===d.remove)custom.clear(state.builder);state.builder.value.items=state.builder.value.items.filter(x=>x.id!==d.remove);renderBuilder();}return;}
  if(d.planned){dialog(esc(d.planned)+" (planned)","Separate administration will manage master product catalogs, technical rules and authorizations. No production changes occur on this page.");return;}
+ if(["save-custom-boq","cancel-custom-boq","edit-custom-boq"].includes(d.action)){handleCustom(d.action,t);return;}
  if(d.action==="add-item"){addItem();return;}
  if(d.action==="edit"){const c=record(state.selected);if(c)newBuilder(c);return;}
  if(d.action==="duplicate"){const c=record(state.selected);if(c)newBuilder(c,true);return;}
 });
 $("config-builder-body").addEventListener("change",e=>{
  if(!state.builder)return;const t=e.target,b=state.builder;
+ if(custom.update(b,t))return;
  if(t.name==="configServiceIds"){
   const selected=new Set(flow.normalized(b.value.serviceIds||[],true));
   if(t.checked)selected.add(t.value);else selected.delete(t.value);
@@ -533,6 +555,7 @@ $("config-builder-body").addEventListener("change",e=>{
 });
 $("config-builder-body").addEventListener("input",e=>{
  if(!state.builder)return;const t=e.target,b=state.builder;
+ if(custom.update(b,t))return;
  if(t.dataset.cField&&["name","notes"].includes(t.dataset.cField))b.value[t.dataset.cField]=t.value;
  if(t.dataset.solarField!==undefined){
   b.value.solar||={};b.value.solar[t.dataset.solarField]=t.type==="number"&&t.value!==""?Number(t.value):t.value;
