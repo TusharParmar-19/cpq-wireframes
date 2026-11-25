@@ -5,7 +5,7 @@ const $=id=>document.getElementById(id);
 const esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const db=JSON.parse(JSON.stringify(window.CPQ_MA006_DATA));
 const flow=window.CPQ_FLOW;
-const pricing=window.CPQ_PRICING,custom=window.CPQ_CUSTOM_BOQ;
+const pricing=window.CPQ_PRICING,custom=window.CPQ_CUSTOM_BOQ,req=window.CPQ_REQUIREMENTS;
 const master=window.CPQ_MA004_DATA, org=window.CPQ_MA002_DATA, staff=window.CPQ_MA003_USERS, enquiries=window.CPQ_MA005_DATA.opportunities;
 const state={selected:"QT-2026-014",tab:"summary",mode:"register",company:"all",branch:"all",status:"all",owner:"all",search:"",listExpanded:false,builder:null,history:[]};
 const quote=id=>db.quotations.find(q=>q.id===id);
@@ -191,7 +191,7 @@ function items(q){
  (l.includedInParent?'<small class="cpq-quote-service-included">Included in parent package — not billed separately</small>':'')+
  (l.modelSnapshot?.documentRefs?.length?'<small>'+l.modelSnapshot.documentRefs.length+' captured document reference(s) · metadata only</small>':'')+'</td><td>'+esc(l.quantity)+'</td>'+
  '<td>'+esc(l.unit)+'</td><td class="ma6-money">'+money(l.unitPrice)+'</td><td class="ma6-money">'+money(extended(l))+'</td></tr>')):blank("No BOQ lines yet. Continue Editing to add catalog equipment or services."))+
- '<div class="cpq-model-snapshot"><h4>Captured product specifications and document references</h4>'+
+ req.detail(q)+'<div class="cpq-model-snapshot"><h4>Captured product specifications and document references</h4>'+
  (q.lines.some(l=>l.modelSnapshot)?q.lines.filter(l=>l.modelSnapshot).map(l=>{
   const m=l.modelSnapshot,docs=m.documentRefs||[],w=m.warranty||{};
   return '<details><summary>'+esc(l.description)+' · '+esc(m.sku)+' ('+docs.length+' document references)</summary>'+
@@ -259,6 +259,7 @@ function demoReadiness(q){
  if(!own||own.status!=="Active"||!(own.assignments||[]).some(x=>x.companyId===q.companyId&&(x.branches||[]).includes(q.branchId)))missing.push("Responsible employee assigned to this branch");
  if(!q.lines?.length||q.lines.some(l=>!Number.isInteger(Number(l.quantity))||Number(l.quantity)<=0||!Number.isFinite(Number(l.unitPrice))||Number(l.unitPrice)<0))missing.push("Valid BOQ products, quantities and sample rates");
  if(q.lines?.some(l=>custom.errors(l).length))missing.push("Correct invalid custom BOQ items.");
+ missing.push(...req.errors(q));
  if(q.lines?.some(l=>!l.includedInParent&&!(Number(l.unitPrice)>0)))
   missing.push("Enter a positive fictional sample selling rate for each billable line; included sub-services remain ₹0");
  if(!reviewChecks(q)[2][1])missing.push("Complete product option selections");
@@ -328,7 +329,7 @@ function paper(q){
  '<div><span>Illustrative tax ('+esc(q.taxRate)+'%)</span><strong>'+money(t.tax)+'</strong></div>'+
  '<div class="final"><span>Illustrative quotation total</span><strong>'+money(t.total)+'</strong></div></div>'+
  '<p><b>Payment:</b> '+text(q.payment)+'<br><b>Delivery:</b> '+text(q.delivery)+'<br><b>Warranty:</b> '+text(q.warranty)+'</p>'+
- '<p><b>Exclusions:</b> '+text(q.exclusions)+'</p><p style="border-top:1px solid #e8edf2;padding-top:12px"><b>NOT AN ISSUED QUOTATION.</b> No company signature, approval, verified tax data or legally usable PDF is provided.</p></div>';
+ req.publicScope(q)+'<p class="cpq-req-public"><b>Exclusions:</b> '+text(q.exclusions)+'</p><p style="border-top:1px solid #e8edf2;padding-top:12px"><b>NOT AN ISSUED QUOTATION.</b> No company signature, approval, verified tax data or legally usable PDF is provided.</p></div>';
 }
 function documents(q){
  const dispatch=q.demoDispatch||null, events=dispatch?.events||[];
@@ -466,7 +467,7 @@ function boqBuilder(q,b){
  '<td class="ma6-money">'+money(extended(l))+'</td><td>'+custom.editButton(l)+'<button type="button" class="btn" data-remove-line="'+esc(l.id)+'" aria-label="Remove '+esc(l.description)+'">Remove</button></td></tr>')):
  blank("No BOQ items yet. Add a catalog product, service or custom item, or import a configuration.");
  return panel("2 · Products & BOQ",q.sourceConfigId?"Review imported configuration items and quantities. Pricing is handled separately.":"Select products and services, confirm quantities, then continue to Pricing & Costing.")+
- source+lineTable+custom.form(b)+
+ source+lineTable+custom.form(b)+req.form(q)+
  '<div class="ma6-section-sub ma6a-quote-add"><h4>'+q.lines.length+' BOQ item(s) · Current offered BOQ '+money(totals(q).boqSubtotal)+'</h4>'+
  '<button type="button" class="btn'+(b.addPickerOpen?'':' primary')+'" data-action="toggle-add-product">'+
  (b.addPickerOpen?'Close Product / Service Picker':'+ Add Product or Service')+'</button></div>'+
