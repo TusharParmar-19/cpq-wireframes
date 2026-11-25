@@ -343,7 +343,24 @@ function refreshCustomerScope(q){
  if(q.ownerId&&!staff.some(u=>u.id===q.ownerId&&u.status==="Active"&&(u.assignments||[]).some(x=>x.companyId===q.companyId&&x.branches.includes(q.branchId))))q.ownerId="";
  renderBuilder();toast("Customer company links refreshed. Your quotation items, rates and other draft details remain open.");
 }
+function selectLinkedSellingScope(q,scope){
+ const c=customer(q.customerId),company=entity(scope?.companyId),site=company?.branches?.find(x=>x.id===scope?.branchId);
+ if(!c||c.status==="Archived"||!company||!site||["Inactive","Archived"].includes(company.status)||["Inactive","Archived"].includes(site.status)||!c.links?.some(x=>x.companyId===company.id&&x.branchId===site.id))throw Error("This company/branch is not an available customer link.");
+ const changed=q.companyId!==company.id||q.branchId!==site.id;
+ q.companyId=company.id;q.branchId=site.id;
+ if(changed)q.ownerId="";
+ renderBuilder();
+ if(changed)toast("Selling company and branch selected. Choose the responsible employee and review any supplier rates for this company.");
+}
 function handleAction(action,target){
+ if(action==="link-selling-scope"&&state.builder){
+  const q=state.builder.quote;
+  if(!q.customerId||!window.CPQ_QUICK_CREATE?.open){explain("Choose a customer","Select an available customer before linking another selling company.");return;}
+  window.CPQ_QUICK_CREATE.open("customerScope",{customerId:q.customerId},(record,scope)=>{
+   if(state.builder?.quote!==q||record.id!==q.customerId)throw Error("Return to the original customer quotation.");
+   selectLinkedSellingScope(q,scope);
+  },target);return;
+ }
  if(action==="refresh-customer-scope"&&state.builder){
   try{refreshCustomerScope(state.builder.quote);}catch(error){explain("Cannot refresh links",esc(error.message));}
   return;

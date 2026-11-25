@@ -28,8 +28,9 @@ function toast(text){const n=$("toast");n.hidden=false;n.textContent=text;if(toa
 function saved(c,text,tab=""){
  audit(c,text);if(tab)state.tab=tab;close();render();toast(text+" · demo only");
 }
-const companyOptions=()=>own.map(x=>[x.id,x.name]);
-const branchOptions=companyId=>(ent(companyId)?.branches||[]).map(x=>[x.id,x.name+" · "+x.city]);
+const availableScope=x=>!!x&&!["Inactive","Archived"].includes(x.status);
+const companyOptions=(activeOnly=false)=>own.filter(x=>!activeOnly||availableScope(x)&&(x.branches||[]).some(availableScope)).map(x=>[x.id,x.name]);
+const branchOptions=(companyId,activeOnly=false)=>(ent(companyId)?.branches||[]).filter(x=>!activeOnly||availableScope(x)).map(x=>[x.id,x.name+" · "+x.city]);
 /* Demo-only shortlist. The real backend must check user status, role grants and scopes again. */
 const staff=Array.isArray(window.CPQ_MA003_USERS)?window.CPQ_MA003_USERS:[];
 const assignedTo=(u,companyId,branchId)=>u.status==="Active"&&!!companyId&&!!branchId&&
@@ -42,9 +43,9 @@ function ownerField(names=[],selected=""){
  return '<div class="ma4-form-item full"><label for="f-owner">Relationship owner (optional)</label><select id="f-owner" name="owner">'+ownerOptions(names,selected)+'</select>'+
  '<p class="ma4-form-help">Choose an active MA-003 employee assigned to the selected internal company/branch. This does not grant permissions.</p></div>';
 }
-function ownFields(companyId="",branchId=""){
- return '<div class="ma4-form-item"><label for="ma4-own-company">Our internal company *</label><select id="ma4-own-company" name="ourCompany" required><option value="">Select internal company</option>'+options(companyOptions(),companyId)+'</select></div>'+
- '<div class="ma4-form-item"><label for="ma4-own-branch">Our internal branch *</label><select id="ma4-own-branch" name="ourBranch" required><option value="">Select internal branch</option>'+options(branchOptions(companyId),branchId)+'</select></div>';
+function ownFields(companyId="",branchId="",activeOnly=false){
+ return '<div class="ma4-form-item"><label for="ma4-own-company">Our internal company *</label><select id="ma4-own-company" name="ourCompany"'+(activeOnly?' data-active-scope="yes"':'')+' required><option value="">Select internal company</option>'+options(companyOptions(activeOnly),companyId)+'</select></div>'+
+ '<div class="ma4-form-item"><label for="ma4-own-branch">Our internal branch *</label><select id="ma4-own-branch" name="ourBranch" required><option value="">Select internal branch</option>'+options(branchOptions(companyId,activeOnly),branchId)+'</select></div>';
 }
 function updateOwners(){
  const company=$("ma4-own-company"),branch=$("ma4-own-branch"),owner=$("f-owner");
@@ -55,7 +56,7 @@ function updateOwners(){
 }
 function updateOwnBranches(){
  const company=$("ma4-own-company"),br=$("ma4-own-branch");if(!company||!br)return;
- br.innerHTML='<option value="">Select internal branch</option>'+options(branchOptions(company.value),"");
+ br.innerHTML='<option value="">Select internal branch</option>'+options(branchOptions(company.value,company.dataset.activeScope==="yes"),"");
  br.value="";
  updateOwners();
 }
@@ -135,15 +136,31 @@ function editCustomer(){
  },"Save customer (demo)");
 }
 
-function linkScope(){
+function linkScope(quick=false){
  const c=cust(state.selected);if(!c||c.status==="Archived")return;
- const f=wrap(ownFields(),"Link the customer to another INTERNAL company and branch. This does not grant permissions to employees, and cross-company record access must be checked by the backend.");
- show("Link Internal Company & Branch",c.name+" · relationship scope",f,fd=>{
+ const f=wrap(ownFields("","",true)+(quick?'<div class="ma4-form-item full"><p class="ma4-form-help">This will save the company/branch association to the existing customer, then select that selling scope in your current quotation. No new customer or company will be created.</p></div>':""),"Link the customer to another INTERNAL company and branch. This does not grant permissions to employees, and cross-company record access must be checked by the backend.");
+ show(quick?"Choose another selling company / branch":"Link Internal Company & Branch",c.name+" · relationship scope",f,fd=>{
   const co=v(fd,"ourCompany"),br=v(fd,"ourBranch");
-  if(!allowedLink(co,br)){invalid("The selected branch must belong to that internal company.");return;}
-  if(c.links.some(x=>x.companyId===co&&x.branchId===br)){invalid("This internal company/branch relationship already exists.");return;}
-  c.links.push({companyId:co,branchId:br});saved(c,"Internal scope linked: "+(ent(co)?.name||co)+" / "+(branch(br)?.name||br),"overview");
- },"Link scope (demo)");
+  const company=ent(co),site=company?.branches?.find(x=>x.id===br);
+  if(!company||company.status==="Inactive"||company.status==="Archived"||!site||site.status==="Inactive"||site.status==="Archived"){invalid("Choose an active internal company and one of its active branches.");return;}
+  // Start with the latest saved master to avoid overwriting unrelated customer edits.
+  const latest=window.CPQ_SHARED?.read()?.modules?.customers||db;
+  const next=JSON.parse(JSON.stringify(latest)),record=next.customers.find(x=>x.id===c.id);
+  if(!record||record.status==="Archived"){invalid("This customer is no longer available.");return;}
+  const existing=(record.links||[]).some(x=>x.companyId===co&&x.branchId===br);
+  if(existing&&!quick){invalid("This internal company/branch relationship already exists.");return;}
+  const message="Internal scope linked: "+company.name+" / "+site.name;
+  if(!existing){
+   (record.links??=[]).push({companyId:co,branchId:br});
+   record.updated=new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})+" (demo)";
+   (next.history??=[]).unshift({customerId:record.id,text:message,when:new Date().toLocaleString("en-IN",{dateStyle:"medium",timeStyle:"short"})+" · Demo"});
+  }
+  if(!window.CPQ_SHARED?.save("customers",next)){invalid("Could not save the customer company link in this browser.");return;}
+  // Keep existing page references and activity state synchronized.
+  Object.assign(db,next);state.history=db.history||[];
+  state.tab="overview";close();render();toast(existing?"Existing linked company selected.":message+" · demo only");
+  if(quick)window.CPQ_QUICK_CREATE?.saved("customerScope",record.id,{companyId:co,branchId:br});
+ },quick?"Link & Select (demo)":"Link scope (demo)");
 }
 const taxOptions=[["Not supplied","Not supplied"],["Pending","Pending verification"],["Verified sample","Verified (sample only)"]];
 function companyForm(id=null){
@@ -314,7 +331,7 @@ function qcCustomerChild(ctx,form){
  if(selector&&ctx.buyerId&&Array.from(selector.options).some(o=>o.value===ctx.buyerId)){selector.value=ctx.buyerId;selector.dispatchEvent(new Event("change",{bubbles:true}));}
  return $("overlay");
 }
-window.CPQ_QC_FORMS={customer:ctx=>{
+window.CPQ_QC_FORMS={customerScope:ctx=>qcCustomerChild(ctx,()=>linkScope(true)),customer:ctx=>{
  createCustomer();
  if(ctx.companyId&&Array.from($("ma4-own-company").options).some(o=>o.value===ctx.companyId)){$("ma4-own-company").value=ctx.companyId;updateOwnBranches();}
  if(ctx.branchId&&Array.from($("ma4-own-branch").options).some(o=>o.value===ctx.branchId)){$("ma4-own-branch").value=ctx.branchId;updateOwners();}

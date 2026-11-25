@@ -400,7 +400,7 @@ function contextBuilder(q){
  const opps=enquiries.filter(x=>x.customerId===q.customerId&&x.buyerId===q.buyerId).map(x=>[x.id,x.id+" · "+x.title]);
  const companyHelp=q.customerId?
   (comps.length?'Showing '+comps.length+' linked internal '+(comps.length===1?'company.':'companies.'):'No internal company is linked to this customer yet.')+
-  '<div class="ma6-scope-links"><a href="ma-004-customers.html?customer='+encodeURIComponent(q.customerId)+'" target="_blank" rel="noopener">Manage customer company links ↗</a><button class="btn ma6-scope-refresh" type="button" data-action="refresh-customer-scope">Refresh links</button></div>'
+  '<div class="ma6-scope-links"><button class="btn ma6-scope-refresh" type="button" data-action="link-selling-scope">+ Use another company / branch</button></div><details class="ma6-scope-links"><summary>Manage existing links</summary><a href="ma-004-customers.html?customer='+encodeURIComponent(q.customerId)+'" target="_blank" rel="noopener">Open customer ↗</a> <button class="btn ma6-scope-refresh" type="button" data-action="refresh-customer-scope">Refresh links</button></details>'
   :'Select a customer first. Only its linked selling companies will be available.';
  const branchHelp=q.companyId?'Only branches linked to this customer under the selected selling company.':'Choose a selling company first.';
  return panel("1 · Customer, Buyer & Scope","Use MA-004 master records and optionally link an MA-005 enquiry. A direct quotation is also allowed.")+
