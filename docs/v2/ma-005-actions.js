@@ -223,7 +223,7 @@ function handleAction(name){
  else if(name==="stage")stageForm();
  else if(name==="followup")addFollowup();
  else if(name==="prepare")handoff();
- else if(name==="files")editEnquiry();
+ else if(name==="files"){editEnquiry();const p=$("modal-body").querySelector("[data-req-panel]");if(p){p.open=true;p.scrollIntoView({block:"start"});}}
 }
 document.addEventListener("click",e=>{
  const t=e.target.closest("[data-opp],[data-tab],[data-stage],[data-action],[data-quote],[data-planned]");

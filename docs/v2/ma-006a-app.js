@@ -498,7 +498,8 @@ function updateContext(field,value){
  }
  if(field==="buyerId"){if(c.buyerId&&c.buyerId!==value){if(!req.confirmReplace(c)){renderBuilder();return;}req.clear(c);}c.buyerId=value;c.contactId="";c.siteId="";c.projectId="";c.opportunityId="";c.serviceIds=[];renderBuilder();return;}
  if(field==="opportunityId"){
-  if(c.opportunityId!==value&&!req.confirmReplace(c)){renderBuilder();return;}
+  if(c.opportunityId===value)return;
+  if(!req.confirmReplace(c)){renderBuilder();return;}
   c.opportunityId=value;
   const src=opportunity(value);
   req.transfer(c,src&&src.customerId===c.customerId&&src.buyerId===c.buyerId?req.opportunity(src):null,src?.id||"");

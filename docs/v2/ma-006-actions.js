@@ -213,7 +213,8 @@ function updateBuilderField(field,value){
   q.branchId=value;q.ownerId="";renderBuilder();return;
  }
  if(field==="opportunityId"){
-  if(q.opportunityId!==value&&!req.confirmReplace(q)){renderBuilder();return;}
+  if(q.opportunityId===value)return;
+  if(!req.confirmReplace(q)){renderBuilder();return;}
   q.opportunityId=value;const src=opportunity(value);
   req.transfer(q,src&&src.customerId===q.customerId&&src.buyerId===q.buyerId?req.opportunity(src):null,src?.id||"");
   q.lines=q.lines.filter(l=>!l.importedFromOpportunity);

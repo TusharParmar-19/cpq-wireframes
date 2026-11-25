@@ -47,11 +47,11 @@ function docList(r,editable=false){
  const p=read(r),ds=p.documents||[];
  return ds.length?'<ul class="cpq-req-files">'+ds.map((d,i)=>'<li><div><b>'+esc(d.name)+'</b><small>'+esc(d.type)+(d.legacyStatus?' · '+esc(d.legacyStatus):'')+' · metadata only</small></div>'+(editable?'<button type="button" class="btn" data-req-remove="'+i+'" aria-label="Remove '+esc(d.name)+'">Remove</button>':'')+'</li>').join("")+'</ul>':'<p class="cpq-req-muted">No customer document references recorded.</p>';
 }
-function form(r){
+function form(r,quotation=false){
  const p=read(r),field=(k,label,value)=>'<label>'+esc(label)+'<textarea rows="3" maxlength="4000" data-req-field="'+k+'">'+esc(value)+'</textarea></label>';
  return '<details class="cpq-req" data-req-panel><summary>Customer BOQ, documents &amp; scope of work <small>(optional)</small></summary><div class="cpq-req-content">'+(p.source?'<p class="cpq-req-muted">Copied from '+esc(p.source)+' · editable local snapshot; source remains unchanged.</p>':'')+
  '<p class="cpq-req-muted">Record the customer’s original requirements. Only scope of work and exclusions appear in the customer quotation. Internal instructions and file references stay internal.</p>'+
- '<div class="cpq-req-grid">'+field("scope","Scope of work / included work",p.scope)+field("exclusions","Exclusions / not included",r.exclusions||"")+field("instructions","Internal technical instructions (not on customer preview)",p.instructions)+'</div>'+
+ '<div class="cpq-req-grid">'+field("scope","Scope of work / included work",p.scope)+field("exclusions",quotation?"Exclusions / not included (also editable in Step 4)":"Exclusions / not included",r.exclusions||"")+field("instructions","Internal technical instructions (not on customer preview)",p.instructions)+'</div>'+
  '<h4>Customer requirement documents</h4><p class="cpq-req-muted">Choose fictional sample files only. Filename, type and size are recorded; contents are not read, uploaded or downloadable. No automatic Excel/PDF import.</p>'+
  '<div class="cpq-req-pick"><label>Document type<select data-req-type>'+types.slice(0,5).map(t=>'<option>'+esc(t)+'</option>').join("")+'</select></label><label>Choose sample files<input type="file" multiple data-req-files></label></div><div data-req-doc-list>'+docList(r,true)+'</div><p data-req-error role="alert" class="cpq-req-error"></p></div></details>';
 }
