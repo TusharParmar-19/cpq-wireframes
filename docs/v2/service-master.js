@@ -167,7 +167,7 @@ function renderDetail(){
   '<p class="muted">'+esc(s.description||"No description yet. You can add one when editing.")+'</p>'+
   '<div class="sm-kv">'+[
    ["Business domain",s.domain||"Not set"],["Work type",s.workType||"Not set"],
-   ["Commercial unit",s.unit||"Not set"],["Parent service",s.parentId?(item(s.parentId)?.name||"Missing parent"):"None (main service)"]
+   ["Commercial unit",s.unit||"Not set"],["GST / SAC",window.CPQ_TAX.describe(window.CPQ_TAX.service(s))],["Parent service",s.parentId?(item(s.parentId)?.name||"Missing parent"):"None (main service)"]
   ].map(x=>'<div><small>'+esc(x[0])+'</small><strong>'+esc(x[1])+'</strong></div>').join("")+'</div>'+
   '<div class="sm-box"><b>Scope of work</b>'+esc(s.scope||"Not defined yet.")+'</div>'+
   '<div class="sm-box"><b>Expected deliverables</b>'+esc(s.deliverables||"Not defined yet.")+'</div>'+
@@ -253,6 +253,7 @@ function openEditor(mode,parentId){
   '</div>'+
   '<div class="sm-field"><label for="sm-description">Short description</label><textarea id="sm-description" name="description" maxlength="600" placeholder="What does this service provide?">'+esc(rec.description)+'</textarea></div>'+
   '</div></details>'+
+  '<details open><summary>GST &amp; SAC (demo)</summary><div class="sm-form-grid">'+window.CPQ_TAX.fields("serviceTax",rec.tax,"service","sm-field",false)+'</div><p class="muted">Each service and sub-service has its own tax classification. Enter offered service rates excluding GST in the quotation.</p></details>'+
   '<details><summary>2. Scope &amp; deliverables (optional)</summary><div>'+
   '<div class="sm-field"><label for="sm-scope">Scope of work</label><textarea id="sm-scope" name="scope" maxlength="3000" placeholder="Scope, limits and assumptions">'+esc(rec.scope)+'</textarea></div>'+
   '<div class="sm-field"><label for="sm-deliverables">Expected deliverables</label><textarea id="sm-deliverables" name="deliverables" maxlength="2000" placeholder="Report, installation, inspection etc.">'+esc(rec.deliverables)+'</textarea></div>'+
@@ -296,8 +297,9 @@ function saveEditor(event){
  const prev=new Set(existing?.productIds||[]);
  const ids=Array.from($("sm-form").querySelectorAll('input[name="productIds"]:checked')).map(x=>x.value);
  if(ids.some(id=>!allowed.has(id)&&!prev.has(id)))return showError("Only Active product models can be newly linked.");
+ let tax;try{tax=window.CPQ_TAX.read(f,"serviceTax","service",false);}catch(error){return showError(error.message);}
  const record={
-  ...(existing||{}),id:existing?.id||nextId(db.services),code:serviceCode,name,parentId,
+  ...(existing||{}),tax,id:existing?.id||nextId(db.services),code:serviceCode,name,parentId,
   domain:String(f.get("domain")||"Other"),workType:String(f.get("workType")||"Other"),
   unit:String(f.get("unit")||"Job"),status:String(f.get("status")||"Draft"),
   description:String(f.get("description")||"").trim(),scope:String(f.get("scope")||"").trim(),

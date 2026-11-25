@@ -15,6 +15,7 @@ const methods=[["fixed","Fixed amount"],["quantity","Quantity × rate"],["percen
 const defaultPricing=()=>({version:1,method:"standard",markup:20,costs:[],history:[]});
 const variant=id=>window.CPQ_MA006A_CATALOG?.variants?.find(v=>v.id===id);
 function captureLine(line,fresh=false){
+ const tax=fresh?window.CPQ_TAX.capture(line):line.taxSnapshot;
  if(line.pricing)return line.pricing;
  const v=window.CPQ_CUSTOM_BOQ?.is(line)?null:variant(line.sourceVariantId||line.productId),p=v?.price||{};
  const isMasterService=Boolean(line.serviceId);
@@ -22,8 +23,8 @@ function captureLine(line,fresh=false){
  const validCurrency=!p.currency||p.currency==="INR";
  const knownCatalogPrice=fresh&&v&&validCurrency&&pricePositive(p.sell);
  const knownLegacyPrice=fresh&&!v&&!isMasterService&&!window.CPQ_CUSTOM_BOQ?.is(line)&&original>0;
- const base=fresh?(knownCatalogPrice?round(p.sell):knownLegacyPrice?round(original):null):(original>0?round(original):null);
- const cost=fresh&&v&&validCurrency&&pricePositive(p.cost)?round(p.cost):null;
+ const base=fresh?(knownCatalogPrice?window.CPQ_TAX.net(p.sell,tax,tax?.sellBasis):knownLegacyPrice?round(original):null):(original>0?round(original):null);
+ const cost=fresh&&v&&validCurrency&&pricePositive(p.cost)?window.CPQ_TAX.net(p.cost,tax,tax?.costBasis):null;
  const source=fresh?(v?(knownCatalogPrice?(p.list||"Sample Product Master"):(validCurrency?"Catalog rate unavailable":"Catalog currency mismatch")):
   window.CPQ_CUSTOM_BOQ?.is(line)?"Custom item — manual rate":isMasterService?"Service Master — manual rate":knownLegacyPrice?"Legacy sample rate":"Manual rate required"):
   "Existing draft rate retained — original list not captured";
@@ -57,7 +58,8 @@ function calculate(q){
  const discountRate=Math.min(100,n(q.discount))/100;
  const discount=round(subtotal*discountRate);
  const taxable=round(Math.max(0,subtotal-discount));
- const tax=round(taxable*Math.min(100,n(q.taxRate))/100);
+ const gst=window.CPQ_TAX.enabled(q)?window.CPQ_TAX.calculate(q,lines,publicRows,discount):null;
+ const tax=gst?gst.tax:round(taxable*Math.min(100,n(q.taxRate))/100);
  const missing=lines.filter(l=>!validNumber(l.pricing?.unitCost)).length;
  const directCost=round(lines.reduce((a,l)=>a+(validNumber(l.pricing?.unitCost)?round(n(l.quantity)*n(l.pricing.unitCost)):0),0));
  const extraCost=round(costs.reduce((a,c)=>a+costAmount(c,directCost,taxable),0));
@@ -70,7 +72,7 @@ function calculate(q){
  const salePct=costs.filter(c=>c.method==="percent-sale").reduce((a,c)=>a+n(c.rate)/100,0);
  const denominator=1-salePct*(1-discountRate)*(1+markup);
  const target=missing||denominator<=0?null:round(fixedCosts*(1+markup)/denominator);
- return {boqSubtotal,charges,publicRows,subtotal,discount,taxable,tax,total:round(taxable+tax),directCost,extraCost,totalCost,missing,profit,margin,actualMarkup,target,denominator};
+ return {boqSubtotal,charges,publicRows,subtotal,discount,taxable,tax,gst,total:round(taxable+tax),directCost,extraCost,totalCost,missing,profit,margin,actualMarkup,target,denominator};
 }
 function requiresReason(l){
  return !l.includedInParent&&pricePositive(l.unitPrice)&&
@@ -232,7 +234,7 @@ function pricingView(q,financialRows){
    (x.effectiveFrom?'<small>List dates: '+esc(x.effectiveFrom)+(x.effectiveTo?' to '+esc(x.effectiveTo):' onward')+'</small>':'')+'</td>'+
    '<td>'+input(attr+'data-price-field="cost" aria-label="Estimated unit cost '+esc(l.description)+'" placeholder="Unknown"',x.unitCost??"")+
    '<small class="cpq-price-warning" data-cost-missing="'+esc(l.id)+'"'+(x.unitCost==null?'':' hidden')+'>Cost not entered</small>'+vendorRatePicker(q,l)+'</td>'+
-   '<td>'+input(attr+'data-price-field="rate" aria-label="Offered selling rate '+esc(l.description)+'"'+(included?' disabled':''),l.unitPrice)+
+   '<td>'+input(attr+'data-price-field="rate" aria-label="Offered selling rate excluding GST '+esc(l.description)+'"'+(included?' disabled':''),l.unitPrice)+
    '<small class="cpq-price-warning" data-rate-changed="'+esc(l.id)+'"'+(changed?'':' hidden')+'>Quote-specific override</small></td>'+
    '<td><strong data-offered-total="'+esc(l.id)+'">'+fmt(lineTotal(l))+'</strong></td>'+
    '<td>'+(!included?input(attr+'data-price-field="reason" aria-label="Price change reason '+esc(l.description)+'" placeholder="'+(changed?"Reason required before review":"Optional change reason")+'"',x.overrideReason,"text")+
@@ -266,10 +268,10 @@ function pricingView(q,financialRows){
  '<section class="cpq-price-section"><div class="cpq-price-heading"><div><h4>Pricing method &amp; profitability</h4><p>Standard selling prices may already contain profit. Add a markup only by explicitly applying a cost-plus target.</p></div></div>'+
  '<div class="cpq-price-settings"><label>Pricing method'+select('data-pricing-field="method"',[["standard","Standard / negotiated selling prices"],["cost-plus","Cost-plus target"]],p.method)+'</label>'+
  '<label>Customer discount (%)'+input('data-field="discount" max="100"',q.discount)+'</label>'+
- '<label>Illustrative tax (%)'+input('data-field="taxRate" max="100"',q.taxRate)+'</label>'+
+ ''+(window.CPQ_TAX.enabled(q)?"":'<label>Legacy illustrative tax (%)'+input('data-field="taxRate" max="100"',q.taxRate)+'</label>')+
  (p.method==="cost-plus"?'<label>Target markup on cost (%)'+input('data-pricing-field="markup" max="500"',p.markup)+'</label>':'')+'</div>'+
  (p.method==="cost-plus"?'<div class="cpq-price-target"><div><b data-price-target>Suggested selling amount before discount: '+(t.target===null?"Complete cost data / check inputs":fmt(t.target))+'</b><p>Apply once to distribute the target among billable BOQ rates after deducting any separate customer charges. Rates remain editable; unit rounding may produce a small difference. Discounts reduce final profit.</p></div><button type="button" class="btn primary" data-action="price-apply-target">Apply Cost-plus Target</button></div>':'')+
- '<div data-price-metrics>'+metrics(q)+'</div><div data-price-loss>'+(t.profit!==null&&t.profit<0?'<p class="cpq-price-alert">Below estimated cost — requires a commercial exception review in production.</p>':'')+'</div>'+
+ ''+window.CPQ_TAX.editor(q,t)+'<div data-price-metrics>'+metrics(q)+'</div><div data-price-loss>'+(t.profit!==null&&t.profit<0?'<p class="cpq-price-alert">Below estimated cost — requires a commercial exception review in production.</p>':'')+'</div>'+
  '<div class="cpq-price-final"><div><b>Internal pricing only</b><p>Costs, commission, profit, margin and override history are not included in the customer-facing layout. No actual permission is enforced in this public demo.</p></div><div data-price-summary>'+financialRows(q)+'</div></div>'+
  '<div data-price-history>'+history(q)+'</div></section></div>';
 }

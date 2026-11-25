@@ -146,7 +146,7 @@ function mount(editor,database){
    '<summary>Advanced catalog classification (optional)</summary><p>Category and behavior are set automatically. Authorized staff can adjust them here.</p>');
   const advancedGrid=group();move(form,["familyCategory","familyType"],advancedGrid);adv.appendChild(advancedGrid);
   for(const el of original){
-   if(el.tagName==="DETAILS"&&el.querySelector('[name="familyUnit"]'))adv.appendChild(el);
+   if(el.tagName==="DETAILS"&&(el.querySelector('[name="familyUnit"]')||el.querySelector('[name="familyTaxCode"]')))adv.appendChild(el);
   }
   basic.appendChild(adv);
   updateCategory(form,form.querySelector('[name="solarKind"]')?.value||"pv-module");
@@ -195,8 +195,8 @@ function mount(editor,database){
   const grid=commercial.querySelector(".ma6-field-grid"),quick=group();
   if(grid){move(form,["sell","availability","datasheet"],quick);}
   price.appendChild(quick);
-  commercial.querySelector("summary").textContent="More price and sourcing fields (commercial team)";
-  commercial.open=false;price.appendChild(commercial);
+  commercial.querySelector("summary").textContent="GST, HSN, purchase price and sourcing (commercial team)";
+  commercial.open=true;price.appendChild(commercial);
  }
  const parts=original.find(el=>el.tagName==="DETAILS"&&String(el.querySelector("summary")?.textContent||"").includes("Parts & accessories"));
  if(parts){parts.open=false;price.appendChild(parts);}

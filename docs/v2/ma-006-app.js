@@ -214,14 +214,14 @@ function financialRows(q){
  '<div class="ma6-price-row"><span>Offer subtotal before discount</span><strong>'+money(t.subtotal)+'</strong></div>'+
  '<div class="ma6-price-row"><span>Sample discount ('+esc(q.discount)+'%)</span><strong>− '+money(t.discount)+'</strong></div>'+
  '<div class="ma6-price-row"><span>Illustrative taxable base</span><strong>'+money(t.taxable)+'</strong></div>'+
- '<div class="ma6-price-row"><span>Illustrative tax ('+esc(q.taxRate)+'%)</span><strong>'+money(t.tax)+'</strong></div>'+
+ '<div class="ma6-price-row"><span>'+(t.gst?"Total GST (demo)":"Illustrative tax ("+esc(q.taxRate)+"%)")+'</span><strong>'+money(t.tax)+'</strong></div>'+window.CPQ_TAX.breakdown(t)+
  '<div class="ma6-price-row final"><span>Illustrative quote total</span><strong>'+money(t.total)+'</strong></div></div>';
 }
 function commercial(q){
  const p=draftMissing(q).filter(x=>["Validity date","Payment terms","Delivery terms"].includes(x));
  return panel("Commercial summary","Sample calculations and the conditions intended for the customer")+
  '<div class="ma6a-commercial-top"><div class="ma6a-commercial-aside"><h4>Pricing review</h4><p>Figures are illustrative. Confirm SKU rates, tax treatment, discounts and any price exceptions before submitting for approval.</p>'+
- '<div class="ma6a-commercial-badges"><span class="ma6-tag">Discount: '+esc(q.discount)+'%</span><span class="ma6-tag">Tax assumption: '+esc(q.taxRate)+'%</span></div>'+
+ '<div class="ma6a-commercial-badges"><span class="ma6-tag">Discount: '+esc(q.discount)+'%</span><span class="ma6-tag">'+(window.CPQ_TAX.enabled(q)?"Item-wise GST":"Legacy tax: "+esc(q.taxRate)+"%")+'</span></div>'+
  (q.status==="Draft"?'<button type="button" class="btn" data-action="edit-pricing">Edit Pricing &amp; Costing</button>':'')+
  '</div>'+financialRows(q)+'</div>'+
  pricing.internalSummary(q)+
@@ -260,6 +260,7 @@ function demoReadiness(q){
  if(!q.lines?.length||q.lines.some(l=>!Number.isInteger(Number(l.quantity))||Number(l.quantity)<=0||!Number.isFinite(Number(l.unitPrice))||Number(l.unitPrice)<0))missing.push("Valid BOQ products, quantities and sample rates");
  if(q.lines?.some(l=>custom.errors(l).length))missing.push("Correct invalid custom BOQ items.");
  missing.push(...req.errors(q));
+ missing.push(...window.CPQ_TAX.reviewIssues(q,totals(q)));
  if(q.lines?.some(l=>!l.includedInParent&&!(Number(l.unitPrice)>0)))
   missing.push("Enter a positive fictional sample selling rate for each billable line; included sub-services remain ₹0");
  if(!reviewChecks(q)[2][1])missing.push("Complete product option selections");
@@ -321,12 +322,12 @@ function paper(q){
  return '<div class="ma6-paper"><div class="ma6-paper-head"><div><strong>'+text(entity(q.companyId)?.name)+'</strong><p>Customer quotation preview · fictional information</p></div><span>'+esc(q.id)+' / '+esc(q.rev)+'</span></div>'+
  '<p><b>To:</b> '+text(buyer(q.buyerId)?.name)+'<br><b>Reference:</b> '+esc(q.title)+'<br><b>Valid until:</b> '+text(q.validUntil)+'</p>'+
  '<table><thead><tr><th>Particulars</th><th>Qty</th><th>Unit</th><th>Offered rate</th><th>Amount</th></tr></thead><tbody>'+
- q.lines.map(l=>'<tr><td>'+esc(l.description)+(custom.is(l)&&l.customItem?.specification?'<small class="cpq-custom-note">'+esc(l.customItem.specification)+'</small>':'')+(l.includedInParent?' <small>(included in package)</small>':'')+'</td><td>'+esc(l.quantity)+'</td><td>'+esc(l.unit)+'</td><td class="ma6-money">'+(l.includedInParent?"Included":money(l.unitPrice))+'</td><td class="ma6-money">'+money(extended(l))+'</td></tr>').join("")+
- t.publicRows.map(c=>'<tr><td>'+esc(c.label)+'</td><td>1</td><td>Job</td><td class="ma6-money">'+money(c.amount)+'</td><td class="ma6-money">'+money(c.amount)+'</td></tr>').join("")+
+ q.lines.map(l=>'<tr><td>'+esc(l.description)+(custom.is(l)&&l.customItem?.specification?'<small class="cpq-custom-note">'+esc(l.customItem.specification)+'</small>':'')+(l.includedInParent?' <small>(included in package)</small>':'')+(t.gst?'<small class="cpq-custom-note">'+esc(window.CPQ_TAX.publicLabel(l))+'</small>':'')+'</td><td>'+esc(l.quantity)+'</td><td>'+esc(l.unit)+'</td><td class="ma6-money">'+(l.includedInParent?"Included":money(l.unitPrice))+'</td><td class="ma6-money">'+money(extended(l))+'</td></tr>').join("")+
+ t.publicRows.map(c=>'<tr><td>'+esc(c.label)+(t.gst?'<small class="cpq-custom-note">'+esc(window.CPQ_TAX.describe(q.pricing?.costs?.find(x=>x.id===c.id)?.taxSnapshot||window.CPQ_TAX.empty("service")))+'</small>':'')+'</td><td>1</td><td>Job</td><td class="ma6-money">'+money(c.amount)+'</td><td class="ma6-money">'+money(c.amount)+'</td></tr>').join("")+
  '</tbody></table><div class="cpq-customer-totals"><div><span>Offer subtotal</span><strong>'+money(t.subtotal)+'</strong></div>'+
  '<div><span>Discount ('+esc(q.discount)+'%)</span><strong>− '+money(t.discount)+'</strong></div>'+
  '<div><span>Net before tax</span><strong>'+money(t.taxable)+'</strong></div>'+
- '<div><span>Illustrative tax ('+esc(q.taxRate)+'%)</span><strong>'+money(t.tax)+'</strong></div>'+
+ '<div><span>'+(t.gst?"Total GST (demo)":"Illustrative tax ("+esc(q.taxRate)+"%)")+'</span><strong>'+money(t.tax)+'</strong></div>'+window.CPQ_TAX.breakdown(t,"cpq-gst-paper-row")+
  '<div class="final"><span>Illustrative quotation total</span><strong>'+money(t.total)+'</strong></div></div>'+
  '<p><b>Payment:</b> '+text(q.payment)+'<br><b>Delivery:</b> '+text(q.delivery)+'<br><b>Warranty:</b> '+text(q.warranty)+'</p>'+
  req.publicScope(q)+'<p class="cpq-req-public"><b>Exclusions:</b> '+text(q.exclusions)+'</p><p style="border-top:1px solid #e8edf2;padding-top:12px"><b>NOT AN ISSUED QUOTATION.</b> No company signature, approval, verified tax data or legally usable PDF is provided.</p></div>';

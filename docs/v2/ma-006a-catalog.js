@@ -10,7 +10,7 @@ const db=clone(window.CPQ_MA006A_CATALOG);
 window.CPQ_MA006A_CATALOG=db;
 const tpl=window.CPQ_PRODUCT_TEMPLATES,flow=window.CPQ_FLOW;
 tpl.apply(db);
-const pim=window.CPQ_MA006A_PRODUCT_INFO;
+const pim=window.CPQ_MA006A_PRODUCT_INFO,tax=window.CPQ_TAX;
 const state={hub:"products",family:"FAM-005",variant:"VAR-009",tab:"variants",category:"all",manufacturer:"all",status:"all",search:"",editor:null};
 const family=id=>db.families.find(x=>x.id===id);
 const variant=id=>db.variants.find(x=>x.id===id);
@@ -231,7 +231,7 @@ function renderPrices(f,v){
  '</tbody></table></div>':'<div class="ma6a-empty-note">No variants match the filters.</div>')+
  '<div class="ma6a-section-heading"><h3>Document references — '+esc(v?flow.variantLabel(v):"No model selected")+'</h3><button class="btn" type="button" data-catalog-action="edit-variant">Edit prices &amp; files</button></div>'+
  '<div class="ma6-kvs">'+kv("Datasheet",v?.datasheet)+kv("Drawing",v?.drawing)+kv("Price-list validity",v?.price?.from?(v.price.from+" to "+(v.price.to||"open end")):"Not supplied")+
- kv("Preferred supplier",window.CPQ_VENDOR_MODEL?.data().vendors.find(x=>x.id===v?.price?.supplierId)?.name||v?.price?.supplierRef||"Not selected")+kv("Sample currency",v?.price?.currency)+kv("Lifecycle",v?.status)+kv("Model notes",v?.notes)+'</div>'+
+ kv("Preferred supplier",window.CPQ_VENDOR_MODEL?.data().vendors.find(x=>x.id===v?.price?.supplierId)?.name||v?.price?.supplierRef||"Not selected")+kv("Sample currency",v?.price?.currency)+kv("GST / HSN",tax.describe(tax.product(v,f)))+kv("GST source",tax.product(v,f).source)+kv("Selling price basis",tax.product(v,f).sellBasis)+kv("Purchase price basis",tax.product(v,f).costBasis)+kv("Lifecycle",v?.status)+kv("Model notes",v?.notes)+'</div>'+
  note('<b>Pricing protection:</b> All costs/prices shown are fictional. Real vendor cost and margin require separate MA-003 grants. Real prices need approval, branch/company price lists, effective dates, currency and tax treatment. The quotation must freeze the price and specifications actually offered; later master edits must not silently rewrite issued quotations.');
 }
 function renderDetails(){
@@ -349,7 +349,8 @@ function familyFields(f={}){
  textField("familyRating","General Rating / Size",f.rating||"")+
  selectField("familyStatus","Lifecycle Status",statuses.map(x=>[x,x]),f.status||"Draft")+
  areaField("familyDescription","Description",f.description||"")+
- areaField("familyAttributes","Configurable attribute names",f.attributes||"")));
+ areaField("familyAttributes","Configurable attribute names",f.attributes||"")))+
+ details("Default GST & HSN for product group",group(tax.fields("familyTax",f.tax,"product"))+"<p class=\"ma6a-editor-section-note\">Models inherit these defaults unless their own tax settings are selected.</p>");
 }
 function techToText(items){return (items||[]).map(x=>x.name+": "+x.value).join("\n");}
 function partsPicker(v={}){
@@ -391,7 +392,8 @@ function variantFields(v={},f={}){
  selectField("availability","Availability",[["Unknown","Unknown"],["In Stock","In Stock"],["Order Basis","Order Basis"],["Not Available","Not Available"]],p.availability||"Unknown")+
  selectField("supplierId","Preferred Supplier (optional)",[...((window.CPQ_VENDOR_MODEL?.selectable()||[]).map(v=>[v.id,v.name+" · "+v.id])),...((p.supplierId&&!window.CPQ_VENDOR_MODEL?.selectable().some(v=>v.id===p.supplierId))?[[p.supplierId,(window.CPQ_VENDOR_MODEL?.data().vendors.find(v=>v.id===p.supplierId)?.name||p.supplierId)+" (historical / inactive)"]]:[]) ],p.supplierId||"","Not selected")+
  textField("supplierRef","Supplier reference / legacy note (optional)",p.supplierRef||"")+
- textField("hsnSac","HSN / SAC (requires review)",p.hsnSac||"")+
+ selectField("taxSource","GST source",[["inherit","Inherit product group defaults"],["override","Model-specific GST"]],p.tax||p.hsnSac?"override":"inherit","Choose tax source")+
+ tax.fields("modelTax",p.tax||{code:p.hsnSac||""},"product")+
  numberField("leadTimeDays","Expected Lead Time (days)",p.leadTimeDays??"")+
 
  numberField("cost","Internal Cost (restricted in production)",p.cost??0)+
@@ -480,7 +482,7 @@ function getFamilyForm(f){
  if((type==="service"||kind==="service")&&state.editor?.mode!=="family-edit")throw Error("Use Service Management to add new services.");
  return {name:name.slice(0,150),category,type,solarKind:trim(f,"solarKind")||"general",unit:trim(f,"familyUnit")||"Nos",
   rating:trim(f,"familyRating"),description:trim(f,"familyDescription"),status:trim(f,"familyStatus")||"Draft",
-  attributes:trim(f,"familyAttributes")};
+  attributes:trim(f,"familyAttributes"),tax:tax.read(f,"familyTax","product")};
 }
 function getVariantForm(f,familyType,existing=null,solarKind="general",category="Other"){
  const identity=tpl.identity(db,f,solarKind,existing);
@@ -516,6 +518,7 @@ function getVariantForm(f,familyType,existing=null,solarKind="general",category=
  const supplierId=trim(f,"supplierId");
  if(supplierId&&supplierId!==existing?.price?.supplierId&&!window.CPQ_VENDOR_MODEL?.selectable().some(v=>v.id===supplierId))throw Error("Choose an active vendor from the supplier master.");
  const from=trim(f,"priceFrom"),to=trim(f,"priceTo");
+ const modelTax=trim(f,"taxSource")==="override"?tax.read(f,"modelTax","product"):null;
  if(from&&to&&to<from)throw Error("Price effective-until cannot precede the effective-from date.");
  return {...identity,variant:trim(f,"variantName")||identity.model||tpl.describe(solarKind,solar,trim(f,"capacity"),db)||identity.sku,specTemplate:tpl.capture(solarKind,db),
   status:trim(f,"variantStatus")||"Draft",capacity:trim(f,"capacity"),voltage:trim(f,"voltage"),
@@ -526,7 +529,7 @@ function getVariantForm(f,familyType,existing=null,solarKind="general",category=
   price:{currency:trim(f,"currency")||"INR",list:trim(f,"priceList")||"Demo Base Price List",
    cost:cost===""?0:cost,sell:sell===""?0:sell,from,to,
    availability:trim(f,"availability")||"Unknown",supplierId,supplierRef:trim(f,"supplierRef"),
-   hsnSac:trim(f,"hsnSac"),leadTimeDays:positive(f,"leadTimeDays")},
+   hsnSac:modelTax?.code||"",tax:modelTax,leadTimeDays:positive(f,"leadTimeDays")},
   datasheet:trim(f,"datasheet"),drawing:trim(f,"drawing"),notes:trim(f,"variantNotes")};
 }
 function stagedWizardDocuments(form,old){

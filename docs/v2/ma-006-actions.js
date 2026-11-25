@@ -35,7 +35,7 @@ function makeBlank(){
  return {
   id:"",rev:"R0",status:statusDraft,title:"",customerId:"",buyerId:"",contactId:"",siteId:"",projectId:"",opportunityId:"",serviceIds:[],enquiryServiceIds:[],
   companyId:"",branchId:"",ownerId:"",date:demoDate(),validUntil:"",currency:"INR",
-  discount:0,taxRate:18,payment:"To be agreed",delivery:"To be confirmed",warranty:"Subject to approved product terms",
+  discount:0,taxRate:18,taxMode:"item",taxRegion:"",payment:"To be agreed",delivery:"To be confirmed",warranty:"Subject to approved product terms",
   exclusions:"",notes:"",lines:[],review:"Not submitted",response:"Not issued",responseNote:"",lastUpdated:demoDate()+" (demo)",versionNotes:"New unissued draft"
  };
 }
@@ -117,7 +117,7 @@ function saveBuilder(){
   const idx=db.quotations.findIndex(x=>x.id===q.id);
   if(idx<0||db.quotations[idx].status!=="Draft"){explain("Draft not available","This sample quotation is no longer an editable draft.");return;}
   const before=db.quotations[idx];
-   const material=["title","customerId","buyerId","contactId","siteId","projectId","opportunityId","companyId","branchId","ownerId","validUntil","discount","taxRate","payment","delivery","warranty","exclusions","notes","requirementPack","lines","pricing"];
+   const material=["title","customerId","buyerId","contactId","siteId","projectId","opportunityId","companyId","branchId","ownerId","validUntil","discount","taxRate","taxMode","taxRegion","payment","delivery","warranty","exclusions","notes","requirementPack","lines","pricing"];
    if(before.demoApproval&&material.some(k=>JSON.stringify(before[k])!==JSON.stringify(q[k]))){
     const previous=before.demoApproval;
     q.demoApproval={state:"Needs resubmission",technical:"Not requested",commercial:"Not requested",
@@ -177,7 +177,7 @@ function handleCustom(action,target){
    const next=custom.make(b.customDraft||custom.blank(),old?.id||custom.nextId(q.lines,"L"),true);
    const changed=old&&["kind","name","unit","specification"].some(k=>old.customItem[k]!==next.customItem[k]);
    if(old&&!changed){
-    next.unitPrice=old.unitPrice;next.pricing=old.pricing;next.sourceCustomConfigLine=old.sourceCustomConfigLine;
+    next.unitPrice=old.unitPrice;next.pricing=old.pricing;next.taxSnapshot=old.taxSnapshot;next.sourceCustomConfigLine=old.sourceCustomConfigLine;
    }else if(old){
     if((Number(old.unitPrice)>0||old.pricing?.unitCost!=null)&&!window.confirm("The item description, type, unit or specification changed. Clear the previous item cost and selling rate so they can be reviewed again?"))return;
     next.sourceCustomConfigLine=old.sourceCustomConfigLine;
@@ -409,7 +409,10 @@ function handleAction(action,target){
  if(action.startsWith("price-")&&state.builder){
   const q=state.builder.quote;
   try{
-   if(action==="price-refresh-vendor"){toast("Supplier rate options refreshed; unsaved quotation remains open.");}
+   if(action==="price-enable-item-tax"){
+    if(!window.confirm("Switch this editable draft to item-wise GST? Existing offered and cost rates are retained as excluding GST; verify classifications and totals. Other saved quotations remain unchanged."))return;
+    window.CPQ_TAX.enable(q);toast("Item-wise GST enabled for this draft.");
+   }else if(action==="price-refresh-vendor"){toast("Supplier rate options refreshed; unsaved quotation remains open.");}
    else if(action==="price-apply-vendor"){
     const l=q.lines.find(x=>x.id===target.dataset.priceLine),key=target.closest("td")?.querySelector("[data-vendor-rate-select]")?.value;
     if(!l||!key)throw Error("Select an eligible verified supplier rate first.");
@@ -467,6 +470,7 @@ function changedInput(e,commit=true){
  const t=e.target;
  const b=state.builder,q=b.quote;
  if(custom.update(b,t))return;
+ if(t.dataset.taxField||t.hasAttribute("data-tax-region")){try{window.CPQ_TAX.update(q,t);renderBuilder();}catch(error){renderBuilder();explain("Check GST data",esc(error.message));}return;}
  if(t.dataset.priceField||t.dataset.costField||t.dataset.pricingField){
   try{
    if(t.dataset.priceField){
