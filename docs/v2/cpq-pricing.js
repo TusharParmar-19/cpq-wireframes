@@ -55,11 +55,13 @@ function calculate(q){
  const publicRows=publicCharges(q);
  const charges=round(publicRows.reduce((a,c)=>a+c.amount,0));
  const subtotal=round(boqSubtotal+charges);
- const discountRate=Math.min(100,n(q.discount))/100;
- const discount=round(subtotal*discountRate);
- const taxable=round(Math.max(0,subtotal-discount));
- const gst=window.CPQ_TAX.enabled(q)?window.CPQ_TAX.calculate(q,lines,publicRows,discount):null;
+ const cm=window.CPQ_COMMERCIAL,plan=cm.enabled(q)?cm.plan(q,lines,publicRows):null;
+ const discountRate=plan?(q.commercial.overall.mode==="percent"?Math.min(100,n(q.commercial.overall.value))/100:0):Math.min(100,n(q.discount))/100;
+ const discount=plan?plan.discount:round(subtotal*discountRate);
+ const taxable=plan?plan.net:round(Math.max(0,subtotal-discount));
+ const gst=window.CPQ_TAX.enabled(q)?window.CPQ_TAX.calculate(q,lines,publicRows,discount,plan):null;
  const tax=gst?gst.tax:round(taxable*Math.min(100,n(q.taxRate))/100);
+ const commercial=plan?cm.finish(q,plan,gst,tax):null;
  const missing=lines.filter(l=>!validNumber(l.pricing?.unitCost)).length;
  const directCost=round(lines.reduce((a,l)=>a+(validNumber(l.pricing?.unitCost)?round(n(l.quantity)*n(l.pricing.unitCost)):0),0));
  const extraCost=round(costs.reduce((a,c)=>a+costAmount(c,directCost,taxable),0));
@@ -71,8 +73,9 @@ function calculate(q){
  const fixedCosts=round(directCost+costs.filter(c=>c.method!=="percent-sale").reduce((a,c)=>a+costAmount(c,directCost,0),0));
  const salePct=costs.filter(c=>c.method==="percent-sale").reduce((a,c)=>a+n(c.rate)/100,0);
  const denominator=1-salePct*(1-discountRate)*(1+markup);
- const target=missing||denominator<=0?null:round(fixedCosts*(1+markup)/denominator);
- return {boqSubtotal,charges,publicRows,subtotal,discount,taxable,tax,gst,total:round(taxable+tax),directCost,extraCost,totalCost,missing,profit,margin,actualMarkup,target,denominator};
+ const targetBlocked=!!plan&&(plan.itemDiscount>0||(q.commercial.overall.mode==="fixed"&&plan.overallDiscount>0));
+ const target=missing||denominator<=0||targetBlocked?null:round(fixedCosts*(1+markup)/denominator);
+ return {boqSubtotal,charges,publicRows,subtotal,discount,taxable,tax,gst,commercial,total:commercial?commercial.total:round(taxable+tax),directCost,extraCost,totalCost,missing,profit,margin,actualMarkup,target,denominator,targetBlocked};
 }
 function requiresReason(l){
  return !l.includedInParent&&pricePositive(l.unitPrice)&&
@@ -151,7 +154,7 @@ function clearVendorRate(q,l,newCost=null){
 function supplierIssues(q,review=false){return (q.lines||[]).map(l=>window.CPQ_VENDOR_QUOTE?.snapshotIssues(q,l,review)||"").filter(Boolean);}
 function errors(q){
  if(!q.pricing)return [];
- const p=q.pricing,err=supplierIssues(q);
+ const p=q.pricing,err=[...supplierIssues(q),...window.CPQ_COMMERCIAL.errors(q,calculate(q))];
  if(q.currency!=="INR")err.push("This pricing wireframe uses INR only; no currency conversion is available.");
  if(!["standard","cost-plus"].includes(p.method)||!validNumber(p.markup)||n(p.markup)>500)err.push("Choose a valid pricing method and markup between 0 and 500%.");
  for(const l of q.lines||[]){
@@ -170,6 +173,7 @@ function applyTarget(q){
  prepare(q);
  const issues=errors(q);if(issues.length)throw Error(issues[0]);
  const t=calculate(q);
+ if(t.targetBlocked)throw Error("Clear item and fixed overall discounts before applying a cost-plus target, then negotiate and review actual margin.");
  if(t.missing)throw Error("Enter a unit cost for every BOQ line first. Use 0 only where there is genuinely no additional direct cost.");
  if(t.target===null||t.denominator<=0)throw Error("This cost/commission/markup combination has no valid cost-plus target.");
  const billable=q.lines.filter(l=>!l.includedInParent);
@@ -267,11 +271,11 @@ function pricingView(q,financialRows){
  '<p class="cpq-price-help">Internal / included costs reduce profitability; they do not automatically increase the offered amount. Recover them in offered rates or use an explicit separate customer charge. Commission based on net sale is calculated after discount, before tax.</p></section>'+
  '<section class="cpq-price-section"><div class="cpq-price-heading"><div><h4>Pricing method &amp; profitability</h4><p>Standard selling prices may already contain profit. Add a markup only by explicitly applying a cost-plus target.</p></div></div>'+
  '<div class="cpq-price-settings"><label>Pricing method'+select('data-pricing-field="method"',[["standard","Standard / negotiated selling prices"],["cost-plus","Cost-plus target"]],p.method)+'</label>'+
- '<label>Customer discount (%)'+input('data-field="discount" max="100"',q.discount)+'</label>'+
+ (window.CPQ_COMMERCIAL.enabled(q)?"":'<label>Customer discount (%)'+input('data-field="discount" max="100"',q.discount)+'</label>')+
  ''+(window.CPQ_TAX.enabled(q)?"":'<label>Legacy illustrative tax (%)'+input('data-field="taxRate" max="100"',q.taxRate)+'</label>')+
  (p.method==="cost-plus"?'<label>Target markup on cost (%)'+input('data-pricing-field="markup" max="500"',p.markup)+'</label>':'')+'</div>'+
- (p.method==="cost-plus"?'<div class="cpq-price-target"><div><b data-price-target>Suggested selling amount before discount: '+(t.target===null?"Complete cost data / check inputs":fmt(t.target))+'</b><p>Apply once to distribute the target among billable BOQ rates after deducting any separate customer charges. Rates remain editable; unit rounding may produce a small difference. Discounts reduce final profit.</p></div><button type="button" class="btn primary" data-action="price-apply-target">Apply Cost-plus Target</button></div>':'')+
- '<div data-tax-editor>'+window.CPQ_TAX.editor(q,t)+'</div><div data-price-metrics>'+metrics(q)+'</div><div data-price-loss>'+(t.profit!==null&&t.profit<0?'<p class="cpq-price-alert">Below estimated cost — requires a commercial exception review in production.</p>':'')+'</div>'+
+ (p.method==="cost-plus"?'<div class="cpq-price-target"><div><b data-price-target>Suggested selling amount before discount: '+(t.targetBlocked?"Clear item / fixed discounts to apply target":t.target===null?"Complete cost data / check inputs":fmt(t.target))+'</b><p>Apply once to distribute the target among billable BOQ rates after deducting any separate customer charges. Rates remain editable; unit rounding may produce a small difference. Discounts reduce final profit.</p></div><button type="button" class="btn primary" data-action="price-apply-target">Apply Cost-plus Target</button></div>':'')+
+ '<div data-commercial-editor>'+window.CPQ_COMMERCIAL.editor(q,t)+'</div><div data-tax-editor>'+window.CPQ_TAX.editor(q,t)+'</div><div data-commercial-reconciliation>'+window.CPQ_COMMERCIAL.reconciliation(t)+'</div><div data-price-metrics>'+metrics(q)+'</div><div data-price-loss>'+(t.profit!==null&&t.profit<0?'<p class="cpq-price-alert">Below estimated cost — requires a commercial exception review in production.</p>':'')+'</div>'+
  '<div class="cpq-price-final"><div><b>Internal pricing only</b><p>Costs, commission, profit, margin and override history are not included in the customer-facing layout. No actual permission is enforced in this public demo.</p></div><div data-price-summary>'+financialRows(q)+'</div></div>'+
  '<div data-price-history>'+history(q)+'</div></section></div>';
 }
@@ -281,14 +285,16 @@ function refresh(q,root,financialRows){
  const html=(selector,value)=>{const el=get(selector);if(el)el.innerHTML=value;};
  const text=(selector,value)=>{const el=get(selector);if(el)el.textContent=value;};
  const show=(selector,value)=>{const el=get(selector);if(el)el.hidden=!value;};
+ html("[data-commercial-editor]",window.CPQ_COMMERCIAL.editor(q,t));
  html("[data-tax-editor]",window.CPQ_TAX.editor(q,t));
+ html("[data-commercial-reconciliation]",window.CPQ_COMMERCIAL.reconciliation(t));
  html("[data-price-metrics]",metrics(q));
  html("[data-price-loss]",t.profit!==null&&t.profit<0?'<p class="cpq-price-alert">Below estimated cost — requires a commercial exception review in production.</p>':"");
  html("[data-price-summary]",financialRows(q));
  const historyOpen=get("[data-price-history] details")?.open;
  html("[data-price-history]",history(q));
  const detail=get("[data-price-history] details");if(detail&&historyOpen)detail.open=true;
- text("[data-price-target]","Suggested selling amount before discount: "+(t.target===null?"Complete cost data / check inputs":fmt(t.target)));
+ text("[data-price-target]","Suggested selling amount before discount: "+(t.targetBlocked?"Clear item / fixed discounts to apply target":t.target===null?"Complete cost data / check inputs":fmt(t.target)));
  for(const l of q.lines||[]){
   const id=String(l.id).replace(/[^A-Za-z0-9_-]/g,"");
   text('[data-offered-total="'+id+'"]',fmt(lineTotal(l)));

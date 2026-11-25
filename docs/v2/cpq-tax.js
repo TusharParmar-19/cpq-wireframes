@@ -64,15 +64,16 @@ function describe(raw){const t=normalize(raw,raw?.kind||"product");return [t.cod
 function enabled(q){return q.taxMode==="item";}
 function enable(q){q.taxMode="item";q.taxRegion="";for(const l of q.lines||[])capture(l);}
 function chargeTax(c){return c?.taxSnapshot||{...empty("service"),source:"Separate charge"};}
-function calculate(q,lines,charges,discount){
+function calculate(q,lines,charges,discount,commercialPlan=null){
  const rows=[...lines.filter(l=>!l.includedInParent).map(l=>({id:l.id,label:l.description,amount:round(Number(l.quantity)*Number(l.unitPrice)),tax:l.taxSnapshot||empty(l.customItem?.kind||((l.serviceId||l.type==="service")?"service":"product"))})),...charges.map(c=>({id:c.id,label:c.label,amount:c.amount,tax:chargeTax(q.pricing?.costs?.find(x=>x.id===c.id))}))];
  const subtotal=round(rows.reduce((a,r)=>a+r.amount,0));
  let cumulative=0,allocated=0;const groups={};
  for(const r of rows){
   cumulative=round(cumulative+r.amount);
   const share=subtotal?round(discount*cumulative/subtotal):0;
-  r.discount=round(share-allocated);allocated=share;
-  r.base=round(Math.max(0,r.amount-r.discount));
+  const planned=commercialPlan?.rows.find(x=>x.id===r.id);
+  r.discount=planned?round(planned.item+planned.overall):round(share-allocated);allocated=share;
+  r.base=planned?planned.net:round(Math.max(0,r.amount-r.discount));
   r.configured=complete(r.tax);
   r.gst=r.configured?round(r.base*r.tax.rate/100):0;
   if(r.configured){const key=r.tax.category+"|"+r.tax.rate;const g=groups[key]||={category:r.tax.category,rate:r.tax.rate,base:0,tax:0};g.base=round(g.base+r.base);g.tax=round(g.tax+r.gst);}
@@ -115,7 +116,9 @@ function update(q,target){
  const next={...prev,[k]:target.value,sellBasis:"exclusive",costBasis:"exclusive",source:"Quote-specific assumption",capturedSellBasis:prev.capturedSellBasis||prev.sellBasis,capturedCostBasis:prev.capturedCostBasis||prev.costBasis};
  if(k==="category"&&target.value==="taxable"&&prev.category!=="taxable")next.rate=null;
  const t=normalize(next,prev.kind);
- const issue=invalid(t);if(issue)throw Error(issue);source.taxSnapshot=t;
+ const issue=invalid(t);if(issue)throw Error(issue);
+ if(t.code===prev.code&&t.category===prev.category&&t.rate===prev.rate)return;
+ source.taxSnapshot=t;
 }
 function breakdown(result,cls="ma6-price-row"){
  const d=result.gst;if(!d)return "";
