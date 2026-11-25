@@ -394,15 +394,15 @@ function contextBuilder(q){
  const contacts=master.contacts.filter(x=>x.customerId===q.customerId&&x.companyId===q.buyerId).map(x=>[x.id,x.name]);
  const sites=master.sites.filter(x=>x.customerId===q.customerId&&x.companyId===q.buyerId).map(x=>[x.id,x.name]);
  const projects=master.projects.filter(x=>x.customerId===q.customerId&&x.companyId===q.buyerId).map(x=>[x.id,x.name]);
- const comps=org.filter(e=>links.some(l=>l.companyId===e.id)).map(e=>[e.id,e.name]);
- const branches=(entity(q.companyId)?.branches||[]).filter(x=>links.some(l=>l.companyId===q.companyId&&l.branchId===x.id)).map(x=>[x.id,x.name+" · "+x.city]);
+ const comps=window.CPQ_SCOPE_DEFAULTS.companies(org,links).map(e=>[e.id,e.name]);
+ const branches=window.CPQ_SCOPE_DEFAULTS.branches(org,q.companyId,links).map(x=>[x.id,x.name+" · "+x.city]);
  const owners=staff.filter(u=>u.status==="Active"&&(u.assignments||[]).some(x=>x.companyId===q.companyId&&x.branches.includes(q.branchId))).map(x=>[x.id,x.name]);
  const opps=enquiries.filter(x=>x.customerId===q.customerId&&x.buyerId===q.buyerId).map(x=>[x.id,x.id+" · "+x.title]);
  const companyHelp=q.customerId?
-  (comps.length?'Showing '+comps.length+' linked internal '+(comps.length===1?'company.':'companies.'):'No internal company is linked to this customer yet.')+
+  (comps.length===1?'One eligible company — automatically selected when choosing the customer.':comps.length?'Showing '+comps.length+' linked internal companies.':'No active company/branch is linked to this customer yet.')+
   '<div class="ma6-scope-links"><button class="btn ma6-scope-refresh" type="button" data-action="link-selling-scope">+ Use another company / branch</button></div><details class="ma6-scope-links"><summary>Manage existing links</summary><a href="ma-004-customers.html?customer='+encodeURIComponent(q.customerId)+'" target="_blank" rel="noopener">Open customer ↗</a> <button class="btn ma6-scope-refresh" type="button" data-action="refresh-customer-scope">Refresh links</button></details>'
   :'Select a customer first. Only its linked selling companies will be available.';
- const branchHelp=q.companyId?'Only branches linked to this customer under the selected selling company.':'Choose a selling company first.';
+ const branchHelp=q.companyId?(branches.length===1?'One eligible branch — automatically selected when choosing the company.':'Only active branches linked to this customer under the selected selling company.'):'Choose a selling company first.';
  return panel("1 · Customer, Buyer & Scope","Use MA-004 master records and optionally link an MA-005 enquiry. A direct quotation is also allowed.")+
  '<div class="ma6-field-grid">'+formSelect("customerId","Customer account",customers,q.customerId,"Choose customer",true)+formSelect("buyerId","Exact buyer / bill-to",bs,q.buyerId,"Choose buyer",true)+
  formSelect("companyId","Our selling legal entity",comps,q.companyId,"Choose linked company",true,companyHelp)+formSelect("branchId","Our internal branch",branches,q.branchId,"Choose linked branch",true,branchHelp)+

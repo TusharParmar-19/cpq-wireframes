@@ -172,7 +172,7 @@ function updateBuilderField(field,value){
  if(field==="customerId"){
   q.customerId=value;q.buyerId="";q.contactId="";q.siteId="";q.projectId="";q.opportunityId="";
   q.lines=q.lines.filter(l=>!l.importedFromOpportunity);q.enquiryServiceIds=[];syncPackageBilling(q);
-  q.companyId="";q.branchId="";q.ownerId="";renderBuilder();return;
+  Object.assign(q,window.CPQ_SCOPE_DEFAULTS.choose(org,customer(value)?.links||[]));q.ownerId="";renderBuilder();return;
  }
  if(field==="buyerId"){
   q.buyerId=value;q.contactId="";q.siteId="";q.projectId="";q.opportunityId="";
@@ -180,7 +180,7 @@ function updateBuilderField(field,value){
   renderBuilder();return;
  }
  if(field==="companyId"){
-  q.companyId=value;q.branchId="";q.ownerId="";renderBuilder();return;
+  q.companyId=value;q.branchId=window.CPQ_SCOPE_DEFAULTS.sole(window.CPQ_SCOPE_DEFAULTS.branches(org,value,customer(q.customerId)?.links||[]));q.ownerId="";renderBuilder();return;
  }
  if(field==="branchId"){
   q.branchId=value;q.ownerId="";renderBuilder();return;
@@ -337,9 +337,9 @@ function refreshCustomerScope(q){
   if(latest&&typeof latest==="object"&&Array.isArray(latest)===Array.isArray(target))merge(target,latest);
  }
  const c=customer(q.customerId),links=c?.links||[];
- const validCompanies=org.filter(e=>links.some(l=>l.companyId===e.id));
+ const validCompanies=window.CPQ_SCOPE_DEFAULTS.companies(org,links);
  if(q.companyId&&!validCompanies.some(e=>e.id===q.companyId)){q.companyId="";q.branchId="";q.ownerId="";}
- if(q.branchId&&(!entity(q.companyId)?.branches?.some(b=>b.id===q.branchId)||!links.some(l=>l.companyId===q.companyId&&l.branchId===q.branchId))){q.branchId="";q.ownerId="";}
+ if(q.branchId&&!window.CPQ_SCOPE_DEFAULTS.branches(org,q.companyId,links).some(b=>b.id===q.branchId)){q.branchId="";q.ownerId="";}
  if(q.ownerId&&!staff.some(u=>u.id===q.ownerId&&u.status==="Active"&&(u.assignments||[]).some(x=>x.companyId===q.companyId&&x.branches.includes(q.branchId))))q.ownerId="";
  renderBuilder();toast("Customer company links refreshed. Your quotation items, rates and other draft details remain open.");
 }

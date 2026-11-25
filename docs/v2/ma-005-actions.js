@@ -20,6 +20,7 @@ const contactFor=(id,bid)=>master.contacts.filter(x=>x.customerId===id&&x.compan
 const siteFor=(id,bid)=>master.sites.filter(x=>x.customerId===id&&x.companyId===bid&&x.status==="Active");
 const projectFor=(id,bid)=>master.projects.filter(x=>x.customerId===id&&x.companyId===bid);
 const linkedScopes=id=>customer(id)?.links||[];
+const scopeDefaults=window.CPQ_SCOPE_DEFAULTS;
 let submit=null,focusBefore=null,toastHandle=null;
 function open(title,description,content,callback=null,label="Save demo"){
  focusBefore=document.activeElement;submit=callback;
@@ -76,7 +77,7 @@ function createForm(){
   const serviceIds=window.CPQ_FLOW.normalized(fd.getAll("serviceIds"),false);
   if(!customer(customerId)){error("Select a customer from MA-004.");return;}
   if(!master.companies.some(x=>x.id===buyerId&&x.customerId===customerId)){error("Select a buyer that belongs to the chosen customer.");return;}
-  if(!linkedScopes(customerId).some(x=>x.companyId===companyId&&x.branchId===branchId)){error("Our company/branch must be linked to that customer.");return;}
+  if(!scopeDefaults.branches(org,companyId,linkedScopes(customerId)).some(b=>b.id===branchId)){error("Our company/branch must be active and linked to that customer.");return;}
   if(!activeOwners(companyId,branchId).some(x=>x.id===ownerId)){error("Choose an active employee assigned to that internal branch.");return;}
   if(!title||!summary){error("Enter a title and a short customer requirement summary.");return;}
   const contactId=v(fd,"contactId"),siteId=v(fd,"siteId"),projectId=v(fd,"projectId");
@@ -99,8 +100,8 @@ function updateCustomerBuyers(){
 }
 function updateCustomerCompanies(){
  const id=$("f-customerId")?.value||"",co=$("f-companyId");if(!co)return;
- const ids=[...new Set(linkedScopes(id).map(l=>l.companyId))];
- co.innerHTML='<option value="">Choose internal company</option>'+options(org.filter(e=>ids.includes(e.id)).map(e=>[e.id,e.name]),"");co.value="";
+ const rows=scopeDefaults.companies(org,linkedScopes(id)),selected=scopeDefaults.sole(rows);
+ co.innerHTML='<option value="">Choose internal company</option>'+options(rows.map(e=>[e.id,e.name]),selected);co.value=selected;
  updateInternalBranches();
 }
 function updateBuyerLinks(){
@@ -115,10 +116,9 @@ function updateBuyerLinks(){
 function updateInternalBranches(){
  const cid=$("f-customerId")?.value||"",companyId=$("f-companyId")?.value||"",sel=$("f-branchId");
  if(!sel)return;
- const ids=linkedScopes(cid).filter(x=>x.companyId===companyId).map(x=>x.branchId);
- const branches=(entity(companyId)?.branches||[]).filter(b=>ids.includes(b.id));
- sel.innerHTML='<option value="">Choose internal branch</option>'+options(branches.map(b=>[b.id,b.name+" · "+b.city]),"");
- sel.value="";updateOwners();
+ const branches=scopeDefaults.branches(org,companyId,linkedScopes(cid)),selected=scopeDefaults.sole(branches);
+ sel.innerHTML='<option value="">Choose internal branch</option>'+options(branches.map(b=>[b.id,b.name+" · "+b.city]),selected);
+ sel.value=selected;updateOwners();
 }
 function updateOwners(){
  const comp=$("f-companyId")?.value,br=$("f-branchId")?.value,sel=$("f-ownerId");if(!sel)return;
