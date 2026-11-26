@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Commercial Settings | CPQ</title><link rel="stylesheet" href="ma-001.css"><link rel="stylesheet" href="commercial-settings.css?v=1"></head>
+<body><div class="layout"><aside class="sidebar">
+    <div class="logo"><span>CP</span><div>CPQ Platform<small>Master Admin Workspace</small></div></div>
+    <nav class="nav" aria-label="CPQ navigation">
+      <div class="nav-title">Workspace</div>
+      <a class="nav-link" href="ma-001-dashboard.html">▦ &nbsp; Dashboard</a>
+      <div class="nav-title">Organization &amp; People</div>
+      <a class="nav-link" href="ma-002-organization.html">▤ &nbsp; Companies &amp; Branches</a>
+      <a class="nav-link" href="ma-003-users-roles.html">♙ &nbsp; Users, Roles &amp; Access</a>
+      <div class="nav-title">Business Records</div>
+      <a class="nav-link" href="ma-004-customers.html">◉ &nbsp; Customers <small>MA-004</small></a>
+      <a class="nav-link" href="ma-005-opportunities.html">◇ &nbsp; Opportunities <small>MA-005</small></a>
+       <a class="nav-link" href="vendor-master.html">▤ &nbsp; Vendors / Suppliers</a>
+      <a class="nav-link" href="service-master.html">▤ &nbsp; Service Management <small>Master</small></a>
+      <a class="nav-link" href="ma-006a-configuration.html">⚙ &nbsp; Products &amp; Configuration <small>MA-006A</small></a>
+      <a class="nav-link" href="ma-006-quotations.html">▣ &nbsp; Quotations <small>MA-006</small></a>
+      <a class="nav-link" href="ma-007-orders.html">☷ &nbsp; Orders <small>MA-007</small></a>
+      <div class="nav-title">Controls</div>
+      <!-- Configuration Rules deferred to Phase 3. -->
+      <!-- Approval Policies deferred to Phase 3. -->
+      <a class="nav-link active" href="commercial-settings.html" aria-current="page">⚙ &nbsp; Commercial Settings</a>
+      <button disabled class="nav-link" type="button" data-planned="Reports">▥ &nbsp; Reports</button>
+    </nav>
+    <div class="sidebar-foot"><b>Master Admin · Wireframe</b><p>Permissions, authorized price lists, sensitive costs, discounts, engineering rules and approvals require separate backend policy checks. Demo selections are not approved offers.</p></div>
+  </aside><div class="app"><header class="top"><div>CPQ Workspace / <b>Commercial Settings</b></div><span class="avatar">MA</span></header><main class="page">
+<div class="hero"><div><div class="overline">MASTER ADMIN / CONTROLS</div><h1>Commercial Settings</h1><p class="muted">Set reusable commercial terms once and use them in new quotations and direct orders.</p></div><div class="actions"><a class="btn" href="ma-006-quotations.html">Open Quotations</a><a class="btn" href="ma-007-orders.html">Open Orders</a></div></div>
+<div class="info"><b>DEMO ONLY.</b> Shared optional defaults for all companies and branches in this browser. Existing quotations, revisions and orders retain their saved terms. Verify each transaction separately.</div>
+<form id="settings-form"><section class="card settings-card"><div class="settings-head"><div><h2>Standard commercial defaults</h2><p class="muted">Copied into new quotations and direct orders. Employees can edit the draft without changing these settings.</p></div><span class="settings-version" id="settings-version">Built-in sample defaults</span></div>
+<div class="settings-grid"><label>Quotation validity (calendar days)<input name="validityDays" type="number" min="0" max="365" step="1" required><small>0 leaves validity blank. Direct orders have no quotation validity.</small></label><label>Final amount rounding<select name="rounding"><option value="none">No rounding (paise)</option><option value="rupee">Nearest rupee</option></select><small>Default only; editable in Pricing &amp; Costing.</small></label>
+<label>Default payment terms<textarea name="payment" rows="3" maxlength="1000"></textarea></label><label>Default delivery / execution terms<textarea name="delivery" rows="3" maxlength="1000"></textarea></label><label>Default warranty / support<textarea name="warranty" rows="3" maxlength="1000"></textarea></label><label>Default exclusions<textarea name="exclusions" rows="3" maxlength="1000"></textarea></label></div></section>
+<section class="card settings-card"><div class="settings-head"><div><h2>Payment terms templates</h2><p class="muted">Reusable options available in the quotation and direct order terms dropdown.</p></div><button class="btn" id="add-template" type="button">+ Add Template</button></div><div id="template-rows"></div><p class="muted">Removing a template does not remove terms already copied into saved drafts or orders.</p></section>
+<section class="card settings-card"><div class="settings-head"><div><h2>Where other settings are managed</h2><p class="muted">Keep commercial data in one place rather than duplicating it here.</p></div></div><div class="settings-links"><div><b>Product rates, HSN and GST</b><span>Product models and group defaults</span><a class="btn" href="ma-006a-configuration.html">Products &amp; Configuration</a></div><div><b>Service classification and SAC</b><span>Service and sub-service records; manual quotation rates</span><a class="btn" href="service-master.html">Service Management</a></div><div><b>Discounts, tax treatment and subsidy</b><span>Set per transaction, no automatic assumption</span><a class="btn" href="ma-006-quotations.html">Quotations</a></div></div></section>
+<div class="settings-save"><p id="settings-message" role="status" aria-live="polite"></p><div class="actions"><button class="btn" type="button" id="discard-settings">Discard Unsaved Changes</button><button class="btn primary" type="submit">Save Commercial Settings (demo)</button></div></div></form>
+<section class="card settings-card"><div class="settings-head"><div><h2>Settings history</h2><p class="muted">Previous saved versions for reference.</p></div></div><div id="settings-history"></div></section>
+<div class="info">No real GST determination, bank information, legal terms approval, financial policy or per-company rules are configured here. Advanced policies and configuration rules remain deferred to Phase 3.</div><footer class="footer">CPQ · Commercial Settings · Browser-only wireframe</footer></main></div></div>
+<script src="cpq-demo-store.js?v=phase1-controls"></script><script src="cpq-commercial-settings.js?v=1"></script><script src="commercial-settings-app.js?v=1"></script></body></html>
