@@ -49,7 +49,7 @@ function update(id,to,fields,at,now=today()){
  if(to==="Registered"){
   const ref=text(fields?.reference,120),date=fields?.date;
   if(!ref||!dateOK(date)||date>now||(o.acceptance?.date&&date<o.acceptance.date))throw Error("Enter customer PO / confirmation reference and a valid registration date, not before acceptance or after today.");
-  if(o.source==="Accepted Quotation"){const q=W.CPQ_SHARED?.read()?.modules?.quotations?.quotations?.find(x=>x.id===o.quoteId);if(!accepted(q)||q.rev!==o.quoteRev||JSON.stringify(q.demoDispatch.response)!==JSON.stringify(o.acceptance))throw Error("Accepted quotation evidence changed; review source before registration.");}
+  if(o.source==="Accepted Quotation"){if(typeof W.CPQ_POLICY?.phase1Reviewed!=="function")throw Error("Quotation review verification is unavailable. Refresh the Orders page and try again.");const q=W.CPQ_SHARED?.read()?.modules?.quotations?.quotations?.find(x=>x.id===o.quoteId);if(!accepted(q)||q.rev!==o.quoteRev||JSON.stringify(q.demoDispatch.response)!==JSON.stringify(o.acceptance))throw Error("Accepted quotation evidence changed; review source before registration.");}
   o.reference=ref;o.orderDate=date;o.notes=note;
  }
  if(to==="Cancelled"&&!note)throw Error("Enter a cancellation reason.");
