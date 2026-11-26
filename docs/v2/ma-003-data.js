@@ -101,7 +101,7 @@ window.CPQ_MA003_PAGE_CATALOG=[
  {id:"vendor-quotations",name:"Vendor Quotations (received offers)",section:"Procurement & Files",code:"Vendor Quotations",stage:"Available",actions:["vendorquotes.view","vendorquotes.create","vendorquotes.edit","vendorquotes.verify","vendorquotes.archive","cost.view"]},
  {id:"vendor-rfqs",name:"Advanced RFQ & Supplier Comparison (Phase 2)",section:"Procurement & Files",code:"Planned",stage:"Planned",actions:["rfq.view","rfq.create","rfq.send","rfq.compare","cost.view"]},
  {id:"documents",name:"Documents & Evidence",section:"Procurement & Files",code:"Planned",stage:"Planned",actions:["documents.view","documents.upload","documents.download","documents.delete"]},
- {id:"orders",name:"Orders & Registration",section:"Orders & Controls",code:"Planned",stage:"Planned",actions:["orders.view","orders.edit","orders.register","records.archive"]},
+ {id:"orders",name:"Orders & Registration",section:"Orders & Controls",code:"MA-007",stage:"Available",actions:["orders.view","orders.edit","orders.register","records.archive"]},
  {id:"approvals",name:"Advanced Approval Queue & Policy (Phase 3)",section:"Orders & Controls",code:"Phase 3",stage:"Planned",actions:["approvals.view","approvals.decide","approvals.manage","discount.approve"]},
  {id:"commercial",name:"Commercial Settings & Tax",section:"Orders & Controls",code:"Planned",stage:"Planned",actions:["commercial.view","commercial.manage","bank.view"]},
  {id:"reports",name:"Reports & Export",section:"Reporting & Audit",code:"Planned",stage:"Planned",actions:["reports.view","reports.export"]},

@@ -1,0 +1,24 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MA-007 | Orders</title><link rel="stylesheet" href="ma-001.css"><link rel="stylesheet" href="ma-006.css"><link rel="stylesheet" href="ma-007.css"></head><body><div class="layout"><aside class="sidebar">
+    <div class="logo"><span>CP</span><div>CPQ Platform<small>Master Admin Workspace</small></div></div>
+    <nav class="nav" aria-label="CPQ navigation">
+      <div class="nav-title">Workspace</div>
+      <a class="nav-link" href="ma-001-dashboard.html">▦ &nbsp; Dashboard</a>
+      <div class="nav-title">Organization &amp; People</div>
+      <a class="nav-link" href="ma-002-organization.html">▤ &nbsp; Companies &amp; Branches</a>
+      <a class="nav-link" href="ma-003-users-roles.html">♙ &nbsp; Users, Roles &amp; Access</a>
+      <div class="nav-title">Business Records</div>
+      <a class="nav-link" href="ma-004-customers.html">◉ &nbsp; Customers <small>MA-004</small></a>
+      <a class="nav-link" href="ma-005-opportunities.html">◇ &nbsp; Opportunities <small>MA-005</small></a>
+       <a class="nav-link" href="vendor-master.html">▤ &nbsp; Vendors / Suppliers</a>
+      <a class="nav-link" href="service-master.html">▤ &nbsp; Service Management <small>Master</small></a>
+      <a class="nav-link" href="ma-006a-configuration.html">⚙ &nbsp; Products &amp; Configuration <small>MA-006A</small></a>
+      <a class="nav-link" href="ma-006-quotations.html">▣ &nbsp; Quotations <small>MA-006</small></a>
+      <a class="nav-link active" href="ma-007-orders.html" aria-current="page">☷ &nbsp; Orders <small>MA-007</small></a>
+      <div class="nav-title">Controls</div>
+      <button disabled class="nav-link" type="button" data-planned="Product Catalog & Configuration Rules">⚙ &nbsp; Product Catalog &amp; Rules</button>
+      <!-- Approval Policies deferred to Phase 3. -->
+      <button disabled class="nav-link" type="button" data-planned="Commercial Settings">⚙ &nbsp; Commercial Settings</button>
+      <button disabled class="nav-link" type="button" data-planned="Reports">▥ &nbsp; Reports</button>
+    </nav>
+    <div class="sidebar-foot"><b>Master Admin · Wireframe</b><p>Permissions, authorized price lists, sensitive costs, discounts, engineering rules and approvals require separate backend policy checks. Demo selections are not approved offers.</p></div>
+  </aside><div class="app"><header class="top"><div>CPQ Workspace / <b>Orders</b></div><span class="avatar">MA</span></header><main class="page"><div class="hero"><div><div class="overline">MASTER ADMIN / MA-007</div><h1>Order Management</h1><p class="muted">Register accepted quotations or create direct orders. Track the saved commercial snapshot, fulfillment status and references.</p></div><div class="actions"><a class="btn" href="ma-006-quotations.html">Quotations</a><a class="btn primary" href="ma-006-quotations.html?action=direct-order">+ New Direct Order</a></div></div><div class="info"><b>DEMO ONLY.</b> No actual order, invoice, payment, inventory or fulfillment activity occurs. Use fictional references. Previous dashboard sample orders are not live records.</div><div id="order-metrics" class="order-metrics"></div><section class="card order-filter"><div><label for="order-search">Search order / customer / quotation</label><input id="order-search" placeholder="Search orders"></div><div><label for="order-source">Order source</label><select id="order-source"><option value="">All sources</option><option>Accepted Quotation</option><option>Direct Order</option></select></div><div><label for="order-status">Status</label><select id="order-status"><option value="">All statuses</option></select></div><div><label for="order-company">Company</label><select id="order-company"><option value="">All companies</option></select></div><div><label for="order-branch">Branch</label><select id="order-branch"><option value="">All branches</option></select></div></section><section class="order-layout"><div class="card order-list"><h2>Order register <small id="order-count"></small></h2><div id="order-list"></div></div><div class="card order-detail" id="order-detail"></div></section><p id="order-message" role="status" class="order-message" hidden></p><footer class="footer">CPQ · MA-007 Orders · Browser-only wireframe</footer></main></div></div><script src="cpq-demo-store.js"></script><script src="cpq-orders.js"></script><script src="ma-007-app.js"></script></body></html>

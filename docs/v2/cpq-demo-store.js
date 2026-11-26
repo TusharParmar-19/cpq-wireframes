@@ -15,7 +15,8 @@
    vendors:"CPQ_VENDOR_MASTER",
    vendorOffers:"CPQ_VENDOR_OFFERS",
   quotations:"CPQ_MA006_DATA",
-  approvalPolicies:"CPQ_APPROVAL_POLICY_DATA"
+  approvalPolicies:"CPQ_APPROVAL_POLICY_DATA",
+  orders:"CPQ_ORDER_DATA"
  };
  const copy=x=>JSON.parse(JSON.stringify(x));
  function read(){
@@ -63,6 +64,8 @@
   const opps=window.CPQ_MA005_DATA;
   const quotes=window.CPQ_MA006_DATA;
   const configs=window.CPQ_MA006A_DATA;
+  const orderRecords=read().modules.orders?.orders||[];
+  if(opps?.opportunities)for(const op of opps.opportunities)op.demoOrders=orderRecords.filter(o=>o.opportunityId===op.id).map(o=>({id:o.id,status:o.status,source:o.source}));
   if(opps&&quotes&&Array.isArray(opps.opportunities)&&Array.isArray(quotes.quotations)){
    const linked=new Map();
    for(const q of quotes.quotations){
@@ -83,7 +86,7 @@
    }
   }
   if(customers&&opps&&quotes&&Array.isArray(customers.related)){
-   const others=customers.related.filter(r=>!["Opportunity","Quotation"].includes(r.type));
+   const others=customers.related.filter(r=>!["Opportunity","Quotation"].includes(r.type)&&!r.demoOrder);
    const serviceCatalog=window.CPQ_SERVICE_MASTER?.services||[];
    const describeService=ids=>Array.isArray(ids)?ids.map(id=>serviceCatalog.find(x=>x.id===id)?.name).filter(Boolean).join(" · "):"";
    const rel=[];
@@ -101,6 +104,7 @@
      status:q.status+(outcome?" · "+outcome+" (demo)":""),companyId:q.companyId,
      branchId:q.branchId,customerCompanyId:q.buyerId,serviceIds:ids,serviceNames:describeService(ids)});
    }
+   for(const o of orderRecords){if(!customers.customers.some(c=>c.id===o.customerId))continue;rel.push({id:o.id,customerId:o.customerId,type:"Order",status:o.status+" (demo)",companyId:o.companyId,branchId:o.branchId,customerCompanyId:o.buyerId,demoOrder:true});}
    customers.related=others.concat(rel);
   }
   if(configs&&quotes&&Array.isArray(configs.configurations)){
@@ -118,6 +122,8 @@
   const customers=window.CPQ_MA004_DATA;
   const opportunities=window.CPQ_MA005_DATA;
   const quotations=window.CPQ_MA006_DATA;
+  const orderRecords=read().modules.orders?.orders||[];
+  data.orders=orderRecords.filter(o=>!["Draft","Cancelled"].includes(o.status)).map(o=>[o.id,o.snapshot.labels.customer,o.companyId,o.branchId,o.status,o.source]);
   if(Array.isArray(own)){
    data.entities=own.map(e=>({id:e.id,name:e.name,branches:(e.branches||[]).map(b=>[b.id,b.name])}));
   }

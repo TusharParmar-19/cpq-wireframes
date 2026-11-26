@@ -5,7 +5,7 @@ const $=id=>document.getElementById(id);
 const esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const db=JSON.parse(JSON.stringify(window.CPQ_MA006_DATA));
 const flow=window.CPQ_FLOW;
-const pricing=window.CPQ_PRICING,custom=window.CPQ_CUSTOM_BOQ,req=window.CPQ_REQUIREMENTS,policy=window.CPQ_POLICY;
+const pricing=window.CPQ_PRICING,custom=window.CPQ_CUSTOM_BOQ,req=window.CPQ_REQUIREMENTS,policy=window.CPQ_POLICY,orders=window.CPQ_ORDERS;
 const master=window.CPQ_MA004_DATA, org=window.CPQ_MA002_DATA, staff=window.CPQ_MA003_USERS, enquiries=window.CPQ_MA005_DATA.opportunities;
 const state={selected:"QT-2026-014",tab:"summary",mode:"register",company:"all",branch:"all",status:"all",owner:"all",search:"",listExpanded:false,builder:null,history:[]};
 const quote=id=>db.quotations.find(q=>q.id===id);
@@ -236,7 +236,7 @@ function commercial(q){
 }
 function reviewChecks(q){
  const hasFinal=(x)=>!!String(x||"").trim()&&!/^(to be agreed|to be confirmed|tbd)$/i.test(String(x).trim());
- const termsOK=hasFinal(q.payment)&&hasFinal(q.delivery)&&!!String(q.validUntil||"").trim()&&Number.isFinite(Date.parse(q.validUntil));
+ const termsOK=hasFinal(q.payment)&&hasFinal(q.delivery)&&(q.directOrderDraft||!!String(q.validUntil||"").trim()&&Number.isFinite(Date.parse(q.validUntil)));
  return [
  ["Buyer / internal scope",Boolean(buyer(q.buyerId)&&entity(q.companyId)&&branch(q.branchId)),"Customer legal buyer and selling branch identified"],
  ["BOQ lines",q.lines.length>0&&q.lines.every(l=>!custom.errors(l).length),"At least one item, valid quantity and selling rate"],
@@ -267,7 +267,7 @@ function demoReadiness(q){
  if(q.lines?.some(l=>!l.includedInParent&&!(Number(l.unitPrice)>0)))
   missing.push("Enter a positive fictional sample selling rate for each billable line; included sub-services remain ₹0");
  if(!reviewChecks(q)[2][1])missing.push("Complete product option selections");
- if(!reviewChecks(q)[3][1])missing.push("Validity, payment and delivery terms");
+ if(!reviewChecks(q)[3][1])missing.push(q.directOrderDraft?"Payment and delivery terms":"Validity, payment and delivery terms");
  if(totals(q).missing||totals(q).margin===null)missing.push("Complete internal costs and profit margin.");
  if(q.pricing){
   missing.push(...new Set([...pricing.errors(q),...pricing.supplierIssues(q,true)]));
@@ -319,7 +319,7 @@ function documents(q){
  const dispatch=q.demoDispatch||null, events=dispatch?.events||[];
  const simulated=dispatch?.state==="Sent in demo", historical=["Sent","Won","Lost"].includes(q.status);
  const canSimulate=q.status==="Draft"&&!simulated&&policy.phase1Reviewed(q)&&demoReadiness(q).length===0;
- const canRespond=simulated||q.status==="Sent";
+ const linkedOrder=orders.linked(q.id),canRespond=!linkedOrder&&(simulated||q.status==="Sent");
  const currentResponse=dispatch?.response?.decision?dispatch.response.decision+" (demo)":q.response||"Not recorded";
  const dispatchLabel=simulated?"Sent in demo":historical?"Historical sample (unverified)":"Not dispatched";
  const formatEvent=ev=>'<div class="ma6a-review-event"><strong>'+esc(ev.action)+'</strong><small>'+esc(ev.at||"")+' · '+esc(ev.actor||"Demo user")+' · '+esc(ev.revision||q.rev)+'</small>'+
@@ -340,10 +340,10 @@ function documents(q){
  '<section class="ma6a-dispatch-card"><div class="ma6a-dispatch-card-title"><b>2 · Customer response</b><span class="ma6a-demo-state">'+esc(currentResponse)+'</span></div>'+
  '<p>Record Accepted, Rejected or Changes Requested, with the reply source, date, reference and notes.</p>'+
  (canRespond?'<button type="button" class="btn primary" data-action="open-demo-response">'+(dispatch?.response?"Update demo response":"Record demo response")+'</button>':
- '<p class="ma6a-dispatch-muted">Available after a simulated dispatch, or for a historical Sent sample.</p>')+
+ '<p class="ma6a-dispatch-muted">'+(linkedOrder?"Response locked because an order is linked.":"Available after simulated dispatch, or for a historical Sent sample.")+'</p>')+
  (dispatch?.response?'<div class="ma6a-dispatch-meta"><b>Source:</b> '+esc(dispatch.response.source)+'<br><b>Received:</b> '+esc(dispatch.response.date)+'<br><b>Evidence:</b> '+esc(dispatch.response.reference||"Not recorded")+'</div>':'')+
  '</section></div>'+
- (dispatch?.response?.decision==="Accepted"?note('A sample acceptance was recorded. Order registration is a separate process; no order has been created.'):'')+
+ (linkedOrder?note('<b>Linked order:</b> '+esc(linkedOrder.id)+' · '+esc(linkedOrder.status)+' (demo). <a class="btn" href="ma-007-orders.html?order='+encodeURIComponent(linkedOrder.id)+'">View Order</a>'):dispatch?.response?.decision==="Accepted"?note('Sample acceptance recorded. '+(orders.available(q)?'<button type="button" class="btn primary" data-action="create-order-draft">Create Order Draft</button>':'A valid reviewed and dispatched revision with dated acceptance evidence is required.')):'')+
  (dispatch?.response?.decision==="Changes Requested"?note('Customer requested changes. In production create a new controlled quotation revision; never overwrite a sent revision.',true):'')+
  '<details class="ma6a-quote-more"><summary>Dispatch and response demo history ('+events.length+')</summary>'+
  (events.length?'<div class="ma6a-review-history">'+[...events].reverse().map(formatEvent).join("")+'</div>':
@@ -390,13 +390,13 @@ function contextBuilder(q){
   '<div class="ma6-scope-links"><button class="btn ma6-scope-refresh" type="button" data-action="link-selling-scope">+ Use another company / branch</button></div><details class="ma6-scope-links"><summary>Manage existing links</summary><a href="ma-004-customers.html?customer='+encodeURIComponent(q.customerId)+'" target="_blank" rel="noopener">Open customer ↗</a> <button class="btn ma6-scope-refresh" type="button" data-action="refresh-customer-scope">Refresh links</button></details>'
   :'Select a customer first. Only its linked selling companies will be available.';
  const branchHelp=q.companyId?(branches.length===1?'One eligible branch — automatically selected when choosing the company.':'Only active branches linked to this customer under the selected selling company.'):'Choose a selling company first.';
- return panel("1 · Customer, Buyer & Scope","Use MA-004 master records and optionally link an MA-005 enquiry. A direct quotation is also allowed.")+
+ return panel("1 · Customer, Buyer & Scope",q.directOrderDraft?"Select customer, buyer and selling scope for a direct order. No quotation required.":"Use MA-004 master records and optionally link an MA-005 enquiry. A direct quotation is also allowed.")+
  '<div class="ma6-field-grid">'+formSelect("customerId","Customer account",customers,q.customerId,"Choose customer",true)+formSelect("buyerId","Exact buyer / bill-to",bs,q.buyerId,"Choose buyer",true)+
  formSelect("companyId","Our selling legal entity",comps,q.companyId,"Choose linked company",true,companyHelp)+formSelect("branchId","Our internal branch",branches,q.branchId,"Choose linked branch",true,branchHelp)+
- formSelect("ownerId","Responsible employee",owners,q.ownerId,"Choose owner",true)+formSelect("opportunityId","Source opportunity (optional)",opps,q.opportunityId,"Direct quotation — no opportunity")+
+ formSelect("ownerId","Responsible employee",owners,q.ownerId,"Choose owner",true)+formSelect("opportunityId","Source opportunity (optional)",opps,q.opportunityId,q.directOrderDraft?"Direct order — no opportunity":"Direct quotation — no opportunity")+
  formSelect("contactId","Customer contact (optional)",contacts,q.contactId,"Choose contact")+formSelect("siteId","Delivery / project site (optional)",sites,q.siteId,"Choose site")+
  formSelect("projectId","Customer project (optional)",projects,q.projectId,"Choose project")+
- formInput("title","Quotation title",q.title,"text",true,true)+'</div>'+
+ formInput("title",q.directOrderDraft?"Order title":"Quotation title",q.title,"text",true,true)+'</div>'+
  note('Selecting a group customer requires an exact buyer company. Contact, site and project choices must refer to that buyer; a customer’s “primary buyer” is only a default, not an authorized substitution. The selling entity and branch must be linked to this customer.');
 }
 function catalogPicker(q,b){
@@ -464,12 +464,12 @@ function isoDate(v){
 }
 function pricingBuilder(q){return pricing.pricingView(q,financialRows);}
 function finalQuotationBuilder(q){
- return panel("4 · Final Quotation","Review the customer-facing offer, add the commercial terms and preview the final quotation.")+
+ return panel(q.directOrderDraft?"4 · Order Terms":"4 · Final Quotation",q.directOrderDraft?"Review order totals and enter payment and delivery terms.":"Review the customer-facing offer, add the commercial terms and preview the final quotation.")+
  '<div class="ma6a-commercial-top"><div class="ma6a-commercial-aside"><h4>Offer prepared from Pricing &amp; Costing</h4>'+
  '<p>Only offered rates, selected customer charges, discount, tax and customer terms appear here. Internal costs and margins stay in Pricing &amp; Costing.</p>'+
  '<button type="button" class="btn" data-step="2">Edit Pricing &amp; Costing</button></div>'+financialRows(q)+'</div>'+
  '<div class="ma6-section-sub"><h4>Customer-facing terms</h4></div>'+
- '<div class="ma6-field-grid">'+formInput("validUntil","Valid until (required before issue)",isoDate(q.validUntil),"date")+
+ '<div class="ma6-field-grid">'+(q.directOrderDraft?"":formInput("validUntil","Valid until (required before issue)",isoDate(q.validUntil),"date"))+
  '<div class="ma6-field"><label>Currency (demo)</label><input value="'+esc(q.currency)+'" readonly></div>'+
  '<div class="ma6-field full"><label for="quote-payment-preset">Payment terms template (optional)</label>'+
  '<select id="quote-payment-preset" data-payment-preset><option value="">Select a sample template...</option>'+
@@ -480,11 +480,13 @@ function finalQuotationBuilder(q){
  '<details class="ma6a-quote-more"><summary>Warranty, exclusions & internal notes</summary><div class="ma6-field-grid">'+
  formArea("warranty","Warranty / support",q.warranty)+formArea("exclusions","Exclusions",q.exclusions)+
  formArea("notes","Internal notes (not on PDF)",q.notes)+'</div></details>'+
- '<div class="cpq-quote-customer-layout"><div class="ma6-section-sub"><h4>Customer quotation preview</h4><button type="button" class="btn" data-action="preview-builder">Expand preview</button></div>'+
- '<p class="muted">Review the latest entered terms and offered prices. No internal costs, commission, markup or margin are printed.</p><div id="cpq-final-customer-paper">'+paper(q)+'</div></div>'+
+ (q.directOrderDraft?note("Direct order: no quotation or dispatch is created. Review saved order details in Orders."):'<div class="cpq-quote-customer-layout"><div class="ma6-section-sub"><h4>Customer quotation preview</h4><button type="button" class="btn" data-action="preview-builder">Expand preview</button></div>'+
+ '<p class="muted">Review the latest entered terms and offered prices. No internal costs, commission, markup or margin are printed.</p><div id="cpq-final-customer-paper">'+paper(q)+'</div></div>')+
  note('These are demo values. Real HSN/SAC, applicable GST, customer jurisdiction, freight, price list and discount approvals must come from server-controlled commercial rules.',true);
 }
 function reviewBuilder(q){
+ if(q.directOrderDraft){const issues=demoReadiness(q);return panel("5 · Review & Save Direct Order","No quotation record is generated. Register the saved order separately.")+'<div class="ma6-kvs">'+kv("Customer",customer(q.customerId)?.name)+kv("Buyer",buyer(q.buyerId)?.name)+kv("Selling company / branch",(entity(q.companyId)?.name||"Not selected")+" / "+(branch(q.branchId)?.name||"Not selected"))+kv("Order items",String(q.lines.length))+kv("Payment",q.payment)+kv("Delivery",q.delivery)+'</div>'+financialRows(q)+(issues.length?note("<b>Complete before saving:</b> "+esc(issues.join(" · ")),true):note("Order details ready. Registration requires a customer confirmation / PO reference."));}
+
  const rows=reviewChecks(q),ready=Boolean(q.customerId&&q.buyerId&&q.companyId&&q.branchId&&q.ownerId&&q.title&&q.lines.length>0&&q.lines.every(l=>numeric(l.quantity)>0&&numeric(l.unitPrice)>=0&&(l.type!=="config"||configCheck(product(l.productId),l.options).ok)&&!custom.errors(l).length));
  const termsFinalized=Boolean(isoDate(q.validUntil))&&!/^\s*(to be agreed|to be confirmed|tbd)\s*$/i.test(q.payment||"")&&!!String(q.payment||"").trim()&&!/^\s*(to be agreed|to be confirmed|tbd)\s*$/i.test(q.delivery||"");
  return panel("5 · Review & Save Draft","Saving a quote does not approve or send it to the customer.")+
@@ -520,20 +522,23 @@ function renderBuilder(){
  $("quote-view-toggle").textContent="View All Quotations (Table)";
  $("quote-view-toggle").setAttribute("aria-pressed","false");
  $("quote-explainer").hidden=true;$("quote-stats").hidden=true;$("quote-scope").hidden=true;
- $("builder-title").textContent=(b.isNew?"New Draft Quotation":"Edit Draft "+q.id)+" · "+steps[b.step][0];
- $("builder-subtitle").textContent=(b.isNew?"New quote":"Existing "+q.rev)+" · Illustrative values · Saved in this browser only";
- $("builder-steps").innerHTML=steps.map((st,i)=>'<button type="button" data-step="'+i+'" class="'+(b.step===i?'active':'')+'" aria-current="'+(b.step===i?'step':'false')+'"><span class="ma6-step-num">'+(i+1)+'</span><span class="ma6-step-label">'+esc(st[0])+'</span></button>').join("");
+ const direct=!!q.directOrderDraft,stepLabel=direct&&b.step===3?"Order Terms":steps[b.step][0];
+ $("new-quote").hidden=direct;$("quote-view-toggle").hidden=direct;
+ $("builder-close").textContent=direct?"Back to Orders":"Back to Quotation Table";
+ $("builder-title").textContent=(direct?(b.orderId?"Edit "+b.orderId:"New Direct Order"):b.isNew?"New Draft Quotation":"Edit Draft "+q.id)+" · "+stepLabel;
+ $("builder-subtitle").textContent=(direct?"Direct order · No quotation required":b.isNew?"New quote":"Existing "+q.rev)+" · Illustrative values · Saved in this browser only";
+ $("builder-steps").innerHTML=steps.map((st,i)=>'<button type="button" data-step="'+i+'" class="'+(b.step===i?'active':'')+'" aria-current="'+(b.step===i?'step':'false')+'"><span class="ma6-step-num">'+(i+1)+'</span><span class="ma6-step-label">'+esc(direct&&i===3?"Order Terms":st[0])+'</span></button>').join("");
  $("builder-body").innerHTML=stepContent[b.step](q,b);
  $("builder-prev").disabled=b.step===0;
  $("builder-next").hidden=b.step===steps.length-1;
- $("builder-save").hidden=b.step!==steps.length-1;
- $("builder-next").textContent=b.step===1?"Continue to Pricing":b.step===2?"Prepare Final Quotation":b.step===3?"Review & Save":"Next step";
- $("builder-hint").textContent=b.step===0?"Select customer and selling scope":b.step===1?"Confirm technical items before pricing":b.step===2?"Internal costs and offered rates · Fictional estimates":b.step===3?"Customer-facing offer and terms":"Save Draft only · No customer issue or approval";
+ $("builder-save").hidden=b.step!==steps.length-1;$("builder-save").textContent=direct?"Save Order Draft":"Save Draft";
+ $("builder-next").textContent=b.step===1?"Continue to Pricing":b.step===2?(direct?"Review Order Terms":"Prepare Final Quotation"):b.step===3?"Review & Save":"Next step";
+ $("builder-hint").textContent=direct?"Direct order · Browser only · Registration is separate":b.step===0?"Select customer and selling scope":b.step===1?"Confirm technical items before pricing":b.step===2?"Internal costs and offered rates · Fictional estimates":b.step===3?"Customer-facing offer and terms":"Save Draft only · No customer issue or approval";
 }
 function render(){
  if(state.mode==="builder"){renderBuilder();return;}
  if(window.CPQ_SHARED)window.CPQ_SHARED.save("quotations",db);
- $("quote-builder").hidden=true;$("quote-register").hidden=false;
+ $("new-quote").hidden=false;$("quote-builder").hidden=true;$("quote-register").hidden=false;
  $("quote-view-toggle").hidden=false;
  const expanded=state.listExpanded;
  $("quote-register").classList.toggle("is-expanded",expanded);

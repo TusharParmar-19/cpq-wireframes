@@ -107,10 +107,10 @@ function siteTab(c){
 }
 function relatedTab(c){
  const r=related(c.id).filter(x=>(state.company==="all"||x.companyId===state.company)&&(state.branch==="all"||x.branchId===state.branch));
- return panel("Related commercial records","Illustrative references to future Opportunity, Quotation and Order pages.")+
+ return panel("Related commercial records","Linked opportunity, quotation and order records saved in this demo.")+
  (r.length?'<div class="ma4-table-scroller"><table class="ma4-table"><thead><tr><th>Reference</th><th>Type / status</th><th>Buyer identity</th><th>Our internal scope</th><th></th></tr></thead><tbody>'+
  r.map(x=>'<tr><td><strong>'+esc(x.id)+'</strong>'+
- (x.serviceNames?'<small>Services: '+esc(x.serviceNames)+'</small>':'')+'</td><td>'+esc(x.type)+'<small>'+esc(x.status)+'</small></td><td>'+val(buyer(x.customerCompanyId)?.name)+'</td><td>'+val(ent(x.companyId)?.name)+'<small>'+val(branch(x.branchId)?.name)+'</small></td><td>'+(x.type==="Opportunity"?'<a class="btn" href="ma-005-opportunities.html?opportunity='+encodeURIComponent(x.id)+'">View MA-005</a>':x.type==="Quotation"?'<a class="btn" href="ma-006-quotations.html?quote='+encodeURIComponent(x.id)+'">View MA-006</a>':'<button type="button" class="btn" data-record="'+esc(x.id)+'">Planned page</button>')+'</td></tr>').join("")+'</tbody></table></div>':'<div class="ma4-empty">No related records for this internal company/branch scope.</div>')+
+ (x.serviceNames?'<small>Services: '+esc(x.serviceNames)+'</small>':'')+'</td><td>'+esc(x.type)+'<small>'+esc(x.status)+'</small></td><td>'+val(buyer(x.customerCompanyId)?.name)+'</td><td>'+val(ent(x.companyId)?.name)+'<small>'+val(branch(x.branchId)?.name)+'</small></td><td>'+(x.type==="Opportunity"?'<a class="btn" href="ma-005-opportunities.html?opportunity='+encodeURIComponent(x.id)+'">View MA-005</a>':x.type==="Quotation"?'<a class="btn" href="ma-006-quotations.html?quote='+encodeURIComponent(x.id)+'">View MA-006</a>':x.demoOrder?'<a class="btn" href="ma-007-orders.html?order='+encodeURIComponent(x.id)+'">View Order</a>':'<button type="button" class="btn" data-record="'+esc(x.id)+'">Historical sample</button>')+'</td></tr>').join("")+'</tbody></table></div>':'<div class="ma4-empty">No related records for this internal company/branch scope.</div>')+
  info('Cross-company records must remain protected by production authorization. Saved demo customer and related-record changes are available across the CPQ pages in this browser; unsaved form input is not transferred.');
 }
 function activityTab(c){

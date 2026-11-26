@@ -129,6 +129,7 @@ function quotations(o){
  const captured=window.CPQ_REQUIREMENTS.opportunity(o),files=captured.requirementPack.documents;
  return panel("Linked quotations and evidence","Quotation drafts saved in this browser are linked automatically; PDF issue and verified acceptance are separate.","prepare","Prepare quotation")+
  (o.demoQuoteOutcome?note('<b>Most recent simulated response:</b> '+esc(o.demoQuoteOutcome.decision)+' for '+esc(o.demoQuoteOutcome.quoteId)+'. No official status change or order is created by the demo.'):"")+
+ ((o.demoOrders||[]).length?note("<b>Linked demo orders:</b> "+o.demoOrders.map(x=>'<a href="ma-007-orders.html?order='+encodeURIComponent(x.id)+'">'+esc(x.id)+'</a> · '+esc(x.status)).join(" | ")):"")+
  '<div class="ma5-subhead"><h4>Quotation references ('+qs.length+')</h4></div>'+
  (qs.length?'<div class="ma5-table-wrap"><table class="ma5-table"><thead><tr><th>Quotation</th><th>Status</th><th>Revision</th><th>Action</th></tr></thead><tbody>'+qs.map(q=>
  '<tr><td><strong>'+esc(q.id)+'</strong><small>'+window.CPQ_FLOW.summary(q.serviceIds,2)+'</small></td><td>'+esc(q.status)+'</td><td>'+esc(q.revision)+'</td><td><a class="btn" href="ma-006-quotations.html?quote='+encodeURIComponent(q.id)+'">View MA-006</a></td></tr>').join("")+'</tbody></table></div>':

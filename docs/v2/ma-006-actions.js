@@ -6,7 +6,7 @@ const {$,esc,db,master,org,staff,enquiries,state,quote,customer,buyer,contact,si
 let toastTimer=null,priorFocus=null;
 const copy=x=>JSON.parse(JSON.stringify(x));
 const flow=window.CPQ_FLOW,custom=window.CPQ_CUSTOM_BOQ,req=window.CPQ_REQUIREMENTS;
-const pricing=window.CPQ_PRICING,policy=window.CPQ_POLICY;
+const pricing=window.CPQ_PRICING,policy=window.CPQ_POLICY,orders=window.CPQ_ORDERS;
 const demoDate=()=>new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"});
 const statusDraft="Draft";
 const toISO=v=>{
@@ -43,8 +43,8 @@ function setProduct(b,prodId){
  const p=product(prodId);if(!p)return;
  b.productId=prodId;b.quantity=1;b.options=p.type==="config"?{...p.defaults}:{};
 }
-function newBuilder(sourceId=""){
- const q=makeBlank();
+function newBuilder(sourceId="",direct=false){
+ const q=makeBlank();if(direct)q.directOrderDraft=true;
  const src=opportunity(sourceId);
  if(src){
   q.customerId=src.customerId;q.buyerId=src.buyerId;q.contactId=src.contactId;q.siteId=src.siteId;
@@ -94,7 +94,7 @@ function saveBuilder(){
  // Saving is not submitting for approval. Drafts may be missing buyer, BOQ or terms;
  // supplied links, quantities and numeric fields must remain internally consistent.
  let error="";
- if(!String(q.title||"").trim())error="Give this quotation draft a title in step 1.";
+ if(!String(q.title||"").trim())error="Enter a title in step 1.";
  else if(q.customerId&&!validCust)error="This customer is no longer available.";
  else if(q.buyerId&&!isGoodBuyer)error="The buyer must belong to the selected customer.";
  else if(q.companyId&&!entity(q.companyId))error="The selling legal entity is not available.";
@@ -110,6 +110,11 @@ function saveBuilder(){
  else if(q.validUntil&&!toISO(q.validUntil))error="Choose a valid calendar date or leave validity blank until review.";
  if(error){explain("Please correct the saved data",esc(error)+"<p>Incomplete quotation details and unconfirmed terms are allowed in Draft. Invalid relationships or numbers are not.</p>");return;}
  syncPackageBilling(q);
+ if(q.directOrderDraft){
+  const missing=a.demoReadiness(q);
+  if(missing.length){explain("Complete direct order details","<ul>"+missing.map(x=>"<li>"+esc(x)+"</li>").join("")+"</ul>");return;}
+  try{const o=orders.saveDirect(q,a.totals(q),orderLabels(q),demoStamp(),b.orderId||"");window.location.href="ma-007-orders.html?order="+encodeURIComponent(o.id);}catch(err){explain("Cannot save order",esc(err.message));}return;
+ }
  if(b.isNew){
   const max=Math.max(20,...db.quotations.map(x=>Number(x.id.split("-").at(-1))||0));
   q.id="QT-2026-"+String(max+1).padStart(3,"0");q.rev="R0";db.quotations.unshift(copy(q));
@@ -241,6 +246,23 @@ function updateBuilderField(field,value){
 }
 function demoStamp(){return new Date().toLocaleString("en-GB",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});}
 function labels(q){return {customer:customer(q.customerId)?.name,buyer:buyer(q.buyerId)?.name,seller:entity(q.companyId)?.name,branch:branch(q.branchId)?.name};}
+function orderLabels(q){return {...labels(q),owner:employee(q.ownerId)?.name,contact:contact(q.contactId)?.name,site:site(q.siteId)?.name,project:project(q.projectId)?.name};}
+function openOrderDraft(){
+ const q=quote(state.selected);if(!q)return;
+ try{const existing=orders.linked(q.id);if(existing){window.location.href="ma-007-orders.html?order="+encodeURIComponent(existing.id);return;}
+  if(!orders.available(q))throw Error("A reviewed, dispatched and accepted current revision is required.");
+  if(!window.confirm("Create an order draft from "+q.id+" / "+q.rev+"? Captured prices, taxes and terms are preserved. No actual order is registered."))return;
+  const o=orders.createFromQuote(q.id,q.rev,a.totals,orderLabels(q),demoStamp());window.location.href="ma-007-orders.html?order="+encodeURIComponent(o.id);
+ }catch(err){explain("Cannot create order",esc(err.message));}
+}
+function openDirectOrder(id){
+ if(!id){newBuilder("",true);return;}
+ const o=orders.find(id);
+ if(!o||o.source!=="Direct Order"||o.status!=="Draft"){window.location.href="ma-007-orders.html";return;}
+ const q=copy(o.snapshot.quote);
+ state.builder={quote:q,orderId:o.id,isNew:false,step:0,productId:"",options:{},quantity:1,addPickerOpen:!q.lines.length,catalogSearch:""};
+ state.mode="builder";renderBuilder();$("quote-builder").scrollIntoView({block:"start",behavior:"auto"});
+}
 function persistCandidate(q,candidate){
  const next=copy(db);next.quotations[next.quotations.findIndex(x=>x.id===q.id)]=candidate;
  if(!window.CPQ_SHARED.save("quotations",next))throw Error("Browser storage save failed.");
@@ -339,7 +361,7 @@ function recordDemoDispatch(){
 }
 function openDemoResponse(){
  const q=quote(state.selected);
- if(!q||(q.demoDispatch?.state!=="Sent in demo"&&q.status!=="Sent"))return;
+ if(!q||orders.linked(q.id)||(q.demoDispatch?.state!=="Sent in demo"&&q.status!=="Sent"))return;
  const response=q.demoDispatch?.response||{};
  const selectOption=(value,label,selected)=>'<option value="'+esc(value)+'"'+(value===selected?' selected':'')+'>'+esc(label)+'</option>';
  modal("Record customer response (demo)","Browser-only · Does not change official quotation or create an order",
@@ -356,7 +378,7 @@ function openDemoResponse(){
 }
 function saveDemoResponse(){
  const q=quote(state.selected);
- if(!q||(q.demoDispatch?.state!=="Sent in demo"&&q.status!=="Sent"))return;
+ if(!q||orders.linked(q.id)||(q.demoDispatch?.state!=="Sent in demo"&&q.status!=="Sent"))return;
  const decision=$("demo-response-decision")?.value||"";
  const source=$("demo-response-source")?.value||"";
  const date=$("demo-response-date")?.value||"";
@@ -419,6 +441,7 @@ function handleAction(action,target){
  if(action==="view-revision"||action==="compare-revision"){historyView(target.dataset.revision,action==="compare-revision");return;}
  if(action==="go-demo-approvals"){state.tab="approvals";render();return;}
  if(action==="go-demo-documents"){state.tab="documents";render();return;}
+ if(action==="create-order-draft"){openOrderDraft();return;}
  if(action==="open-demo-dispatch"){openDemoDispatch();return;}
  if(action==="record-demo-dispatch"){recordDemoDispatch();return;}
  if(action==="open-demo-response"){openDemoResponse();return;}
@@ -563,6 +586,7 @@ $("builder-body").addEventListener("input",e=>{
   updateBuilderField(t.dataset.field,t.value);
 });
 function openQuotationTable(){
+ if(state.builder?.quote?.directOrderDraft){if(JSON.stringify(state.builder.quote)!==state.builder.initialQuoteSnapshot&&!window.confirm("Discard unsaved direct order changes?"))return;window.location.href="ma-007-orders.html";return;}
  if(state.mode==="builder"){
   const b=state.builder;
   const dirty=!!b&&(JSON.stringify(b.quote)!==b.initialQuoteSnapshot||
@@ -735,7 +759,8 @@ function payloadFromStored(ref){
 }
 const params=new URLSearchParams(window.location.search);
 const quoteRef=params.get("quote"),opRef=params.get("opportunity"),configData=params.get("configData"),configRef=params.get("configuration");
-if(configRef){
+if(params.get("action")==="direct-order"){openDirectOrder(params.get("order"));}
+else if(configRef){
  const data=payloadFromStored(configRef);
  if(!openConfigurationHandoff(data,true)){
   newBuilder();
