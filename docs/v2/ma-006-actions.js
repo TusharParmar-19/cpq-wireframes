@@ -68,7 +68,7 @@ function existingBuilder(mode="edit",step=0){
  }
  const q=copy(original);q.validUntil=toISO(q.validUntil);if(mode==="duplicate"){
   q.id="";q.rev="R0";q.status=statusDraft;q.date=demoDate();q.review="Not submitted";q.response="Not issued";q.responseNote="";
-  q.versionNotes="New draft based on an existing sample";q.lastUpdated=demoDate()+" (demo)";delete q.demoApproval;delete q.demoDispatch;delete q.revisionIdentity;
+  q.versionNotes="New draft based on an existing sample";q.lastUpdated=demoDate()+" (demo)";delete q.demoApproval;delete q.demoDispatch;delete q.revisionIdentity;delete q.productRuleSnapshot;
  }
  const b={quote:q,isNew:mode==="duplicate",step,productId:"",options:{},quantity:1,addPickerOpen:!q.lines.length,catalogSearch:""};
  const existingConfig=q.lines.find(l=>l.type==="config"&&product(l.productId));
@@ -273,7 +273,7 @@ function submitDemoReview(){
  const missing=a.demoReadiness(q);
  if(missing.length){explain("Complete quotation details","<ul>"+missing.map(x=>"<li>"+esc(x)+"</li>").join("")+"</ul>");return;}
  try{
-  const candidate=copy(q);candidate.revisionIdentity=policy.identity(candidate,labels(q));policy.phase1Start(candidate,demoStamp());
+  const candidate=copy(q);candidate.productRuleSnapshot=window.CPQ_PRODUCT_RULES.capture(candidate);if(window.CPQ_PRODUCT_RULES.quotation(candidate).some(x=>x.severity==="block"))throw Error("Resolve the latest product selection rules first.");candidate.revisionIdentity=policy.identity(candidate,labels(q));policy.phase1Start(candidate,demoStamp());
   candidate.review="Master Admin review submitted (demo)";candidate.lastUpdated=demoDate()+" (demo)";
   persistCandidate(q,candidate);state.tab="approvals";render();toast("Revision locked for Master Admin demo review.");
  }catch(error){explain("Review cannot start",esc(error.message));}

@@ -16,7 +16,8 @@
    vendorOffers:"CPQ_VENDOR_OFFERS",
   quotations:"CPQ_MA006_DATA",
   approvalPolicies:"CPQ_APPROVAL_POLICY_DATA",
-  orders:"CPQ_ORDER_DATA"
+  orders:"CPQ_ORDER_DATA",
+  productRules:"CPQ_PRODUCT_RULE_DATA"
  };
  const copy=x=>JSON.parse(JSON.stringify(x));
  function read(){

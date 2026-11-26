@@ -83,7 +83,8 @@ function solarWarnings(c){
  return a;
 }
 function review(c){
- const errors=[...req.errors(c)];
+ const findings=window.CPQ_PRODUCT_RULES.evaluate(c.items);
+ const errors=[...req.errors(c),...findings.filter(x=>x.severity==="block").map(x=>x.message)];
  if(!String(c.name||"").trim())errors.push("Enter a configuration name");
  if(!c.items.length)errors.push("Add at least one product or service");
  if(c.items.length>25)errors.push("This demo supports up to 25 configuration items per handoff.");
@@ -116,7 +117,7 @@ function review(c){
   if(!(m.acKw>0))errors.push("Select an active inverter and quantity");
   if(c.solar?.batteriesNeeded==="Yes"&&!(m.batteryKwh>0))errors.push("Storage requested: choose a battery model");
  }
- return {ok:errors.length===0,errors,warnings:[...solarWarnings(c),...c.items.filter(custom.is).map(l=>(l.customItem?.name||"Custom item")+" — specification, sourcing and pricing require review.")],solar:m};
+ return {ok:errors.length===0,errors,warnings:[...solarWarnings(c),...findings.filter(x=>x.severity==="warning").map(x=>x.message),...c.items.filter(custom.is).map(l=>(l.customItem?.name||"Custom item")+" — specification, sourcing and pricing require review.")],solar:m};
 }
 const status=c=>review(c).ok?"Demo check passed":"Needs changes";
 const badge=c=>review(c).ok?'<span class="ma6a-chip-ok">Demo check passed</span>':'<span class="ma6a-chip-bad">Needs changes</span>';

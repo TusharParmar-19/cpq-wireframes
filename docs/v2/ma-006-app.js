@@ -240,7 +240,7 @@ function reviewChecks(q){
  return [
  ["Buyer / internal scope",Boolean(buyer(q.buyerId)&&entity(q.companyId)&&branch(q.branchId)),"Customer legal buyer and selling branch identified"],
  ["BOQ lines",q.lines.length>0&&q.lines.every(l=>!custom.errors(l).length),"At least one item, valid quantity and selling rate"],
- ["Config rules",q.lines.every(l=>l.type!=="config"||configCheck(product(l.productId),l.options).ok),"Sample compatibility check only — engineers must approve rules"],
+ ["Config rules",q.lines.every(l=>l.type!=="config"||configCheck(product(l.productId),l.options).ok)&&!window.CPQ_PRODUCT_RULES.quotation(q).some(x=>x.severity==="block"),"Basic options and configured demo model selection rules; engineering approval remains separate"],
  ["Terms",termsOK,"Validity, payment and delivery terms must be finalized before issue; placeholders are not approval"],
  ["Pricing/discount policy",false,"Real tax, pricing and approvals are not evaluated in this demo"],
  ["Imported catalog prices",!q.lines.some(l=>l.pricingReview),"Seeded rates are illustration-only. Validate manufacturer/SKU, costs, selling price and exceptions."],
@@ -266,7 +266,8 @@ function demoReadiness(q){
  missing.push(...window.CPQ_TAX.reviewIssues(q,totals(q)),...window.CPQ_COMMERCIAL.reviewIssues(q,totals(q)));
  if(q.lines?.some(l=>!l.includedInParent&&!(Number(l.unitPrice)>0)))
   missing.push("Enter a positive fictional sample selling rate for each billable line; included sub-services remain ₹0");
- if(!reviewChecks(q)[2][1])missing.push("Complete product option selections");
+ if(q.lines.some(l=>l.type==="config"&&!configCheck(product(l.productId),l.options).ok))missing.push("Complete product option selections");
+ missing.push(...window.CPQ_PRODUCT_RULES.quotation(q).filter(x=>x.severity==="block").map(x=>x.message));
  if(!reviewChecks(q)[3][1])missing.push(q.directOrderDraft?"Payment and delivery terms":"Validity, payment and delivery terms");
  if(totals(q).missing||totals(q).margin===null)missing.push("Complete internal costs and profit margin.");
  if(q.pricing){
@@ -287,7 +288,7 @@ function approvals(q){
  (missing.length?'<button class="btn" data-action="edit-builder">Complete Draft</button>':'<button class="btn primary" type="button" data-action="submit-demo-review">Submit Demo Review</button>')+'</div>':
  '<div class="ma6a-review-next"><div><b>'+(ready?"Master Admin review complete (demo)":pending?"Awaiting Master Admin decision":"Revision locked for review / history")+'</b><p>'+esc(ready?"Continue to PDF & Response for simulated dispatch.":pending?"Review the quotation and choose a decision.":!simple&&d?.state==="In review"?"Prior policy-based review retained. Create a new revision to use the Phase 1 review.":"Create a new revision for corrections; historical data is preserved.")+'</p></div>'+
  (pending?'<button class="btn primary" data-action="simulate-review" data-role="master">Review Quotation</button>':ready?'<button class="btn primary" data-action="go-demo-documents">Continue to PDF &amp; Response</button>':policy.canRevise(q)?'<button class="btn" data-action="create-revision">Create New Revision</button>':'')+'</div>')+
- '<details class="ma6a-quote-more"><summary>Quotation checks ('+passed+' of '+checks.length+')</summary><div class="ma6-checklist">'+checks.map(([title,done,desc])=>'<div class="ma6-check-item"><span class="ma6-check-icon">'+(done?'✓':'!')+'</span><div><b>'+esc(title)+'</b><small>'+esc(desc)+'</small></div></div>').join("")+'</div></details>'+
+ ruleNotices(q)+'<details class="ma6a-quote-more"><summary>Quotation checks ('+passed+' of '+checks.length+')</summary><div class="ma6-checklist">'+checks.map(([title,done,desc])=>'<div class="ma6-check-item"><span class="ma6-check-icon">'+(done?'✓':'!')+'</span><div><b>'+esc(title)+'</b><small>'+esc(desc)+'</small></div></div>').join("")+'</div></details>'+
  '<details class="ma6a-quote-more"><summary>Demo review history ('+events.length+')</summary>'+(events.length?'<div class="ma6a-review-history">'+[...events].reverse().map(ev=>'<div class="ma6a-review-event"><strong>'+esc(ev.action)+'</strong><small>'+esc(ev.at)+' · '+esc(ev.actor)+' · '+esc(ev.revision||q.rev)+'</small><p>'+esc(ev.comment||"")+'</p></div>').join("")+'</div>':blank("No demo review actions recorded yet."))+'</details>'+
  note("Phase 3: configurable approval rules, separate approvers, financial thresholds and escalation. The present review is simulated and does not authorize a real offer.",true);
 }
@@ -435,6 +436,7 @@ function catalogPicker(q,b){
  '<div class="ma6-empty" id="quote-add-no-matches"'+(matches.length?' hidden':'')+'>No matching active catalog products. Check the model/SKU or try a broader search.</div>'+
  '</div></div><div class="ma6-config-form" id="quote-add-selection">'+selection+'</div></div>';
 }
+function ruleNotices(q){const f=window.CPQ_PRODUCT_RULES.quotation(q);return f.length?note("<b>Product selection checks (demo)</b><ul>"+f.map(x=>"<li>"+esc((x.severity==="block"?"Resolve before review: ":"Warning: ")+x.message)+"</li>").join("")+"</ul>",f.some(x=>x.severity==="block")):"";}
 function boqBuilder(q,b){
  const source=q.sourceConfigId?
  '<div class="ma6-note"><b>Imported configuration:</b> '+esc(q.sourceConfigName||q.sourceConfigId)+
@@ -451,7 +453,7 @@ function boqBuilder(q,b){
  '<td class="ma6-money">'+money(extended(l))+'</td><td>'+custom.editButton(l)+'<button type="button" class="btn" data-remove-line="'+esc(l.id)+'" aria-label="Remove '+esc(l.description)+'">Remove</button></td></tr>')):
  blank("No BOQ items yet. Add a catalog product, service or custom item, or import a configuration.");
  return panel("2 · Products & BOQ",q.sourceConfigId?"Review imported configuration items and quantities. Pricing is handled separately.":"Select products and services, confirm quantities, then continue to Pricing & Costing.")+
- source+lineTable+custom.form(b)+req.form(q,true)+
+ source+lineTable+ruleNotices(q)+custom.form(b)+req.form(q,true)+
  '<div class="ma6-section-sub ma6a-quote-add"><h4>'+q.lines.length+' BOQ item(s) · Current offered BOQ '+money(totals(q).boqSubtotal)+'</h4>'+
  '<button type="button" class="btn'+(b.addPickerOpen?'':' primary')+'" data-action="toggle-add-product">'+
  (b.addPickerOpen?'Close Product / Service Picker':'+ Add Product or Service')+'</button></div>'+

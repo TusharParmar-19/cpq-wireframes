@@ -98,7 +98,7 @@ function revise(q,all,reason,t,labels,at,actor){
  const historical=copy(q);historical.revisionIdentity=copy(q.revisionIdentity||identity(q,labels));
  const snapshot={quoteId:q.id,rev:q.rev,archivedAt:at,archivedBy:actor,reason,quote:historical,amounts:amountSnapshot(t)};
  const next=copy(q);next.rev="R"+number;next.status="Draft";next.versionNotes=reason;next.review="Not submitted";next.response="Not issued";next.responseNote="";next.lastUpdated=at+" (demo)";
- delete next.demoApproval;delete next.demoDispatch;delete next.revisionIdentity;
+ delete next.demoApproval;delete next.demoDispatch;delete next.revisionIdentity;delete next.productRuleSnapshot;
  return {next,snapshot};
 }
 function compare(old,current,t){
