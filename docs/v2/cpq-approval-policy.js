@@ -108,5 +108,28 @@ function compare(old,current,t){
  const lines=[...new Set([...before.keys(),...after.keys()])].map(id=>{const a=before.get(id),b=after.get(id);return {name:b?.description||a?.description||id,change:!a?"Added":!b?"Removed":JSON.stringify(a)===JSON.stringify(b)?"Unchanged":"Changed",before:a?String(a.quantity)+" × "+money(a.unitPrice):"—",after:b?String(b.quantity)+" × "+money(b.unitPrice):"—"};});
  return {rows,lines,terms:["payment","delivery","validUntil","warranty","exclusions"].filter(k=>old.quote[k]!==current[k])};
 }
-W.CPQ_POLICY={defaultPolicy,load,masters,scopeId,applicable,validate,savePolicy,eligible,plan,locked,canRevise,fingerprint,start,optionsFor,decide,reviewed,identity,revise,compare,money,esc};
+// Phase 1: single Master Admin demo review. Advanced policy engine is retained for Phase 3 only.
+function phase1Start(q,at){
+ if(locked(q))throw Error("Create a new revision before starting a new review.");
+ q.demoApproval={mode:"phase1-master",state:"In review",fingerprint:fingerprint(q),master:"Pending",events:[...(q.demoApproval?.events||[]),{action:"Submitted for Master Admin demo review",actor:"Draft editor (demo)",at,revision:q.rev,comment:"Single-stage Phase 1 review; no approval policy required."}]};
+ return q.demoApproval;
+}
+function phase1Pending(q){
+ const d=q?.demoApproval;
+ return !!d&&q.status==="Draft"&&d.mode==="phase1-master"&&d.state==="In review"&&d.master==="Pending"&&d.fingerprint===fingerprint(q)&&q.demoDispatch?.state!=="Sent in demo";
+}
+function phase1Decide(q,decision,comment,at){
+ if(!phase1Pending(q)||!["approved","changes","rejected"].includes(decision))throw Error("No active Master Admin demo review for this revision.");
+ if(decision!=="approved"&&!String(comment||"").trim())throw Error("Enter a reason for rejection or requested changes.");
+ const d=q.demoApproval,label=decision==="approved"?"Demo approved":decision==="changes"?"Changes requested":"Rejected";
+ d.master=label;d.state=decision==="approved"?"Demo reviewed":label;d.decision={decision:label,actor:"Master Admin (simulated)",comment,at};
+ d.events.push({action:"Master Admin review · "+label,actor:d.decision.actor,at,revision:q.rev,comment});
+ return d.state;
+}
+function phase1Reviewed(q){
+ const d=q?.demoApproval;
+ // Preserve historical completed policy reviews, but do not run policy routing in Phase 1.
+ return !!d&&(d.mode==="phase1-master"?d.state==="Demo reviewed"&&d.master==="Demo approved"&&d.decision?.decision==="Demo approved"&&d.fingerprint===fingerprint(q):reviewed(q));
+}
+W.CPQ_POLICY={phase1Start,phase1Pending,phase1Decide,phase1Reviewed,defaultPolicy,load,masters,scopeId,applicable,validate,savePolicy,eligible,plan,locked,canRevise,fingerprint,start,optionsFor,decide,reviewed,identity,revise,compare,money,esc};
 })();

@@ -248,30 +248,27 @@ function persistCandidate(q,candidate){
 }
 function submitDemoReview(){
  const q=quote(state.selected);if(!q||policy.locked(q))return;
- const route=policy.plan(q,a.totals(q)),missing=[...a.demoReadiness(q),...route.issues];
- if(missing.length){explain("Complete readiness and approval routing","<ul>"+missing.map(x=>"<li>"+esc(x)+"</li>").join("")+"</ul>");return;}
+ const missing=a.demoReadiness(q);
+ if(missing.length){explain("Complete quotation details","<ul>"+missing.map(x=>"<li>"+esc(x)+"</li>").join("")+"</ul>");return;}
  try{
-  const candidate=copy(q);candidate.revisionIdentity=policy.identity(candidate,labels(q));policy.start(candidate,route,demoStamp());
-  candidate.review="Sample review submitted · not authorized";candidate.lastUpdated=demoDate()+" (demo)";
-  persistCandidate(q,candidate);state.tab="approvals";render();toast("Policy and revision locked for demo review.");
+  const candidate=copy(q);candidate.revisionIdentity=policy.identity(candidate,labels(q));policy.phase1Start(candidate,demoStamp());
+  candidate.review="Master Admin review submitted (demo)";candidate.lastUpdated=demoDate()+" (demo)";
+  persistCandidate(q,candidate);state.tab="approvals";render();toast("Revision locked for Master Admin demo review.");
  }catch(error){explain("Review cannot start",esc(error.message));}
 }
 function openDemoDecision(role){
- const q=quote(state.selected),choices=q?policy.optionsFor(q,role):[];
- if(!choices.length){explain("Reviewer unavailable","Check role grants, scope and earlier stages.");return;}
- const stage=q.demoApproval.route.stages.find(s=>s.key===role);
- modal(stage.label+" · Demo decision","Browser simulation · No authenticated approver",
- '<div class="ma6-note">Select an eligible employee to simulate the decision. This is not their actual approval.</div>'+
- '<div class="ma6-field"><label for="demo-reviewer">Simulated reviewer *</label><select id="demo-reviewer"><option value="">Select reviewer</option>'+choices.map(u=>'<option value="'+esc(u.id)+'">'+esc(u.name)+'</option>').join("")+'</select></div>'+
- '<div class="ma6-field"><label for="demo-review-comment">Reviewer comments (required for changes / rejection)</label><textarea id="demo-review-comment" maxlength="400" rows="3"></textarea></div>'+
- '<div class="ma6a-demo-decision-buttons">'+[["changes","Request changes"],["rejected","Reject (demo)"],["approved","Mark demo approved"]].map(([k,l])=>'<button type="button" class="btn '+(k==="approved"?"primary":"")+'" data-action="record-demo-review" data-role="'+esc(role)+'" data-decision="'+k+'">'+l+'</button>').join("")+'</div>');
+ const q=quote(state.selected);if(role!=="master"||!policy.phase1Pending(q))return;
+ modal("Master Admin review","Phase 1 · Browser simulation",
+ '<div class="ma6-note">Check the customer offer, BOQ, GST, costs and commercial terms. This simulates a Master Admin decision; no authenticated approval or real issuance occurs.</div>'+
+ '<div class="ma6-field"><label for="demo-review-comment">Comments (required for changes / rejection)</label><textarea id="demo-review-comment" maxlength="400" rows="3"></textarea></div>'+
+ '<div class="ma6a-demo-decision-buttons">'+[["changes","Request changes"],["rejected","Reject (demo)"],["approved","Mark demo approved"]].map(([k,l])=>'<button type="button" class="btn '+(k==="approved"?"primary":"")+'" data-action="record-demo-review" data-role="master" data-decision="'+k+'">'+l+'</button>').join("")+'</div>');
 }
 function recordDemoDecision(role,decision){
- const q=quote(state.selected);if(!q)return;
+ const q=quote(state.selected);if(!q||role!=="master")return;
  try{
-  const candidate=copy(q),status=policy.decide(candidate,role,decision,$("demo-reviewer")?.value,$("demo-review-comment")?.value.trim()||"",demoStamp());
+  const candidate=copy(q),status=policy.phase1Decide(candidate,decision,$("demo-review-comment")?.value.trim()||"",demoStamp());
   candidate.review=status+" · sample only, not authorized";candidate.lastUpdated=demoDate()+" (demo)";
-  persistCandidate(q,candidate);closeModal();state.tab="approvals";render();toast("Demo decision recorded.");
+  persistCandidate(q,candidate);closeModal();state.tab="approvals";render();toast("Master Admin demo decision recorded.");
  }catch(error){toast(error.message);}
 }
 function openRevision(){
@@ -309,8 +306,8 @@ function localISO(){
 function openDemoDispatch(){
  const q=quote(state.selected);
  if(!q||q.status!=="Draft"||q.demoDispatch?.state==="Sent in demo")return;
- if(!policy.reviewed(q)||a.demoReadiness(q).length){
-  explain("Review required before dispatch","First complete the quote and record both sample review decisions under Review & Approvals. The demo still cannot authorize or issue an actual quotation.");return;
+ if(!policy.phase1Reviewed(q)||a.demoReadiness(q).length){
+  explain("Review required before dispatch","First complete the quote and record the Master Admin demo decision under Review & Approvals. The demo still cannot authorize or issue an actual quotation.");return;
  }
  modal("Simulate quotation dispatch","Browser-only · No PDF issued or message sent",
   '<div class="ma6-note"><b>Demonstration only.</b> This records a pretend dispatch against '+esc(q.id)+' / '+esc(q.rev)+'. Do not enter actual recipient email addresses or confidential evidence.</div>'+
@@ -325,7 +322,7 @@ function openDemoDispatch(){
 function recordDemoDispatch(){
  const q=quote(state.selected);
  if(!q||q.status!=="Draft"||q.demoDispatch?.state==="Sent in demo"||
-    !policy.reviewed(q)||a.demoReadiness(q).length)return;
+    !policy.phase1Reviewed(q)||a.demoReadiness(q).length)return;
  const recipient=$("demo-send-recipient")?.value.trim()||"";
  const channel=$("demo-send-channel")?.value||"";
  const date=$("demo-send-date")?.value||"";
@@ -421,6 +418,7 @@ function handleAction(action,target){
  if(action==="record-revision"){recordRevision();return;}
  if(action==="view-revision"||action==="compare-revision"){historyView(target.dataset.revision,action==="compare-revision");return;}
  if(action==="go-demo-approvals"){state.tab="approvals";render();return;}
+ if(action==="go-demo-documents"){state.tab="documents";render();return;}
  if(action==="open-demo-dispatch"){openDemoDispatch();return;}
  if(action==="record-demo-dispatch"){recordDemoDispatch();return;}
  if(action==="open-demo-response"){openDemoResponse();return;}
@@ -470,7 +468,7 @@ function handleAction(action,target){
   const q=quote(state.selected);if(q)modal("Customer-facing quotation preview",q.id+" / "+q.rev+" · Not an issued PDF",paper(q));return;
  }
  if(action==="preview-approval"){
-  explain("How real approvals work","The intended production sequence is:<ol><li>Complete customer, BOQ and commercial terms.</li><li>Submit an immutable revision for technical and commercial review.</li><li>Route each review through MA-003 permissions, company/branch scope and approval thresholds. Approvers may approve, request changes or reject with comments.</li><li>Only after every required authorized decision and audit record is complete may an approved revision be locked and issued.</li></ol><p><b>Here you can simulate those two decisions for UI review only.</b> No reviewer is authenticated, no real approval is recorded and issuing stays disabled.</p>");return;
+  explain("Phase 1 quotation review","Complete customer, BOQ, prices, taxes and terms, then submit the revision for one Master Admin demo decision. Request changes or reject with a reason; create a new revision for corrections. Configurable policies, thresholds and multi-role approval routing are deferred to Phase 3. No actual approval, email or PDF issuance occurs in this demo.");return;
  }
  if(action==="preview-dispatch"){
   explain("Dispatch & customer response","Production flow: <ol><li>Complete technical and commercial approvals with verified MA-003 rights.</li><li>Lock the approved revision and issue its numbered PDF.</li><li>Dispatch to the authorized recipient; record channel, time and message/document proof.</li><li>Record Accepted, Rejected or Changes Requested with customer evidence and action owner.</li><li>Create an order separately after validating acceptance and terms.</li></ol><p><b>Try the two demo cards on this tab.</b> Neither card sends a message or authorizes a quotation.</p>");return;

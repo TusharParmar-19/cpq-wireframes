@@ -102,7 +102,7 @@ window.CPQ_MA003_PAGE_CATALOG=[
  {id:"vendor-rfqs",name:"Advanced RFQ & Supplier Comparison (Phase 2)",section:"Procurement & Files",code:"Planned",stage:"Planned",actions:["rfq.view","rfq.create","rfq.send","rfq.compare","cost.view"]},
  {id:"documents",name:"Documents & Evidence",section:"Procurement & Files",code:"Planned",stage:"Planned",actions:["documents.view","documents.upload","documents.download","documents.delete"]},
  {id:"orders",name:"Orders & Registration",section:"Orders & Controls",code:"Planned",stage:"Planned",actions:["orders.view","orders.edit","orders.register","records.archive"]},
- {id:"approvals",name:"Approval Queue & Policy",section:"Orders & Controls",code:"Approval Policies",stage:"Available",actions:["approvals.view","approvals.decide","approvals.manage","discount.approve"]},
+ {id:"approvals",name:"Advanced Approval Queue & Policy (Phase 3)",section:"Orders & Controls",code:"Phase 3",stage:"Planned",actions:["approvals.view","approvals.decide","approvals.manage","discount.approve"]},
  {id:"commercial",name:"Commercial Settings & Tax",section:"Orders & Controls",code:"Planned",stage:"Planned",actions:["commercial.view","commercial.manage","bank.view"]},
  {id:"reports",name:"Reports & Export",section:"Reporting & Audit",code:"Planned",stage:"Planned",actions:["reports.view","reports.export"]},
  {id:"audit",name:"Activity & Audit History",section:"Reporting & Audit",code:"Planned",stage:"Planned",actions:["audit.view"]}

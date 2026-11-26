@@ -277,25 +277,19 @@ function demoReadiness(q){
  return missing;
 }
 function approvals(q){
- const checks=reviewChecks(q),passed=checks.filter(x=>x[1]).length,d=q.demoApproval||null,active=d?.route,stage=d?.state||"Not requested";
- const route=active||policy.plan(q,totals(q)),p=route.policy,met=route.metrics,missing=policy.locked(q)?[]:[...demoReadiness(q),...route.issues],events=d?.events||[];
- const cards=route.stages.map(s=>{
-  const current=d?.[s.key]||"Not requested",choices=policy.optionsFor(q,s.key),decision=d?.decisions?.[s.key];
-  return '<div class="ma6a-review-card"><div class="ma6a-review-card-title"><b>'+esc(s.label)+'</b><span class="ma6a-demo-state">'+esc(current)+'</span></div><p>Assigned role: <b>'+esc(s.roleName)+'</b></p><small>Eligible at routing: '+esc(s.candidates.map(u=>u.name).join(", ")||"None")+'</small>'+
-   (decision?'<p>Decision by '+esc(decision.reviewerName)+' · '+esc(decision.comment||"No comment")+'</p>':'')+
-   (choices.length?'<button class="btn" type="button" data-action="simulate-review" data-role="'+esc(s.key)+'">Simulate decision</button>':d?.state==="In review"&&current==="Pending"?'<p class="muted">Waiting for earlier stage or eligible reviewer.</p>':'')+'</div>';
- }).join("");
- return panel("Review & Approvals","Policy-based demo routing · independent reviewers","preview-approval","How real approvals work")+
- '<div class="ma6a-demo-approval-intro"><div><span class="ma6a-demo-kicker">BROWSER-ONLY DEMONSTRATION</span><h4>'+esc(p.name)+' · v'+esc(p.version)+'</h4><p>'+(active?"Captured policy for submitted revision.":"Policy preview for selling company / branch.")+' No actual reviewer authenticated.</p><a class="btn" href="approval-policies.html">Manage Approval Policies</a></div><span class="ma6a-demo-state">'+esc(stage)+'</span></div>'+
- '<div class="ma6-kvs">'+kv("Combined discount",met.discount.toFixed(2)+"% / limit "+p.maxDiscount+"%")+kv("Estimated margin",met.margin==null?"Unavailable":met.margin.toFixed(2)+"% / minimum "+p.minMargin+"%")+kv("Invoice total",money(met.total)+" / limit "+money(p.maxTotal))+kv("Exception approval",met.triggers.length?"Required":"Not required")+'</div>'+
- (met.triggers.length?note("<b>Escalation reasons:</b><ul>"+met.triggers.map(x=>"<li>"+esc(x)+"</li>").join("")+"</ul>",true):note("No configured exception threshold triggered."))+
- '<div class="ma6a-review-grid">'+cards+'</div>'+
- (!policy.locked(q)?'<div class="ma6a-review-next"><div><b>'+(missing.length?"Complete readiness and routing":"Ready for demo submission")+'</b><p>'+esc(missing.join(" · ")||"Technical, commercial and any exception reviews are required in order.")+'</p></div>'+
- (missing.length?'<div>'+(demoReadiness(q).length?'<button class="btn" data-action="edit-builder">Complete Draft</button> ':'')+'<a class="btn" href="ma-003-users-roles.html">Check Roles &amp; Access</a></div>':'<button class="btn primary" type="button" data-action="submit-demo-review">Submit Demo Review</button>')+'</div>':
- '<div class="ma6a-review-next"><div><b>Revision locked for review / history</b><p>'+esc(stage==="Demo reviewed"?"All required demo decisions completed.":stage==="In review"?"Decisions must be recorded in stage order.":"Create a new revision for corrections; historical data remains unchanged.")+'</p></div>'+(policy.canRevise(q)?'<button class="btn" type="button" data-action="create-revision">Create New Revision</button>':'')+'</div>')+
+ const checks=reviewChecks(q),passed=checks.filter(x=>x[1]).length,d=q.demoApproval,stage=d?.state||"Not requested",simple=d?.mode==="phase1-master",pending=policy.phase1Pending(q),ready=policy.phase1Reviewed(q);
+ const missing=policy.locked(q)?[]:demoReadiness(q),events=d?.events||[],t=totals(q);
+ const discount=t.subtotal>0?t.discount/t.subtotal*100:0;
+ return panel("Review & Approvals","Phase 1 · Single Master Admin review","preview-approval","How review works")+
+ '<div class="ma6a-demo-approval-intro"><div><span class="ma6a-demo-kicker">BROWSER-ONLY DEMONSTRATION</span><h4>Master Admin review</h4><p>Review the BOQ, prices, taxes and customer terms together. No configurable approval policy or separate reviewer assignment is required in Phase 1.</p></div><span class="ma6a-demo-state">'+esc(stage)+'</span></div>'+
+ '<div class="ma6-kvs">'+kv("Invoice total",money(t.total))+kv("Combined discount",discount.toFixed(2)+"%")+kv("Estimated margin",t.margin==null?"Unavailable":t.margin.toFixed(2)+"%")+kv("Review authority","Master Admin (demo)")+'</div>'+
+ (!policy.locked(q)?'<div class="ma6a-review-next"><div><b>'+(missing.length?"Complete quotation details":"Ready for Master Admin review")+'</b><p>'+esc(missing.join(" · ")||"Submit the current revision for a single demo review.")+'</p></div>'+
+ (missing.length?'<button class="btn" data-action="edit-builder">Complete Draft</button>':'<button class="btn primary" type="button" data-action="submit-demo-review">Submit Demo Review</button>')+'</div>':
+ '<div class="ma6a-review-next"><div><b>'+(ready?"Master Admin review complete (demo)":pending?"Awaiting Master Admin decision":"Revision locked for review / history")+'</b><p>'+esc(ready?"Continue to PDF & Response for simulated dispatch.":pending?"Review the quotation and choose a decision.":!simple&&d?.state==="In review"?"Prior policy-based review retained. Create a new revision to use the Phase 1 review.":"Create a new revision for corrections; historical data is preserved.")+'</p></div>'+
+ (pending?'<button class="btn primary" data-action="simulate-review" data-role="master">Review Quotation</button>':ready?'<button class="btn primary" data-action="go-demo-documents">Continue to PDF &amp; Response</button>':policy.canRevise(q)?'<button class="btn" data-action="create-revision">Create New Revision</button>':'')+'</div>')+
  '<details class="ma6a-quote-more"><summary>Quotation checks ('+passed+' of '+checks.length+')</summary><div class="ma6-checklist">'+checks.map(([title,done,desc])=>'<div class="ma6-check-item"><span class="ma6-check-icon">'+(done?'✓':'!')+'</span><div><b>'+esc(title)+'</b><small>'+esc(desc)+'</small></div></div>').join("")+'</div></details>'+
  '<details class="ma6a-quote-more"><summary>Demo review history ('+events.length+')</summary>'+(events.length?'<div class="ma6a-review-history">'+[...events].reverse().map(ev=>'<div class="ma6a-review-event"><strong>'+esc(ev.action)+'</strong><small>'+esc(ev.at)+' · '+esc(ev.actor)+' · '+esc(ev.revision||q.rev)+'</small><p>'+esc(ev.comment||"")+'</p></div>').join("")+'</div>':blank("No demo review actions recorded yet."))+'</details>'+
- note("Production requires authenticated permission enforcement, approved policy, audit and immutable storage. These are simulated decisions only.",true);
+ note("Phase 3: configurable approval rules, separate approvers, financial thresholds and escalation. The present review is simulated and does not authorize a real offer.",true);
 }
 function revisions(q){
  const snapshots=(db.revisionSnapshots||[]).filter(x=>x.quoteId===q.id).slice().reverse(),metadata=(db.revisions||[]).filter(x=>x.quoteId===q.id&&x.revision!==q.rev&&!snapshots.some(s=>s.rev===x.revision));
@@ -324,7 +318,7 @@ function paper(q){
 function documents(q){
  const dispatch=q.demoDispatch||null, events=dispatch?.events||[];
  const simulated=dispatch?.state==="Sent in demo", historical=["Sent","Won","Lost"].includes(q.status);
- const canSimulate=q.status==="Draft"&&!simulated&&policy.reviewed(q)&&demoReadiness(q).length===0;
+ const canSimulate=q.status==="Draft"&&!simulated&&policy.phase1Reviewed(q)&&demoReadiness(q).length===0;
  const canRespond=simulated||q.status==="Sent";
  const currentResponse=dispatch?.response?.decision?dispatch.response.decision+" (demo)":q.response||"Not recorded";
  const dispatchLabel=simulated?"Sent in demo":historical?"Historical sample (unverified)":"Not dispatched";
@@ -340,7 +334,7 @@ function documents(q){
  '<p>Production: lock an authorized revision, create the issued PDF, and capture recipient, channel and proof of sending.</p>'+
  (canSimulate?'<button type="button" class="btn primary" data-action="open-demo-dispatch">Simulate dispatch</button>':
  simulated?'<div class="ma6a-dispatch-meta"><b>Recipient:</b> '+esc(dispatch.recipient||"Not recorded")+'<br><b>Channel:</b> '+esc(dispatch.channel||"Not recorded")+'<br><b>Reference:</b> '+esc(dispatch.reference||"Not recorded")+'<br><b>Date:</b> '+esc(dispatch.date||"Not recorded")+'</div>':
- q.status==="Draft"?'<div class="ma6a-dispatch-help">Complete all required demo reviews and essential terms first. <button type="button" class="btn" data-action="go-demo-approvals">Open Reviews</button></div>':
+ q.status==="Draft"?'<div class="ma6a-dispatch-help">Complete the Master Admin demo review and essential terms first. <button type="button" class="btn" data-action="go-demo-approvals">Open Reviews</button></div>':
  '<p class="ma6a-dispatch-muted">Existing sample status only. No actual dispatch or authorization can be verified here.</p>')+
  '</section>'+
  '<section class="ma6a-dispatch-card"><div class="ma6a-dispatch-card-title"><b>2 · Customer response</b><span class="ma6a-demo-state">'+esc(currentResponse)+'</span></div>'+
@@ -503,7 +497,7 @@ function reviewBuilder(q){
  '<small>'+(ready?'Customer, buyer and BOQ are structurally present.':'Review missing customer, buyer, product or quantities.')+'</small></div></div>'+
  '<div class="ma6-check-item"><span class="ma6-check-icon">'+(termsFinalized?'✓':'!')+'</span><div><b>'+(termsFinalized?'Terms entered':'Commercial terms need confirmation')+'</b>'+
  '<small>Validity, payment and execution conditions should be agreed before issue.</small></div></div>'+
- '<div class="ma6-check-item"><span class="ma6-check-icon">!</span><div><b>Technical and commercial approval pending</b>'+
+ '<div class="ma6-check-item"><span class="ma6-check-icon">!</span><div><b>Master Admin review pending</b>'+
  '<small>Engineering, catalog rates, discounts and tax policy are not approved by this demo.</small></div></div>'+
  '<div class="ma6-check-item"><span class="ma6-check-icon">!</span><div><b>Issuing or sending disabled</b>'+
  '<small>An approved, locked quotation revision is required in production.</small></div></div></div>'+
@@ -513,7 +507,7 @@ function reviewBuilder(q){
  '<div class="ma6a-quote-review-actions"><button type="button" class="btn" data-action="preview-builder">Preview customer layout</button>'+
  '<span class="ma6-tag">Draft only · Not issued</span></div>'+
  '<div class="ma6a-quote-draft-hint"><b>Save Draft is available with unfinished terms.</b> Leave validity or payment/delivery details incomplete while working; an authorized approval and issue workflow must block them later.</div>'+
- note('Production sequence: Save Draft → technical/pricing validation → policy approvals → freeze revision → issue PDF → dispatch → customer response. Order registration is separate.',true);
+ note('Phase 1 demo sequence: Save Draft → Master Admin review → lock revision → PDF preview / simulated dispatch → customer response. Order registration is separate.',true);
 }
 const stepContent=[contextBuilder,boqBuilder,pricingBuilder,finalQuotationBuilder,reviewBuilder];
 function renderBuilder(){

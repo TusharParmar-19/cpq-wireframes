@@ -1,0 +1,22 @@
+// node docs/v2/phase1-review-regression.test.cjs
+const fs=require("node:fs"),path=require("node:path"),W={};
+new Function("window",fs.readFileSync(path.join(__dirname,"cpq-approval-policy.js"),"utf8"))(W);
+const P=W.CPQ_POLICY,checks=[],ok=(v,m)=>{if(!v)throw Error("FAIL "+m);checks.push(m);},throws=(fn,m)=>{let caught=false;try{fn()}catch(e){caught=true}ok(caught,m);};
+const blank=()=>({id:"QT-025",rev:"R0",status:"Draft",lines:[{id:"L",quantity:1,unitPrice:267000}],payment:"Advance"});
+let q=blank();
+ok(!P.locked(q)&&!P.phase1Reviewed(q),"draft editable, not approved");
+P.phase1Start(q,"now");ok(P.phase1Pending(q)&&P.locked(q),"start without policy or role masters");
+throws(()=>P.phase1Start(q,"now"),"duplicate submission blocked");
+throws(()=>P.phase1Decide(q,"changes","","now"),"reason required");
+P.phase1Decide(q,"changes","Correct pricing","now");ok(P.locked(q)&&!P.phase1Reviewed(q),"return locks old revision");
+const t={subtotal:287000,discount:20000,taxable:267000,tax:35336.53,total:302337,totalCost:223000,profit:44000,margin:16.48,commercial:{customerPayable:277337}};
+const o=P.revise(q,[],"Correct pricing",t,{},"now","Master Admin");ok(o.next.rev==="R1"&&o.next.id===q.id&&!P.locked(o.next)&&!o.next.demoApproval,"fresh revision");
+ok(o.snapshot.amounts.total===302337&&o.snapshot.quote.demoApproval.state==="Changes requested","snapshot retained");
+o.next.lines[0].unitPrice++;ok(o.snapshot.quote.lines[0].unitPrice===267000,"no mutation of historical quote");
+q=o.next;P.phase1Start(q,"now");P.phase1Decide(q,"approved","","now");ok(P.phase1Reviewed(q)&&P.locked(q),"single approval enables demo dispatch");
+throws(()=>P.phase1Decide(q,"approved","","now"),"second decision blocked");
+q.lines[0].unitPrice++;ok(!P.phase1Reviewed(q),"material edits invalidate approval");
+q=blank();P.phase1Start(q,"now");P.phase1Decide(q,"rejected","Invalid offer","now");ok(P.locked(q)&&!P.phase1Reviewed(q),"rejected revision cannot dispatch");
+q=blank();q.demoApproval={state:"In review",route:{policy:{name:"Old policy"}}};ok(!P.phase1Pending(q)&&!P.phase1Reviewed(q),"legacy unfinished route not silently approved");
+ok(!P.canRevise({...q,demoDispatch:{response:{decision:"Accepted"}}}),"accepted quote protected");
+console.log(checks.length+" Phase 1 review checks passed",checks);
