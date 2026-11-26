@@ -83,7 +83,7 @@ function solarWarnings(c){
  return a;
 }
 function review(c){
- const findings=window.CPQ_PRODUCT_RULES.evaluate(c.items);
+ const findings=window.CPQ_PRODUCT_RULES.workflowEvaluate(c.items);
  const errors=[...req.errors(c),...findings.filter(x=>x.severity==="block").map(x=>x.message)];
  if(!String(c.name||"").trim())errors.push("Enter a configuration name");
  if(!c.items.length)errors.push("Add at least one product or service");

@@ -96,14 +96,14 @@ window.CPQ_MA003_PAGE_CATALOG=[
  {id:"quote-revisions",name:"Quotation Versions & History",section:"Quotations",code:"MA-006",stage:"Available",actions:["quotes.view","quotes.revise"]},
  {id:"quote-pdf",name:"Quotation PDF & Issue",section:"Quotations",code:"MA-006",stage:"Available",actions:["quotes.view","quotes.pdf","quotes.issue","documents.download"]},
  {id:"quote-dispatch",name:"Quotation Dispatch & Response",section:"Quotations",code:"MA-006",stage:"Available",actions:["quotes.view","quotes.dispatch","quotes.response"]},
- {id:"product-rules",name:"Product Catalog & Configuration Rules",section:"Configurations",code:"Control",stage:"Available",actions:["catalog.view","configuration.rules.manage"]},
+ {id:"product-rules",name:"Configuration Rules (Phase 3)",section:"Configurations",code:"Phase 3",stage:"Planned",actions:["catalog.view","configuration.rules.manage"]},
  {id:"vendor-master",name:"Vendors / Suppliers",section:"Procurement & Files",code:"Vendor Master",stage:"Available",actions:["vendors.view","vendors.create","vendors.edit","vendors.archive","vendors.documents.manage"]},
  {id:"vendor-quotations",name:"Vendor Quotations (received offers)",section:"Procurement & Files",code:"Vendor Quotations",stage:"Available",actions:["vendorquotes.view","vendorquotes.create","vendorquotes.edit","vendorquotes.verify","vendorquotes.archive","cost.view"]},
  {id:"vendor-rfqs",name:"Advanced RFQ & Supplier Comparison (Phase 2)",section:"Procurement & Files",code:"Planned",stage:"Planned",actions:["rfq.view","rfq.create","rfq.send","rfq.compare","cost.view"]},
  {id:"documents",name:"Documents & Evidence",section:"Procurement & Files",code:"Planned",stage:"Planned",actions:["documents.view","documents.upload","documents.download","documents.delete"]},
  {id:"orders",name:"Orders & Registration",section:"Orders & Controls",code:"MA-007",stage:"Available",actions:["orders.view","orders.edit","orders.register","records.archive"]},
  {id:"approvals",name:"Advanced Approval Queue & Policy (Phase 3)",section:"Orders & Controls",code:"Phase 3",stage:"Planned",actions:["approvals.view","approvals.decide","approvals.manage","discount.approve"]},
- {id:"commercial",name:"Commercial Settings & Tax",section:"Orders & Controls",code:"Planned",stage:"Planned",actions:["commercial.view","commercial.manage","bank.view"]},
+ {id:"commercial",name:"Commercial Settings",section:"Orders & Controls",code:"Control",stage:"Available",actions:["commercial.view","commercial.manage"]},
  {id:"reports",name:"Reports & Export",section:"Reporting & Audit",code:"Planned",stage:"Planned",actions:["reports.view","reports.export"]},
  {id:"audit",name:"Activity & Audit History",section:"Reporting & Audit",code:"Planned",stage:"Planned",actions:["audit.view"]}
 ];

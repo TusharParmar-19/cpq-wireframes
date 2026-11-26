@@ -240,7 +240,7 @@ function reviewChecks(q){
  return [
  ["Buyer / internal scope",Boolean(buyer(q.buyerId)&&entity(q.companyId)&&branch(q.branchId)),"Customer legal buyer and selling branch identified"],
  ["BOQ lines",q.lines.length>0&&q.lines.every(l=>!custom.errors(l).length),"At least one item, valid quantity and selling rate"],
- ["Config rules",q.lines.every(l=>l.type!=="config"||configCheck(product(l.productId),l.options).ok)&&!window.CPQ_PRODUCT_RULES.quotation(q).some(x=>x.severity==="block"),"Basic options and configured demo model selection rules; engineering approval remains separate"],
+ ["Config rules",q.lines.every(l=>l.type!=="config"||configCheck(product(l.productId),l.options).ok)&&!window.CPQ_PRODUCT_RULES.workflowQuotation(q).some(x=>x.severity==="block"),"Basic option checks; configurable engineering rules deferred to Phase 3"],
  ["Terms",termsOK,"Validity, payment and delivery terms must be finalized before issue; placeholders are not approval"],
  ["Pricing/discount policy",false,"Real tax, pricing and approvals are not evaluated in this demo"],
  ["Imported catalog prices",!q.lines.some(l=>l.pricingReview),"Seeded rates are illustration-only. Validate manufacturer/SKU, costs, selling price and exceptions."],
@@ -267,7 +267,7 @@ function demoReadiness(q){
  if(q.lines?.some(l=>!l.includedInParent&&!(Number(l.unitPrice)>0)))
   missing.push("Enter a positive fictional sample selling rate for each billable line; included sub-services remain ₹0");
  if(q.lines.some(l=>l.type==="config"&&!configCheck(product(l.productId),l.options).ok))missing.push("Complete product option selections");
- missing.push(...window.CPQ_PRODUCT_RULES.quotation(q).filter(x=>x.severity==="block").map(x=>x.message));
+ missing.push(...window.CPQ_PRODUCT_RULES.workflowQuotation(q).filter(x=>x.severity==="block").map(x=>x.message));
  if(!reviewChecks(q)[3][1])missing.push(q.directOrderDraft?"Payment and delivery terms":"Validity, payment and delivery terms");
  if(totals(q).missing||totals(q).margin===null)missing.push("Complete internal costs and profit margin.");
  if(q.pricing){
@@ -436,7 +436,7 @@ function catalogPicker(q,b){
  '<div class="ma6-empty" id="quote-add-no-matches"'+(matches.length?' hidden':'')+'>No matching active catalog products. Check the model/SKU or try a broader search.</div>'+
  '</div></div><div class="ma6-config-form" id="quote-add-selection">'+selection+'</div></div>';
 }
-function ruleNotices(q){const f=window.CPQ_PRODUCT_RULES.quotation(q);return f.length?note("<b>Product selection checks (demo)</b><ul>"+f.map(x=>"<li>"+esc((x.severity==="block"?"Resolve before review: ":"Warning: ")+x.message)+"</li>").join("")+"</ul>",f.some(x=>x.severity==="block")):"";}
+function ruleNotices(q){const f=window.CPQ_PRODUCT_RULES.workflowQuotation(q);return f.length?note("<b>Product selection checks (demo)</b><ul>"+f.map(x=>"<li>"+esc((x.severity==="block"?"Resolve before review: ":"Warning: ")+x.message)+"</li>").join("")+"</ul>",f.some(x=>x.severity==="block")):"";}
 function boqBuilder(q,b){
  const source=q.sourceConfigId?
  '<div class="ma6-note"><b>Imported configuration:</b> '+esc(q.sourceConfigName||q.sourceConfigId)+
@@ -471,13 +471,12 @@ function finalQuotationBuilder(q){
  '<p>Only offered rates, selected customer charges, discount, tax and customer terms appear here. Internal costs and margins stay in Pricing &amp; Costing.</p>'+
  '<button type="button" class="btn" data-step="2">Edit Pricing &amp; Costing</button></div>'+financialRows(q)+'</div>'+
  '<div class="ma6-section-sub"><h4>Customer-facing terms</h4></div>'+
+ (q.commercialSettingsVersion!==undefined?note("Initial defaults: "+(q.commercialSettingsVersion?"Commercial Settings v"+q.commercialSettingsVersion:"built-in sample defaults")+". Editable for this draft; settings changes never update existing saved terms."):note("Existing draft terms are retained. Select a template only if you want to replace payment text."))+
  '<div class="ma6-field-grid">'+(q.directOrderDraft?"":formInput("validUntil","Valid until (required before issue)",isoDate(q.validUntil),"date"))+
  '<div class="ma6-field"><label>Currency (demo)</label><input value="'+esc(q.currency)+'" readonly></div>'+
  '<div class="ma6-field full"><label for="quote-payment-preset">Payment terms template (optional)</label>'+
- '<select id="quote-payment-preset" data-payment-preset><option value="">Select a sample template...</option>'+
- '<option value="50% advance; 50% before dispatch">50% advance / 50% before dispatch</option>'+
- '<option value="30% advance; 70% after completion">30% advance / 70% after completion</option>'+
- '<option value="Net 30 days from invoice">Net 30 days</option></select></div>'+
+ '<select id="quote-payment-preset" data-payment-preset><option value="">Select a payment template...</option>'+
+ window.CPQ_COMMERCIAL_SETTINGS.paymentOptions().map(p=>'<option value="'+esc(p.terms)+'">'+esc(p.name)+'</option>').join("")+'</select><small>Optional: selecting a template copies its text into this draft. <a href="commercial-settings.html" target="_blank" rel="noopener">Manage templates</a>.</small></div>'+
  formArea("payment","Payment terms",q.payment)+formArea("delivery","Delivery / execution terms",q.delivery)+'</div>'+
  '<details class="ma6a-quote-more"><summary>Warranty, exclusions & internal notes</summary><div class="ma6-field-grid">'+
  formArea("warranty","Warranty / support",q.warranty)+formArea("exclusions","Exclusions",q.exclusions)+

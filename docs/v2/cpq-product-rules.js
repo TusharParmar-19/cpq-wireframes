@@ -34,5 +34,10 @@ function quotation(q){
  if(q?.status!=="Draft"||q?.demoApproval||q?.demoDispatch)return [];
  return evaluate(q.lines);
 }
-W.CPQ_PRODUCT_RULES={load,models,save,active,evaluate,capture,quotation};
+// Phase 3 deferred. Retain the isolated engine and saved definitions.
+const workflowEnabled=false;
+const workflowEvaluate=lines=>workflowEnabled?evaluate(lines):[];
+const workflowQuotation=q=>workflowEnabled?quotation(q):[];
+const workflowCapture=q=>workflowEnabled?capture(q):{rules:[],capturedAt:new Date().toISOString()};
+W.CPQ_PRODUCT_RULES={load,models,save,active,evaluate,capture,quotation,workflowEnabled,workflowEvaluate,workflowQuotation,workflowCapture};
 })();

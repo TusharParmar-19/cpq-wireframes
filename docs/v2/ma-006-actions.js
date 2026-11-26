@@ -45,6 +45,7 @@ function setProduct(b,prodId){
 }
 function newBuilder(sourceId="",direct=false){
  const q=makeBlank();if(direct)q.directOrderDraft=true;
+ window.CPQ_COMMERCIAL_SETTINGS.applyToNew(q,new Date(),direct);
  const src=opportunity(sourceId);
  if(src){
   q.customerId=src.customerId;q.buyerId=src.buyerId;q.contactId=src.contactId;q.siteId=src.siteId;
@@ -273,7 +274,7 @@ function submitDemoReview(){
  const missing=a.demoReadiness(q);
  if(missing.length){explain("Complete quotation details","<ul>"+missing.map(x=>"<li>"+esc(x)+"</li>").join("")+"</ul>");return;}
  try{
-  const candidate=copy(q);candidate.productRuleSnapshot=window.CPQ_PRODUCT_RULES.capture(candidate);if(window.CPQ_PRODUCT_RULES.quotation(candidate).some(x=>x.severity==="block"))throw Error("Resolve the latest product selection rules first.");candidate.revisionIdentity=policy.identity(candidate,labels(q));policy.phase1Start(candidate,demoStamp());
+  const candidate=copy(q);candidate.productRuleSnapshot=window.CPQ_PRODUCT_RULES.workflowCapture(candidate);if(window.CPQ_PRODUCT_RULES.workflowQuotation(candidate).some(x=>x.severity==="block"))throw Error("Resolve the latest product selection rules first.");candidate.revisionIdentity=policy.identity(candidate,labels(q));policy.phase1Start(candidate,demoStamp());
   candidate.review="Master Admin review submitted (demo)";candidate.lastUpdated=demoDate()+" (demo)";
   persistCandidate(q,candidate);state.tab="approvals";render();toast("Revision locked for Master Admin demo review.");
  }catch(error){explain("Review cannot start",esc(error.message));}
