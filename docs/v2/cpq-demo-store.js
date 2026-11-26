@@ -14,7 +14,8 @@
   services:"CPQ_SERVICE_MASTER",
    vendors:"CPQ_VENDOR_MASTER",
    vendorOffers:"CPQ_VENDOR_OFFERS",
-  quotations:"CPQ_MA006_DATA"
+  quotations:"CPQ_MA006_DATA",
+  approvalPolicies:"CPQ_APPROVAL_POLICY_DATA"
  };
  const copy=x=>JSON.parse(JSON.stringify(x));
  function read(){

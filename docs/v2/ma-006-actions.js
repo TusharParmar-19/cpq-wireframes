@@ -6,7 +6,7 @@ const {$,esc,db,master,org,staff,enquiries,state,quote,customer,buyer,contact,si
 let toastTimer=null,priorFocus=null;
 const copy=x=>JSON.parse(JSON.stringify(x));
 const flow=window.CPQ_FLOW,custom=window.CPQ_CUSTOM_BOQ,req=window.CPQ_REQUIREMENTS;
-const pricing=window.CPQ_PRICING;
+const pricing=window.CPQ_PRICING,policy=window.CPQ_POLICY;
 const demoDate=()=>new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"});
 const statusDraft="Draft";
 const toISO=v=>{
@@ -62,13 +62,13 @@ function newBuilder(sourceId=""){
 }
 function existingBuilder(mode="edit",step=0){
  const original=quote(state.selected);if(!original)return;
- if(mode==="edit"&&original.demoDispatch?.state==="Sent in demo"){explain("Demo snapshot locked","This quote has a simulated dispatch record. A sent revision must not be silently edited. In production, create a controlled new revision; Duplicate as Draft creates a separate quote, not a revision.");return;}
+ if(mode==="edit"&&policy.locked(original)){explain("Revision locked","Use Create New Revision to preserve the submitted, reviewed, returned or dispatched revision.");return;}
  if(mode==="edit"&&original.status!==statusDraft){
   explain("Editing not available","Only permitted, unissued draft revisions may be edited. Sent, accepted and awaiting-approval quotations require a controlled new revision / duplication flow.");return;
  }
  const q=copy(original);q.validUntil=toISO(q.validUntil);if(mode==="duplicate"){
   q.id="";q.rev="R0";q.status=statusDraft;q.date=demoDate();q.review="Not submitted";q.response="Not issued";q.responseNote="";
-  q.versionNotes="New draft based on an existing sample";q.lastUpdated=demoDate()+" (demo)";delete q.demoApproval;delete q.demoDispatch;
+  q.versionNotes="New draft based on an existing sample";q.lastUpdated=demoDate()+" (demo)";delete q.demoApproval;delete q.demoDispatch;delete q.revisionIdentity;
  }
  const b={quote:q,isNew:mode==="duplicate",step,productId:"",options:{},quantity:1,addPickerOpen:!q.lines.length,catalogSearch:""};
  const existingConfig=q.lines.find(l=>l.type==="config"&&product(l.productId));
@@ -115,7 +115,7 @@ function saveBuilder(){
   q.id="QT-2026-"+String(max+1).padStart(3,"0");q.rev="R0";db.quotations.unshift(copy(q));
  }else{
   const idx=db.quotations.findIndex(x=>x.id===q.id);
-  if(idx<0||db.quotations[idx].status!=="Draft"){explain("Draft not available","This sample quotation is no longer an editable draft.");return;}
+  if(idx<0||policy.locked(db.quotations[idx])||db.quotations[idx].rev!==q.rev){explain("Draft not available","This revision is no longer editable. Reopen the current revision.");return;}
   const before=db.quotations[idx];
    const material=["title","customerId","buyerId","contactId","siteId","projectId","opportunityId","companyId","branchId","ownerId","validUntil","discount","taxRate","taxMode","taxRegion","commercial","payment","delivery","warranty","exclusions","notes","requirementPack","lines","pricing"];
    if(before.demoApproval&&material.some(k=>JSON.stringify(before[k])!==JSON.stringify(q[k]))){
@@ -240,47 +240,68 @@ function updateBuilderField(field,value){
  }
 }
 function demoStamp(){return new Date().toLocaleString("en-GB",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});}
+function labels(q){return {customer:customer(q.customerId)?.name,buyer:buyer(q.buyerId)?.name,seller:entity(q.companyId)?.name,branch:branch(q.branchId)?.name};}
+function persistCandidate(q,candidate){
+ const next=copy(db);next.quotations[next.quotations.findIndex(x=>x.id===q.id)]=candidate;
+ if(!window.CPQ_SHARED.save("quotations",next))throw Error("Browser storage save failed.");
+ Object.assign(q,candidate);
+}
 function submitDemoReview(){
- const q=quote(state.selected);if(!q||q.status!=="Draft")return;
- const missing=a.demoReadiness(q);
- if(missing.length){
-  explain("Complete the draft first","The sample approval request needs:<ul>"+missing.map(x=>"<li>"+esc(x)+"</li>").join("")+"</ul><p>Use Continue Editing to complete the missing fields. Real technical and pricing policies are not executed in this demo.</p>");return;
- }
- if(q.demoApproval?.state==="In review"||q.demoApproval?.state==="Demo reviewed"){toast("The current sample review is already active or completed.");return;}
- const events=[...(q.demoApproval?.events||[])];
- events.push({action:"Submitted for demo review",actor:"Quote owner (sample)",at:demoStamp(),revision:q.rev,comment:"Technical and commercial review requested. No real reviewer was contacted."});
- q.demoApproval={state:"In review",technical:"Pending",commercial:"Pending",events};
- q.review="Sample review submitted · not authorized";q.lastUpdated=demoDate()+" (demo)";
- state.tab="approvals";render();toast("Demo review requested. No real approver was notified.");
+ const q=quote(state.selected);if(!q||policy.locked(q))return;
+ const route=policy.plan(q,a.totals(q)),missing=[...a.demoReadiness(q),...route.issues];
+ if(missing.length){explain("Complete readiness and approval routing","<ul>"+missing.map(x=>"<li>"+esc(x)+"</li>").join("")+"</ul>");return;}
+ try{
+  const candidate=copy(q);candidate.revisionIdentity=policy.identity(candidate,labels(q));policy.start(candidate,route,demoStamp());
+  candidate.review="Sample review submitted · not authorized";candidate.lastUpdated=demoDate()+" (demo)";
+  persistCandidate(q,candidate);state.tab="approvals";render();toast("Policy and revision locked for demo review.");
+ }catch(error){explain("Review cannot start",esc(error.message));}
 }
 function openDemoDecision(role){
- const q=quote(state.selected);
- if(!["technical","commercial"].includes(role)||!q?.demoApproval||q.demoApproval.state!=="In review"||q.demoApproval[role]!=="Pending")return;
- const title=role==="technical"?"Technical review":"Commercial review";
- modal(title+" · Demo decision","Browser simulation · No authenticated approver",
-  '<div class="ma6-note"><b>Demo only.</b> Choose a simulated decision to test the workflow. It will not validate engineering, pricing or permissions, and cannot authorize issuing a quote.</div>'+
-  '<div class="ma6-field ma6a-review-comment"><label for="demo-review-comment">Reviewer comments (required for changes / rejection)</label>'+
-  '<textarea id="demo-review-comment" maxlength="400" rows="3" placeholder="What should be corrected or checked?"></textarea></div>'+
-  '<div class="ma6a-demo-decision-buttons">'+
-  '<button type="button" class="btn" data-action="record-demo-review" data-role="'+role+'" data-decision="changes">Request changes</button>'+
-  '<button type="button" class="btn" data-action="record-demo-review" data-role="'+role+'" data-decision="rejected">Reject (demo)</button>'+
-  '<button type="button" class="btn primary" data-action="record-demo-review" data-role="'+role+'" data-decision="approved">Mark demo approved</button></div>');
+ const q=quote(state.selected),choices=q?policy.optionsFor(q,role):[];
+ if(!choices.length){explain("Reviewer unavailable","Check role grants, scope and earlier stages.");return;}
+ const stage=q.demoApproval.route.stages.find(s=>s.key===role);
+ modal(stage.label+" · Demo decision","Browser simulation · No authenticated approver",
+ '<div class="ma6-note">Select an eligible employee to simulate the decision. This is not their actual approval.</div>'+
+ '<div class="ma6-field"><label for="demo-reviewer">Simulated reviewer *</label><select id="demo-reviewer"><option value="">Select reviewer</option>'+choices.map(u=>'<option value="'+esc(u.id)+'">'+esc(u.name)+'</option>').join("")+'</select></div>'+
+ '<div class="ma6-field"><label for="demo-review-comment">Reviewer comments (required for changes / rejection)</label><textarea id="demo-review-comment" maxlength="400" rows="3"></textarea></div>'+
+ '<div class="ma6a-demo-decision-buttons">'+[["changes","Request changes"],["rejected","Reject (demo)"],["approved","Mark demo approved"]].map(([k,l])=>'<button type="button" class="btn '+(k==="approved"?"primary":"")+'" data-action="record-demo-review" data-role="'+esc(role)+'" data-decision="'+k+'">'+l+'</button>').join("")+'</div>');
 }
 function recordDemoDecision(role,decision){
- const q=quote(state.selected),d=q?.demoApproval;
- if(!d||q.status!=="Draft"||d.state!=="In review"||d[role]!=="Pending"||!["approved","changes","rejected"].includes(decision))return;
- const comments=$("demo-review-comment"),comment=comments?.value.trim()||"";
- if(decision!=="approved"&&!comment){toast("Enter a reason for requesting changes or rejecting.");comments?.focus();return;}
- const label=decision==="approved"?"Demo approved":decision==="changes"?"Changes requested":"Rejected";
- d[role]=label;
- d.events.push({action:(role==="technical"?"Technical":"Commercial")+" · "+label,actor:"Simulated "+role+" reviewer",at:demoStamp(),revision:q.rev,comment});
- if(decision==="changes")d.state="Changes requested";
- else if(decision==="rejected")d.state="Rejected";
- else if(d.technical==="Demo approved"&&d.commercial==="Demo approved")d.state="Demo reviewed";
- q.review=d.state+" · sample only, not authorized";q.lastUpdated=demoDate()+" (demo)";
- closeModal();state.tab="approvals";render();toast(label+" recorded for demonstration only.");
+ const q=quote(state.selected);if(!q)return;
+ try{
+  const candidate=copy(q),status=policy.decide(candidate,role,decision,$("demo-reviewer")?.value,$("demo-review-comment")?.value.trim()||"",demoStamp());
+  candidate.review=status+" · sample only, not authorized";candidate.lastUpdated=demoDate()+" (demo)";
+  persistCandidate(q,candidate);closeModal();state.tab="approvals";render();toast("Demo decision recorded.");
+ }catch(error){toast(error.message);}
 }
-/* Everything below is a simulated employee workflow. No email, PDF issue or role authorization occurs. */
+function openRevision(){
+ const q=quote(state.selected);if(!policy.canRevise(q)){explain("Revision unavailable","Accepted and historical records cannot be revised here.");return;}
+ modal("Create New Revision",q.id+" / "+q.rev+" · Same quotation ID",
+ '<div class="ma6-note">Preserve the current revision in read-only browser history. New draft inherits captured rates, tax and terms; fresh approval is required.</div>'+
+ '<div class="ma6-field"><label for="revision-reason">Reason for revision *</label><textarea id="revision-reason" maxlength="400" rows="3" placeholder="Customer requested revised scope / pricing"></textarea></div><button class="btn primary" data-action="record-revision">Create Revision</button>');
+}
+function recordRevision(){
+ const q=quote(state.selected);if(!q)return;
+ try{
+  const result=policy.revise(q,db.revisionSnapshots||[],$("revision-reason")?.value,a.totals(q),labels(q),demoStamp(),employee(q.ownerId)?.name||"Demo user");
+  const next=copy(db);next.revisionSnapshots=[...(next.revisionSnapshots||[]),result.snapshot];next.quotations[next.quotations.findIndex(x=>x.id===q.id)]=result.next;
+  if(!window.CPQ_SHARED.save("quotations",next))throw Error("Cannot save revision: browser storage full or unavailable.");
+  db.revisionSnapshots=next.revisionSnapshots;db.quotations=next.quotations;closeModal();state.tab="revisions";render();toast("Created "+result.next.id+" / "+result.next.rev+"; prior revision preserved.");
+ }catch(error){toast(error.message);}
+}
+function historyView(rev,compare=false){
+ const q=quote(state.selected),s=(db.revisionSnapshots||[]).find(x=>x.quoteId===q?.id&&x.rev===rev);if(!s)return;
+ if(compare){
+  const c=policy.compare(s,q,a.totals(q)),fmt=(v,percent)=>v==null?"Not available":percent?Number(v).toFixed(2)+"%":policy.money(v);
+  modal("Revision comparison",q.id+" · "+s.rev+" → "+q.rev,a.table(["Commercial field",s.rev,q.rev,"Difference"],c.rows.map(x=>"<tr><td>"+esc(x.label)+"</td><td>"+esc(fmt(x.before,x.percent))+"</td><td>"+esc(fmt(x.after,x.percent))+"</td><td>"+esc(fmt(x.delta,x.percent))+"</td></tr>"))+
+  '<h4>BOQ changes</h4>'+a.table(["Item","Change",s.rev,q.rev],c.lines.map(x=>"<tr><td>"+esc(x.name)+"</td><td>"+esc(x.change)+"</td><td>"+esc(x.before)+"</td><td>"+esc(x.after)+"</td></tr>"))+'<p>Changed terms: '+esc(c.terms.join(", ")||"None")+'</p>');return;
+ }
+ const old=s.quote,events=old.demoApproval?.events||[],dispatch=old.demoDispatch?.events||[];
+ modal("Historical revision snapshot",q.id+" / "+s.rev+" · Read-only demo record",
+ '<div class="ma6-note"><b>Archived:</b> '+esc(s.archivedAt)+' · '+esc(s.reason)+'<br><b>Customer:</b> '+esc(old.revisionIdentity?.customer)+' · <b>Seller:</b> '+esc(old.revisionIdentity?.seller)+' / '+esc(old.revisionIdentity?.branch)+'<br><b>Saved invoice:</b> '+policy.money(s.amounts.total)+' · <b>Saved customer payable:</b> '+policy.money(s.amounts.customerPayable)+'</div>'+
+ paper(old)+'<h4>Historical approval and dispatch evidence</h4>'+[...events,...dispatch].map(x=>'<p><b>'+esc(x.action)+'</b> · '+esc(x.actor)+' · '+esc(x.at)+'<br>'+esc(x.comment||"")+'</p>').join("")+(!events.length&&!dispatch.length?'<p>No simulated review / dispatch events recorded.</p>':''));
+}
+/* All decisions remain simulated. */
 function localISO(){
  const d=new Date();
  return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-");
@@ -288,7 +309,7 @@ function localISO(){
 function openDemoDispatch(){
  const q=quote(state.selected);
  if(!q||q.status!=="Draft"||q.demoDispatch?.state==="Sent in demo")return;
- if(q.demoApproval?.state!=="Demo reviewed"||a.demoReadiness(q).length){
+ if(!policy.reviewed(q)||a.demoReadiness(q).length){
   explain("Review required before dispatch","First complete the quote and record both sample review decisions under Review & Approvals. The demo still cannot authorize or issue an actual quotation.");return;
  }
  modal("Simulate quotation dispatch","Browser-only · No PDF issued or message sent",
@@ -304,7 +325,7 @@ function openDemoDispatch(){
 function recordDemoDispatch(){
  const q=quote(state.selected);
  if(!q||q.status!=="Draft"||q.demoDispatch?.state==="Sent in demo"||
-    q.demoApproval?.state!=="Demo reviewed"||a.demoReadiness(q).length)return;
+    !policy.reviewed(q)||a.demoReadiness(q).length)return;
  const recipient=$("demo-send-recipient")?.value.trim()||"";
  const channel=$("demo-send-channel")?.value||"";
  const date=$("demo-send-date")?.value||"";
@@ -396,6 +417,9 @@ function handleAction(action,target){
   try{refreshCustomerScope(state.builder.quote);}catch(error){explain("Cannot refresh links",esc(error.message));}
   return;
  }
+ if(action==="create-revision"){openRevision();return;}
+ if(action==="record-revision"){recordRevision();return;}
+ if(action==="view-revision"||action==="compare-revision"){historyView(target.dataset.revision,action==="compare-revision");return;}
  if(action==="go-demo-approvals"){state.tab="approvals";render();return;}
  if(action==="open-demo-dispatch"){openDemoDispatch();return;}
  if(action==="record-demo-dispatch"){recordDemoDispatch();return;}
