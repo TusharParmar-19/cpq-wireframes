@@ -748,7 +748,7 @@ if(configRef){
   newBuilder();
   explain("Configuration handoff unavailable","This demonstration cannot validate the supplied configuration data. Please use the Product Configuration page to select a sample solution, or start a new draft quotation.");
  }
-}else if(quoteRef&&quote(quoteRef)){state.selected=quoteRef;state.tab="summary";render();}
+}else if(quoteRef&&quote(quoteRef)){state.selected=quoteRef;state.tab=["approvals","revisions","commercial","documents"].includes(params.get("tab"))?params.get("tab"):"summary";render();}
 else if(opRef&&opportunity(opRef)){newBuilder(opRef);}
 else if(params.get("action")==="new")newBuilder();
 a.quickSelectProduct=id=>{if(!state.builder)return;state.builder.addPickerOpen=true;state.builder.catalogSearch="";setProduct(state.builder,id);renderBuilder();};

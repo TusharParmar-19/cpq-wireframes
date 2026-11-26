@@ -150,7 +150,7 @@ function draftMissing(q){
 function renderHeader(q){
  const issues=!policy.locked(q)?draftMissing(q):[];
  $("quote-header").innerHTML='<div class="ma6-detail-top"><div><small>'+esc(q.id)+' / '+esc(q.rev)+' · '+text(customer(q.customerId)?.name)+'</small><h2>'+esc(q.title)+'</h2><p>Buyer: '+text(buyer(q.buyerId)?.name)+' · '+text(entity(q.companyId)?.name)+' / '+text(branch(q.branchId)?.name)+'</p></div>'+
- '<div class="ma6-detail-actions">'+statusBadge(q.status)+
+ '<div class="ma6-detail-actions">'+statusBadge(q.status)+(q.demoApproval?.state?'<span class="ma6-tag">'+esc(q.demoApproval.state)+' (demo)</span>':'')+
  (!policy.locked(q)?'<button type="button" class="btn primary" data-action="edit-builder">Continue Editing</button>':'<button type="button" class="btn" data-action="preview-pdf">Preview Offer</button>')+
  (policy.locked(q)&&policy.canRevise(q)?'<button type="button" class="btn primary" data-action="create-revision">Create New Revision</button>':'')+
  '<button type="button" class="btn" data-action="duplicate">Duplicate as Draft</button></div></div>'+
@@ -291,7 +291,7 @@ function approvals(q){
  (met.triggers.length?note("<b>Escalation reasons:</b><ul>"+met.triggers.map(x=>"<li>"+esc(x)+"</li>").join("")+"</ul>",true):note("No configured exception threshold triggered."))+
  '<div class="ma6a-review-grid">'+cards+'</div>'+
  (!policy.locked(q)?'<div class="ma6a-review-next"><div><b>'+(missing.length?"Complete readiness and routing":"Ready for demo submission")+'</b><p>'+esc(missing.join(" · ")||"Technical, commercial and any exception reviews are required in order.")+'</p></div>'+
- (missing.length?'<a class="btn" href="ma-003-users-roles.html">Check Roles &amp; Access</a>':'<button class="btn primary" type="button" data-action="submit-demo-review">Submit Demo Review</button>')+'</div>':
+ (missing.length?'<div>'+(demoReadiness(q).length?'<button class="btn" data-action="edit-builder">Complete Draft</button> ':'')+'<a class="btn" href="ma-003-users-roles.html">Check Roles &amp; Access</a></div>':'<button class="btn primary" type="button" data-action="submit-demo-review">Submit Demo Review</button>')+'</div>':
  '<div class="ma6a-review-next"><div><b>Revision locked for review / history</b><p>'+esc(stage==="Demo reviewed"?"All required demo decisions completed.":stage==="In review"?"Decisions must be recorded in stage order.":"Create a new revision for corrections; historical data remains unchanged.")+'</p></div>'+(policy.canRevise(q)?'<button class="btn" type="button" data-action="create-revision">Create New Revision</button>':'')+'</div>')+
  '<details class="ma6a-quote-more"><summary>Quotation checks ('+passed+' of '+checks.length+')</summary><div class="ma6-checklist">'+checks.map(([title,done,desc])=>'<div class="ma6-check-item"><span class="ma6-check-icon">'+(done?'✓':'!')+'</span><div><b>'+esc(title)+'</b><small>'+esc(desc)+'</small></div></div>').join("")+'</div></details>'+
  '<details class="ma6a-quote-more"><summary>Demo review history ('+events.length+')</summary>'+(events.length?'<div class="ma6a-review-history">'+[...events].reverse().map(ev=>'<div class="ma6a-review-event"><strong>'+esc(ev.action)+'</strong><small>'+esc(ev.at)+' · '+esc(ev.actor)+' · '+esc(ev.revision||q.rev)+'</small><p>'+esc(ev.comment||"")+'</p></div>').join("")+'</div>':blank("No demo review actions recorded yet."))+'</details>'+
