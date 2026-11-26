@@ -80,7 +80,7 @@ window.CPQ_MA003_USERS.forEach(u=>{
    Every role's assignments are still evaluated separately per legal entity/branch. */
 window.CPQ_MA003_PAGE_CATALOG=[
  {id:"dashboard",name:"Master Admin Dashboard",section:"Workspace",code:"MA-001",stage:"Available",actions:[]},
- {id:"staff-dashboard",name:"Role Dashboard & My Work",section:"Workspace",code:"Planned",stage:"Planned",actions:[]},
+ {id:"staff-dashboard",name:"Employee Access Preview (demo)",section:"Workspace",code:"Phase 1",stage:"Available",actions:[]},
  {id:"organization",name:"Companies & Branches",section:"Organization & People",code:"MA-002",stage:"Available",actions:["organization.manage"]},
  {id:"users",name:"Users, Roles & Permissions",section:"Organization & People",code:"MA-003",stage:"Available",actions:["users.manage","roles.manage","users.invite"]},
  {id:"customers",name:"Customers, Companies & Contacts",section:"Business Records",code:"MA-004",stage:"Available",actions:["customers.view","customers.create","customers.edit","customers.archive"]},
@@ -104,8 +104,8 @@ window.CPQ_MA003_PAGE_CATALOG=[
  {id:"orders",name:"Orders & Registration",section:"Orders & Controls",code:"MA-007",stage:"Available",actions:["orders.view","orders.edit","orders.register","records.archive"]},
  {id:"approvals",name:"Advanced Approval Queue & Policy (Phase 3)",section:"Orders & Controls",code:"Phase 3",stage:"Planned",actions:["approvals.view","approvals.decide","approvals.manage","discount.approve"]},
  {id:"commercial",name:"Commercial Settings",section:"Orders & Controls",code:"Control",stage:"Available",actions:["commercial.view","commercial.manage"]},
- {id:"reports",name:"Reports & Export",section:"Reporting & Audit",code:"Planned",stage:"Planned",actions:["reports.view","reports.export"]},
- {id:"audit",name:"Activity & Audit History",section:"Reporting & Audit",code:"Planned",stage:"Planned",actions:["audit.view"]}
+ {id:"reports",name:"Reports (demo; export planned)",section:"Reporting & Audit",code:"Control",stage:"Available",actions:["reports.view","reports.export"]},
+ {id:"audit",name:"Activity History (demo)",section:"Reporting & Audit",code:"Control",stage:"Available",actions:["audit.view"]}
 ];
 window.CPQ_MA003_PERMISSIONS.push(
  {id:"vendorquotes.view",name:"View authorized received supplier offers",group:"Vendor quotations",sensitive:true},
