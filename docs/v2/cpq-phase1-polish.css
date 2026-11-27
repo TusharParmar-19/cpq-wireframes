@@ -1,0 +1,264 @@
+/* Solar CPQ V2 / Phase 1 design system
+   Presentation only. Opt-in body class on working Phase 1 pages.
+   MA-001 retains its separately scoped pilot; deferred screens and V1 are not opted in.
+   All source controls, states, data, routes, listeners and permissions are retained. */
+@media screen {
+.cpq-phase1-polish {
+  --cpq-navy:#122d4c; --cpq-primary:#184364; --cpq-accent:#28608c;
+  --cpq-bg:#f4f6fa; --cpq-surface:#fff; --cpq-ink:#172c44;
+  --cpq-muted:#526579; --cpq-border:#dce5ee; --cpq-field:#c4d2df;
+  --cpq-selection:#eaf3fa; --cpq-soft:#f0f4f8;
+  --cpq-focus:#236a9b; --cpq-good:#176348; --cpq-warn:#844b11; --cpq-bad:#982f24;
+  --cpq-r:8px; --cpq-r-sm:6px; --cpq-s1:4px; --cpq-s2:8px;
+  --cpq-s3:12px; --cpq-s4:16px; --cpq-s6:24px;
+  background:var(--cpq-bg); color:var(--cpq-ink);
+}
+/* Shared shell; no visibility/route/permission changes. */
+.cpq-phase1-polish .layout{grid-template-columns:248px minmax(0,1fr)}
+.cpq-phase1-polish .sidebar{position:sticky;top:0;height:100vh;height:100dvh;overflow-y:auto;padding:20px 12px 12px;background:var(--cpq-navy)}
+.cpq-phase1-polish .logo{gap:10px;padding:0 8px 16px;font-size:17px;line-height:1.25}
+.cpq-phase1-polish .logo span{display:grid;place-items:center;flex:0 0 38px;height:38px;padding:0;border-radius:var(--cpq-r)}
+.cpq-phase1-polish .logo small{font-size:11px}
+.cpq-phase1-polish .sidebar .nav{padding-bottom:16px}
+.cpq-phase1-polish .sidebar .nav-title{margin:18px 8px 6px;font-size:11px;letter-spacing:.07em;color:#a2bed5}
+.cpq-phase1-polish .sidebar .nav-link:not([hidden]){display:grid;grid-template-columns:18px minmax(0,1fr) auto;align-items:center;gap:8px;padding:10px 8px;min-height:40px;border-radius:6px;font-size:13px;line-height:1.3}
+.cpq-phase1-polish .dashboard-nav-icon{flex-shrink:0}
+.cpq-phase1-polish .dashboard-nav-label{min-width:0;overflow-wrap:anywhere}
+.cpq-phase1-polish .sidebar .nav-link small{float:none;font-size:10px;text-align:right}
+.cpq-phase1-polish .sidebar .nav-link.active{box-shadow:inset 3px 0 #aad3ed}
+.cpq-phase1-polish .sidebar-foot{padding:12px 8px 0;font-size:12px;line-height:1.55}
+.cpq-phase1-polish .sidebar-foot p{margin:6px 0 0}
+.cpq-phase1-polish .top{min-height:60px;padding:10px 24px;gap:12px;font-size:13px;flex-wrap:wrap}
+.cpq-phase1-polish .top>div{min-width:0;overflow-wrap:anywhere}
+.cpq-phase1-polish .avatar{display:inline-grid;place-items:center;min-width:36px;min-height:36px;padding:8px;font-size:12px}
+.cpq-phase1-polish .cpq-account-panel{border-radius:var(--cpq-r);border-color:var(--cpq-border)}
+.cpq-phase1-polish .cpq-account-panel p{color:var(--cpq-muted);font-size:13px}
+.cpq-phase1-polish .page{padding:24px 24px 40px}
+.cpq-phase1-polish .hero{align-items:center;gap:12px 20px}
+.cpq-phase1-polish .hero>div:first-child{min-width:0}
+.cpq-phase1-polish .hero h1{font-size:28px;letter-spacing:-.025em;line-height:1.2;margin:4px 0}
+.cpq-phase1-polish .hero p{margin:4px 0 0}
+.cpq-phase1-polish .overline{font-size:12px;font-weight:650;letter-spacing:.06em;color:var(--cpq-accent)}
+.cpq-phase1-polish .page :is(h2,h3,h4):not(.ma6-paper *){letter-spacing:-.01em}
+.cpq-phase1-polish .page h2:not(.ma6-paper *){font-weight:650;line-height:1.35}
+.cpq-phase1-polish :is(.muted,.footer,.section-title p,.panel-head p,.scope-note,.empty):not(.ma6-paper *){color:var(--cpq-muted);font-size:13px;line-height:1.5}
+.cpq-phase1-polish .footer{font-size:12px;margin-top:20px}
+.cpq-phase1-polish .page>.info,.cpq-phase1-polish .cpq-auth-card>.info,.cpq-phase1-polish .cpq-profile>.info{margin:12px 0;padding:10px 12px;border-radius:var(--cpq-r-sm);color:#355a76;font-size:13px;line-height:1.5}
+/* Component primitives. Preserve state colors, disabled/read-only behavior, and document typography. */
+.cpq-phase1-polish .card:not(.ma6-paper *){border-color:var(--cpq-border);border-radius:var(--cpq-r)}
+.cpq-phase1-polish .btn:not(.ma6-paper *){font-size:13px;font-weight:600;border-radius:var(--cpq-r-sm);line-height:1.35;min-height:36px}
+.cpq-phase1-polish .hero .btn,.cpq-phase1-polish .actions>.btn{min-height:40px}
+.cpq-phase1-polish .btn.primary:not(:disabled):not([aria-disabled="true"]){background:var(--cpq-primary);border-color:var(--cpq-primary);color:#fff}
+.cpq-phase1-polish .btn.primary:not(:disabled):not([aria-disabled="true"]):hover{background:var(--cpq-accent);border-color:var(--cpq-accent);filter:none}
+.cpq-phase1-polish :is(button,a,input,select,textarea,summary):focus-visible{outline:3px solid var(--cpq-focus);outline-offset:2px}
+.cpq-phase1-polish .sidebar a:focus-visible{outline-color:#b8d8ef}
+.cpq-phase1-polish :is(input[type=checkbox],input[type=radio]){accent-color:var(--cpq-accent)}
+.cpq-phase1-polish :is(input,select,textarea):where(:not([type=checkbox],[type=radio],[type=hidden],[type=file],[type=range],[type=color],[type=button],[type=submit],[type=reset])):not(.ma6-paper *){font-size:14px;max-width:100%;border-radius:var(--cpq-r-sm)}
+.cpq-phase1-polish :is(input[type=text],input[type=email],input[type=number],input[type=date],input[type=password],input[type=search],input:not([type]),select):not(.ma6-paper *){min-height:40px}
+.cpq-phase1-polish input[type=number]{font-variant-numeric:tabular-nums}
+.cpq-phase1-polish :is(.org-form-item,.ma3-form-item,.ma3-filters,.ma3-preview-fields,.ma4-form,.ma4-filters,.ma4-scope-fields,.ma5-form,.ma5-register-controls,.ma5-scope-grid,.ma6-field,.ma6-scope,.ma6-filter-fields,.ma6a-catalog-filter-grid,.ma6a-pim-form,.cpq-template-row,.cpq-price-settings,.cpq-cost-grid,.cpq-req-grid,.cpq-req-pick,.sm-field,.sm-filter,.vm-filters,.vm-form-grid,.vm-picker,.vm-contact-row,.vq-form-grid,.vq-line-grid,.vq-num-grid,.vq-review-dialog,.order-filter,.order-form,.settings-grid,.template-row,.report-filters,.report-search,.cpq-access-field,.qc-list-form) label{font-size:13px;font-weight:600;line-height:1.4}
+.cpq-phase1-polish :is(.org-tabs,.ma3-navtabs,.ma3-role-subtabs,.ma4-tabs,.ma5-tabs,.ma6-tabs,.ma6a-hub-nav,.vq-tabs,.report-tabs) :is(button,a){font-size:13px;font-weight:650;line-height:1.4}
+.cpq-phase1-polish :is(.org-tabs,.ma3-role-subtabs,.ma4-tabs,.ma5-tabs,.ma6-tabs) button{min-height:42px;padding:10px 12px}
+.cpq-phase1-polish :is(.org-tabs,.ma3-role-subtabs,.ma4-tabs,.ma5-tabs,.ma6-tabs){scrollbar-width:thin}
+.cpq-phase1-polish :is(.org-tabs,.ma3-role-subtabs,.ma4-tabs,.ma5-tabs,.ma6-tabs) button:focus-visible{outline-offset:-3px}
+.cpq-phase1-polish :is(.ma3-tag,.ma4-tag,.ma5-tag,.ma6-chip,.ma6-tag,.sm-tag,.vm-badge,.vq-badge,.settings-version,.ma6a-flag,.ma6a-pim-pill){font-size:12px;font-weight:600;border-radius:5px;line-height:1.35}
+.cpq-phase1-polish :is(.org-summary,.ma3-stats,.ma4-stats,.ma5-stats,.ma6-stats,.sm-summary,.vm-summary,.order-metrics,.report-grid){gap:12px;margin-block:12px}
+.cpq-phase1-polish :is(.org-summary-box,.ma3-stat,.ma4-stat,.ma5-stat,.ma6-stat,.sm-stat,.vm-stat,.order-metric,.report-stat){padding:14px 16px;min-width:0}
+.cpq-phase1-polish :is(.org-summary-box,.ma3-stat,.ma4-stat,.ma5-stat,.ma6-stat,.sm-stat,.vm-stat,.order-metric,.report-stat)>strong{font-size:clamp(21px,1.65vw,28px);font-variant-numeric:tabular-nums;letter-spacing:-.02em;line-height:1.2;color:var(--cpq-ink)}
+.cpq-phase1-polish :is(.org-summary-box,.ma3-stat,.ma4-stat,.ma5-stat,.ma6-stat,.sm-stat,.vm-stat,.order-metric,.report-stat)>:is(small,span,p){font-size:13px;color:var(--cpq-muted);line-height:1.45}
+.cpq-phase1-polish :is(.org-summary-box,.ma3-stat,.ma4-stat,.ma5-stat,.ma6-stat,.sm-stat,.vm-stat,.order-metric,.report-stat)>small{font-size:12px}
+.cpq-phase1-polish :is(.org-directory,.ma3-registry,.ma3-profile,.ma3-role-list,.ma3-role-detail,.ma3-preview-setup,.ma3-preview-result,.ma3-audit,.ma4-directory,.ma5-directory,.ma6-list-panel,.sm-register,.sm-detail,.vm-register,.vm-detail,.order-list,.order-detail,.settings-card,.report-card){min-width:0}
+.cpq-phase1-polish :is(.org-layout,.ma3-main,.ma3-role-main,.ma3-preview-main,.ma4-workspace,.ma5-workspace,.ma6-workspace,.ma6a-catalog-workspace,.sm-workspace,.vm-workspace,.order-layout){gap:12px;min-width:0}
+.cpq-phase1-polish :is(.org-item,.ma3-role-option,.ma4-customer,.ma5-item,.ma6-quote-card,.ma6a-family-card,.ma6a-variant-card,.order-pick){border-radius:var(--cpq-r-sm);line-height:1.45}
+.cpq-phase1-polish :is(.org-item-name,.ma4-customer b,.ma5-item-title,.ma6-quote-title,.ma6a-family-card strong,.ma6a-variant-card h4,.order-pick strong,.vm-name){font-size:14px;line-height:1.4;overflow-wrap:anywhere}
+.cpq-phase1-polish :is(.org-item-sub,.org-item-foot,.org-directory-foot,.org-entity-head p,.org-section-title p,.org-footnote,.org-form-item .hint,.ma3-panel-title p,.ma3-profile-head p,.ma3-role-option small,.ma3-role-header p,.ma3-page-row small,.ma3-form-item small,.ma3-branch-meta,.ma3-scope-help,.ma4-guide-card p,.ma4-directory-head p,.ma4-customer small,.ma4-customer-bottom,.ma4-dir-foot,.ma4-panel-top p,.ma4-small-card p,.ma4-kv small,.ma4-form-help,.ma4-activity-item small,.ma5-scope-heading p,.ma5-section-heading p,.ma5-stage-note,.ma5-item-sub,.ma5-item-bottom,.ma5-register-foot,.ma5-panel-title p,.ma5-kv small,.ma5-mini p,.ma5-timeline-entry small,.ma5-form-help,.ma6-quote-sub,.ma6-list-note,.ma6-detail-top p,.ma6-panel-head p,.ma6-kv small,.ma6-field-note,.ma6-builder-hint,.ma6-check-item small,.ma6-revision-row small,.ma6a-family-card small,.ma6a-variant-card p,.ma6a-selected-variant-head p,.ma6a-section-heading p,.ma6a-directory-card p,.ma6a-editor-section p,.ma6a-editor-section-note,.ma6a-field-hint,.ma6a-compact-help,.ma6a-pim-meta,.ma6a-pim-desc,.ma6a-pim-muted,.ma6a-pim-doc-main small,.sm-table-secondary,.sm-tree-hint,.sm-table-footer,.sm-kv small,.vm-foot,.vm-kv small,.vq-field-help,.order-empty,.order-detail small,.order-list small,.settings-grid small,.settings-links span,.history-terms small,.report-caption,.cpq-access-meta,.qc-help,.qc-host-head small,.cpq-price-heading p,.cpq-price-help,.cpq-price-target p,.cpq-price-metric small,.cpq-price-metric span,.cpq-cost-computed small,.cpq-req-muted,.cpq-scope-help,.cpq-scope-muted,.cpq-scope-caption,.cpq-identity-help,.cpq-template-record small):not(.ma6-paper *){font-size:13px;color:var(--cpq-muted);line-height:1.5}
+.cpq-phase1-polish :is(.org-branch-wrap,.ma3-table-scroller,.ma4-table-scroller,.ma5-table-wrap,.ma6-table-wrap,.ma6a-details-table,.sm-table-scroll,.vm-table-wrap,.vq-detail-lines,.order-scroll,.cpq-price-scroll,.cpq-access-table,.scroll){max-width:100%;overscroll-behavior-inline:contain}
+.cpq-phase1-polish table:not(.ma6-paper table){font-variant-numeric:tabular-nums}
+.cpq-phase1-polish table:not(.ma6-paper table) th{font-size:12px;font-weight:650;letter-spacing:0;text-transform:none;color:var(--cpq-muted);background:var(--cpq-soft);line-height:1.4}
+.cpq-phase1-polish table:not(.ma6-paper table) td{font-size:13px;color:var(--cpq-ink);line-height:1.5}
+.cpq-phase1-polish table:not(.ma6-paper table) td small:not(.cpq-price-warning,.cpq-price-included){font-size:12px;line-height:1.45}
+.cpq-phase1-polish table:not(.ma6-paper table) :is(th,td){padding:10px 8px}
+.cpq-phase1-polish :is(.order-total-row,.ma6-price-row,.cpq-price-metric strong,.cpq-cost-computed strong,.vq-line-total,.vq-totals,.sm-table-number){font-variant-numeric:tabular-nums}
+.cpq-phase1-polish .dialog{border-radius:var(--cpq-r)}
+.cpq-phase1-polish :is(.dialog-head,.ma6-dialog-head,.vm-editor-head,.qc-host-head){gap:12px}
+.cpq-phase1-polish :is(.dialog-head,.ma6-dialog-head,.vm-editor-head,.qc-host-head) h2{font-size:18px;font-weight:650}
+.cpq-phase1-polish :is(.dialog-head,.ma6-dialog-head,.vm-editor-head,.qc-host-head) .muted{font-size:13px}
+.cpq-phase1-polish :is(.org-form-error,.ma3-form-error,.ma4-form-error,.ma5-form-error,.ma6a-editor-error,.ma6a-pim-error,.sm-error,.vq-error,.order-form-error,.cpq-access-error,.qc-error,.cpq-req-error){font-size:13px;line-height:1.5}
+.cpq-phase1-polish :is(.qc-host,.ma6a-editor-details,.ma3-scope-card,.ma5-optional,.cpq-price-history,.vm-detail-box,.sm-box,.ma4-small-card,.ma5-mini,.ma6a-detail-card,.ma6a-pim-section,.cpq-template-record){border-radius:var(--cpq-r)}
+.cpq-phase1-polish .qc-host-head{padding:12px 16px}
+.cpq-phase1-polish .qc-inline-button{min-height:36px;font-size:13px}
+.cpq-phase1-polish .qc-list-form{padding:16px}
+.cpq-phase1-polish :is(.cpq-req>summary,.ma6a-editor-details>summary,.ma5-optional>summary,.cpq-price-history>summary){font-size:13px;font-weight:650}
+/* Account screens. Keep all sample warnings, first-login and account access controls. */
+.cpq-phase1-polish .cpq-auth-shell{grid-template-columns:minmax(280px,360px) minmax(0,1fr)}
+.cpq-phase1-polish .cpq-auth-brand{padding:32px;gap:32px}
+.cpq-phase1-polish .cpq-auth-brand h1{font-size:30px;letter-spacing:-.025em}
+.cpq-phase1-polish .cpq-auth-card{width:min(100%,500px);padding:24px}
+.cpq-phase1-polish .cpq-auth-card h1{font-size:28px;letter-spacing:-.025em}
+.cpq-phase1-polish .cpq-auth-card .cpq-access-field{margin-top:12px;gap:6px}
+.cpq-phase1-polish .cpq-auth-card .btn.primary{min-height:44px}
+.cpq-phase1-polish .cpq-sample-picker{padding:12px;background:var(--cpq-soft);border-radius:var(--cpq-r)}
+.cpq-phase1-polish .cpq-sample-picker summary{font-size:13px;font-weight:650}
+.cpq-phase1-polish .cpq-profile{padding:24px 24px 40px}
+.cpq-phase1-polish .cpq-access-card{padding:16px;margin:12px 0}
+.cpq-phase1-polish .cpq-profile-summary dt{font-size:13px;color:var(--cpq-muted)}
+.cpq-phase1-polish .cpq-profile-summary dd{font-size:14px;line-height:1.45}
+/* Organization and permissions: keep tab, matrix and dialog mechanics unchanged. */
+.cpq-phase1-polish .org-account{border-radius:var(--cpq-r)}
+.cpq-phase1-polish .org-form{gap:12px}
+.cpq-phase1-polish .org-section-title h3{font-size:16px}
+.cpq-phase1-polish .ma3-explainer{padding:12px 16px;border-radius:var(--cpq-r)}
+.cpq-phase1-polish .ma3-access-flow>div{padding:10px}
+.cpq-phase1-polish .ma3-role-group h3{font-size:14px;color:var(--cpq-ink);font-weight:650}
+.cpq-phase1-polish .ma3-perm-row{padding:8px 0;gap:12px}
+.cpq-phase1-polish .ma3-perm-row label,.cpq-phase1-polish .ma3-page-row b,.cpq-phase1-polish .ma3-checklabel{font-size:13px;line-height:1.45}
+.cpq-phase1-polish .ma3-perm-row .ma3-sensitive{font-size:12px;color:var(--cpq-warn)}
+.cpq-phase1-polish .ma3-role-subtabs button small{font-size:12px;color:var(--cpq-muted)}
+.cpq-phase1-polish .ma3-dialog{width:min(860px,100%);max-height:min(90vh,900px)}
+.cpq-phase1-polish .ma3-dialog>.dialog-head,.cpq-phase1-polish .ma3-dialog-tools,.cpq-phase1-polish .ma3-dialog-actions{padding:12px 16px}
+.cpq-phase1-polish .ma3-dialog>#modal-body{padding:12px 16px 16px}
+.cpq-phase1-polish .ma3-checkbox-grid{gap:8px}
+.cpq-phase1-polish .ma3-checklabel{padding:10px;border-radius:var(--cpq-r-sm)}
+.cpq-phase1-polish .ma3-scope-card>summary{padding:12px 16px}
+/* Customers and enquiries: compact context, stable hierarchy. */
+.cpq-phase1-polish :is(.ma4-guide-disclosure,.ma5-context){border-radius:var(--cpq-r)}
+.cpq-phase1-polish :is(.ma4-guide-disclosure>summary,.ma5-context>summary){font-size:13px;font-weight:650}
+.cpq-phase1-polish :is(.ma4-scope,.ma5-scope,.ma5-pipeline){padding:12px 16px}
+.cpq-phase1-polish .ma5-stage{padding:10px 12px;border-radius:var(--cpq-r-sm)}
+.cpq-phase1-polish .ma5-stage small{font-size:12px}
+.cpq-phase1-polish :is(.ma4-panel-top,.ma5-panel-title){gap:12px}
+.cpq-phase1-polish :is(.ma4-kv strong,.ma5-kv strong){overflow-wrap:anywhere}
+/* Suppliers, offers, service hierarchy. */
+.cpq-phase1-polish :is(.vm-register,.vm-detail,.sm-register,.sm-detail){padding:16px}
+.cpq-phase1-polish .vm-detail-box{padding:12px 16px}
+.cpq-phase1-polish .vq-section{padding:12px 16px;border-radius:var(--cpq-r)}
+.cpq-phase1-polish .vq-line{padding:12px;border-radius:var(--cpq-r)}
+.cpq-phase1-polish .vq-totals>div{padding:12px;border-radius:var(--cpq-r-sm)}
+.cpq-phase1-polish .sm-table .sm-open-link{font-size:14px;font-weight:650}
+.cpq-phase1-polish .sm-table .sm-row-kind{font-size:12px}
+.cpq-phase1-polish .sm-table .sm-row-toggle{min-width:32px;min-height:32px}
+.cpq-phase1-polish .sm-table .sm-row-actions .btn{font-size:12px;min-height:32px}
+.cpq-phase1-polish .sm-table .sm-table-number{text-align:right}
+.cpq-phase1-polish .sm-detail h3{font-size:16px}
+.cpq-phase1-polish .sm-product-choice{padding:10px;border-radius:var(--cpq-r-sm)}
+/* Catalog, engineering configuration, templates and quotation builder. */
+.cpq-phase1-polish :is(.ma6-explain,.ma6a-flow-step){padding:12px;border-radius:var(--cpq-r)}
+.cpq-phase1-polish :is(.ma6-explain,.ma6a-flow-step) small{font-size:13px;color:var(--cpq-muted)}
+.cpq-phase1-polish .ma6-scope{padding:12px 16px}
+.cpq-phase1-polish :is(.ma6a-simple-nav,.ma6-view-toolbar){gap:8px}
+.cpq-phase1-polish .ma6a-manage-menu>summary{font-size:13px;padding:10px 12px;border-radius:var(--cpq-r-sm)}
+.cpq-phase1-polish .ma6a-variant-card{padding:12px}
+.cpq-phase1-polish .ma6a-variant-card .ma6a-big-rating{font-size:18px;line-height:1.2;font-variant-numeric:tabular-nums}
+.cpq-phase1-polish .ma6a-editor-section h3{font-size:16px}
+.cpq-phase1-polish .ma6a-editor-fields{padding:16px 20px}
+.cpq-phase1-polish .ma6a-wizard-progress button{min-height:48px}
+.cpq-phase1-polish .ma6a-wizard-progress button b{font-size:13px}
+.cpq-phase1-polish .ma6a-wizard-grid{gap:12px}
+.cpq-phase1-polish .ma6a-wizard-footer{gap:8px}
+.cpq-phase1-polish .cpq-template-row{border-radius:var(--cpq-r-sm)}
+.cpq-phase1-polish .ma6a-pim-cards strong{font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.cpq-phase1-polish .ma6a-pim-doc-main strong{overflow-wrap:anywhere}
+.cpq-phase1-polish .ma6-stepper button{padding:12px 8px;min-height:52px}
+.cpq-phase1-polish .ma6-step-label{font-size:13px;line-height:1.35}
+.cpq-phase1-polish .ma6-builder-footer{padding:12px 16px;gap:12px}
+.cpq-phase1-polish .ma6-form-section{border-radius:var(--cpq-r);min-width:0}
+.cpq-phase1-polish :is(.ma6-kvs,.ma6a-details-grid,.ma6a-pim-kvs){gap:12px}
+.cpq-phase1-polish .ma6-kv strong{overflow-wrap:anywhere}
+.cpq-phase1-polish .ma6-product-card{border-radius:var(--cpq-r-sm)}
+.cpq-phase1-polish .ma6-product-card strong{font-size:14px}
+.cpq-phase1-polish .ma6-product-card small{font-size:12px;color:var(--cpq-muted)}
+.cpq-phase1-polish .ma6-dialog-head,.cpq-phase1-polish .ma6-dialog-foot{padding:12px 16px}
+.cpq-phase1-polish .ma6-dialog-body{padding:16px;font-size:13px}
+.cpq-phase1-polish .cpq-price-section{padding:16px;border-radius:var(--cpq-r)}
+.cpq-phase1-polish .cpq-price-section>.cpq-price-heading{margin-bottom:12px}
+.cpq-phase1-polish .cpq-price-heading h4{font-size:16px}
+.cpq-phase1-polish .cpq-price-scroll{border-radius:var(--cpq-r-sm)}
+.cpq-phase1-polish .cpq-price-table td:nth-child(6),.cpq-phase1-polish .cpq-price-table th:nth-child(6){text-align:right}
+.cpq-phase1-polish .cpq-price-table input[type=number]{text-align:right}
+.cpq-phase1-polish .cpq-cost-row,.cpq-phase1-polish .cpq-price-metric{padding:12px;border-radius:var(--cpq-r-sm)}
+.cpq-phase1-polish .cpq-price-metric strong{font-size:20px;letter-spacing:-.015em}
+.cpq-phase1-polish .ma6-price-row{font-size:13px}
+.cpq-phase1-polish .ma6-price-row.final{font-size:14px}
+.cpq-phase1-polish .ma6-price-row.final strong{font-size:19px}
+.cpq-phase1-polish .ma6-check-item{padding:10px 12px;border-radius:var(--cpq-r-sm)}
+.cpq-phase1-polish .ma6-check-item b{font-size:13px}
+.cpq-phase1-polish :is(.ma6a-demo-approval-intro,.ma6a-review-next,.ma6a-dispatch-intro,.ma6a-preview-state,.ma6-response-card){border-radius:var(--cpq-r)}
+.cpq-phase1-polish .ma6-response-card{padding:12px 16px}
+.cpq-phase1-polish .ma6-response-card h4{font-size:14px}
+.cpq-phase1-polish .ma6-response-card p{font-size:13px}
+ /* Frame the existing customer document; do not alter its contents or watermark. */
+.cpq-phase1-polish .ma6-paper{box-shadow:0 2px 10px #24486b12;border-color:var(--cpq-border)}
+/* Orders: visually distinguish registration, retained commercial snapshots and evidence. */
+.cpq-phase1-polish :is(.order-metric,.order-filter,.order-list,.order-detail){padding:14px 16px}
+.cpq-phase1-polish .order-head h2{margin-bottom:8px;line-height:1.35}
+.cpq-phase1-polish .order-section{padding:14px 0;margin-top:12px}
+.cpq-phase1-polish .order-section h3{font-size:16px}
+.cpq-phase1-polish .order-section:has(#order-status-form){border:1px solid #ccddeb;background:#f7faff;border-radius:var(--cpq-r);padding:16px}
+.cpq-phase1-polish .order-section:has(#order-status-form) h3{color:var(--cpq-primary)}
+.cpq-phase1-polish .order-section:has(.order-totals) .order-table :is(th,td):nth-child(n+2){text-align:right}
+.cpq-phase1-polish .order-section:has(.order-totals) .order-table{min-width:640px}
+.cpq-phase1-polish .order-total-row.final{border-radius:0 0 var(--cpq-r-sm) var(--cpq-r-sm);font-size:15px;background:#eaf3fa}
+.cpq-phase1-polish .order-pick{padding:12px;margin:6px 0}
+.cpq-phase1-polish .order-event{padding:10px 0}
+/* Commercial settings and reports. Never recalculate or relabel data. */
+.cpq-phase1-polish .settings-card,.cpq-phase1-polish .report-card{padding:16px;margin:12px 0}
+.cpq-phase1-polish .settings-head{margin-bottom:12px;gap:12px}
+.cpq-phase1-polish .settings-grid,.cpq-phase1-polish .template-row{gap:12px}
+.cpq-phase1-polish .report-section{margin:16px 0 8px}
+.cpq-phase1-polish .report-tabs{margin-bottom:12px;padding-bottom:10px}
+.cpq-phase1-polish .report-search{margin-bottom:12px}
+.cpq-phase1-polish .report-table{min-width:850px}
+.cpq-phase1-polish .report-table td:first-child{overflow-wrap:normal}
+.cpq-phase1-polish .report-card:has(#report-tabs button[data-tab="orders"].active) .report-table{min-width:1280px}
+.cpq-phase1-polish .report-card:has(#report-tabs button[data-tab="orders"].active) .report-table :is(th,td):nth-child(n+7):nth-child(-n+11){text-align:right;white-space:nowrap}
+.cpq-phase1-polish .report-card:has(#report-tabs button[data-tab="quotations"].active) .report-table :is(th,td):nth-child(6){text-align:right;white-space:nowrap}
+.cpq-phase1-polish .report-card:has(#report-tabs button[data-tab="activity"].active) .report-table{min-width:1100px}
+.cpq-phase1-polish .report-card:has(#report-tabs button[data-tab="activity"].active) .report-table td:nth-child(7){min-width:240px;overflow-wrap:anywhere}
+@media(min-width:1101px){
+  .cpq-phase1-polish .cpq-price-table th:first-child{position:sticky;left:0;z-index:2;background:var(--cpq-soft)}
+  .cpq-phase1-polish .cpq-price-table td:first-child{position:sticky;left:0;z-index:1;background:#fff;box-shadow:1px 0 var(--cpq-border)}
+}
+@media(max-width:1100px){
+  .cpq-phase1-polish :is(.org-summary,.ma3-stats,.ma4-stats,.ma5-stats,.ma6-stats,.sm-summary,.vm-summary,.order-metrics,.report-grid){gap:8px}
+}
+@media(max-width:900px){
+  .cpq-phase1-polish .layout{grid-template-columns:minmax(0,1fr)}
+  .cpq-phase1-polish .sidebar{position:static;height:auto;overflow:visible;padding:12px}
+  .cpq-phase1-polish .sidebar .logo{padding-bottom:12px}
+  .cpq-phase1-polish .sidebar .nav{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(180px,100%),1fr));gap:4px;padding-bottom:0}
+  .cpq-phase1-polish .sidebar .nav-title:not([hidden]){grid-column:1/-1;display:block;margin:8px 8px 2px}
+  .cpq-phase1-polish .sidebar .nav-link:not([hidden]){width:100%;grid-template-columns:18px minmax(0,1fr);min-height:44px}
+  .cpq-phase1-polish .sidebar .nav-link small{grid-column:2;text-align:left;line-height:1}
+  .cpq-phase1-polish .page{padding:20px 16px 32px}
+  .cpq-phase1-polish .top{padding:10px 16px}
+}
+@media(max-width:750px){
+  .cpq-phase1-polish .cpq-auth-shell{grid-template-columns:minmax(0,1fr)}
+  .cpq-phase1-polish .cpq-auth-brand{padding:20px;gap:16px}
+  .cpq-phase1-polish .cpq-auth-brand h1{font-size:24px}
+  .cpq-phase1-polish .cpq-auth-card{padding:20px}
+  .cpq-phase1-polish .cpq-profile{padding:16px 12px 32px}
+  .cpq-phase1-polish .ma6-step-label{font-size:12px}
+}
+@media(max-width:650px){
+  .cpq-phase1-polish .hero h1{font-size:24px}
+  .cpq-phase1-polish .hero .actions{width:100%;flex-wrap:wrap}
+  .cpq-phase1-polish .page{padding:16px 12px 28px}
+  .cpq-phase1-polish :is(.org-directory,.ma3-registry,.ma3-profile,.ma3-role-list,.ma3-role-detail,.ma4-directory,.ma5-directory,.ma6-list-panel,.sm-register,.sm-detail,.vm-register,.vm-detail,.order-list,.order-detail,.settings-card,.report-card,.cpq-access-card){padding:12px}
+  .cpq-phase1-polish :is(.org-summary-box,.ma3-stat,.ma4-stat,.ma5-stat,.ma6-stat,.sm-stat,.vm-stat,.order-metric,.report-stat){padding:12px}
+  .cpq-phase1-polish .ma6a-editor-fields{padding:12px}
+  .cpq-phase1-polish .ma3-dialog>#modal-body{padding:12px}
+  .cpq-phase1-polish .ma3-dialog>.dialog-head,.cpq-phase1-polish .ma3-dialog-tools,.cpq-phase1-polish .ma3-dialog-actions{padding:10px 12px}
+  .cpq-phase1-polish .ma3-dialog-actions,.cpq-phase1-polish .ma6-dialog-foot{flex-wrap:wrap}
+  .cpq-phase1-polish .cpq-price-section{padding:12px}
+  .cpq-phase1-polish .cpq-account-panel{min-width:min(245px,calc(100vw - 24px));max-width:calc(100vw - 24px)}
+  .cpq-phase1-polish .overlay{padding:12px}
+  .cpq-phase1-polish .ma6a-wizard-footer{flex-wrap:wrap}
+}
+@media(max-width:380px){
+  .cpq-phase1-polish :is(.org-summary,.ma3-stats,.ma4-stats,.ma5-stats,.ma6-stats,.sm-summary,.vm-summary,.order-metrics,.report-grid){grid-template-columns:minmax(0,1fr)}
+}
+@media(prefers-reduced-motion:reduce){
+  .cpq-phase1-polish *{animation-duration:0s!important;transition-duration:0s!important;scroll-behavior:auto!important}
+}
+}
