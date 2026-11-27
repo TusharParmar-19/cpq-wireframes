@@ -169,7 +169,14 @@ function resolve(el){
  const field=el.dataset.cField||el.dataset.field||name;
  return ({customerId:"customer",buyerId:"buyer",companyId:"company",branchId:"branch",ownerId:"employee",contactId:"contact",siteId:"site",projectId:"project",opportunityId:"enquiry"})[field]||"";
 }
+function accessAllowed(type){
+ const A=W.CPQ_DEMO_ACCESS;if(!A||A.isMaster())return true;
+ if(sources[type])return !["company","branch","employee","role","customerScope"].includes(type)&&A.canOpen(sources[type][1]);
+ if(lists[type])return type!=="payment"&&A.canWriteModule(lists[type][1]);
+ return false;
+}
 function allowed(type,ctx){
+ if(!accessAllowed(type))return false;
  if(type==="customerScope")return !!ctx.customerId&&row("customer",ctx.customerId)?.status!=="Archived"&&!!row("customer",ctx.customerId);
  if(type==="branch")return !!ctx.companyId;
  if(type==="buyer")return row("customer",ctx.customerId)?.type==="Group";
@@ -221,6 +228,7 @@ function close(cancel=false,result=null){
 }
 function open(type,ctx={},onSave=null,anchor=null,activeOnly=false){
  if(current)return;
+ if(!accessAllowed(type)){notice("This master is reserved for Master Admin or requires its working-module grant.");return;}
  if(!allowed(type,ctx)){notice("Choose the required parent customer, buyer or company first.");return;}
  if(!sources[type]&&!lists[type])return;
  const host=ensureHost(),content=$("cpq-qc-content");
@@ -289,7 +297,7 @@ function decorate(el){
  if(el.value!==addValue)previous.set(el,el.value);
 }
 function button(host,type,title,callback){
- if(!host||host.querySelector('[data-qc-button="'+type+'"]'))return;
+ if(!host||!accessAllowed(type)||host.querySelector('[data-qc-button="'+type+'"]'))return;
  const b=D.createElement("button");b.type="button";b.className="btn qc-inline-button";b.dataset.qcButton=type;b.textContent=title;
  host.appendChild(b);b.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();open(type,context(b),r=>callback(r,b),b,["service","product"].includes(type));});
 }

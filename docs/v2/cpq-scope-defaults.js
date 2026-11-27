@@ -7,7 +7,8 @@ const available=x=>!!x&&!["Inactive","Archived"].includes(x.status);
 function branches(org,companyId,links=null){
  const company=(org||[]).find(x=>x.id===companyId);
  if(!available(company))return [];
- return (company.branches||[]).filter(b=>available(b)&&(links===null||links.some(l=>l.companyId===companyId&&l.branchId===b.id)));
+ const A=window.CPQ_DEMO_ACCESS,file=window.location?.pathname?.split("/").pop();
+ return (company.branches||[]).filter(b=>available(b)&&(!A||A.isMaster()||A.canRecord(file,{companyId,branchId:b.id}))&&(links===null||links.some(l=>l.companyId===companyId&&l.branchId===b.id)));
 }
 function companies(org,links=null){
  return (org||[]).filter(c=>available(c)&&branches(org,c.id,links).length>0);

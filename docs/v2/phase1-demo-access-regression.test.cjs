@@ -27,3 +27,26 @@ const d=A.data(),saved={schema:1,modules:{users:d.users.map(u=>u.id==="U002"?{..
 map.set(A.STORE,JSON.stringify(saved));assert.equal(A.current(),null);assert.equal(A.signIn("U002").ok,false);assert.equal(A.signIn("U001").ok,true);
 assert.equal(A.signOut(),true);assert.equal(A.current(),null);assert.deepEqual(JSON.parse(map.get(A.STORE)),saved);
 console.log("Phase 1 demo access assertions passed");
+
+const opRole={id:"custom-operator-test",...A.operatorTemplate()},op={id:"U-OP-TEST",name:"Operator test",status:"Active",assignments:[{companyId:"e1",branches:["e1a"],roles:[opRole.id]}]};
+const sample=A.data();sample.roles.push(opRole);sample.users.push(op);
+map.set(A.STORE,JSON.stringify({schema:1,modules:sample}));
+assert.equal(A.signIn(op.id).working,true);
+for(const f of ["ma-001-dashboard.html","ma-006a-configuration.html","ma-006-quotations.html"])assert.equal(A.canOpen(f),true);
+for(const f of ["ma-003-users-roles.html","ma-002-organization.html","ma-007-orders.html","ma-006-quotations.html?action=direct-order","reports.html"])assert.equal(A.canOpen(f),false);
+for(const k of ["users","roles","entities","orders","commercialSettings"])assert.equal(A.canWriteModule(k),false);
+for(const f of ["ma-006a-configuration.html","ma-006-quotations.html"]){
+ assert.equal(A.canRecord(f,{companyId:"e1",branchId:"e1a"}),true);
+ assert.equal(A.canRecord(f,{companyId:"e1",branchId:"e1s"}),false);
+ assert.equal(A.canRecord(f,{companyId:"e2",branchId:"e2a"}),false);
+ assert.equal(A.canRecord(f,{}),false);
+ assert.deepEqual(A.organizationsFor(f,sample.entities).map(e=>[e.id,e.branches.map(b=>b.id)]),[["e1",["e1a"]]]);
+}
+assert.equal(A.customerVisible("ma-006-quotations.html",{links:[{companyId:"e1",branchId:"e1s"}]}),false);
+assert.equal(A.customerVisible("ma-006-quotations.html",{links:[{companyId:"e1",branchId:"e1a"}]}),true);
+assert.ok(opRole.perms.every(id=>A.permissions.some(p=>p.id===id)&&A.pages.some(p=>opRole.pages.includes(p.id)&&p.actions.includes(id))));
+opRole.perms=opRole.perms.filter(id=>id!=="margin.view");
+map.set(A.STORE,JSON.stringify({schema:1,modules:sample}));
+assert.equal(A.canOpen("ma-006-quotations.html"),false);assert.equal(A.canOpen("ma-006a-configuration.html"),true);
+assert.equal(A.signIn("U001").master,true);
+console.log("Shared operator workspace assertions passed");

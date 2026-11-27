@@ -9,6 +9,7 @@ const flow=window.CPQ_FLOW,custom=window.CPQ_CUSTOM_BOQ,req=window.CPQ_REQUIREME
 const pricing=window.CPQ_PRICING,policy=window.CPQ_POLICY,orders=window.CPQ_ORDERS;
 const demoDate=()=>new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"});
 const statusDraft="Draft";
+const access=window.CPQ_DEMO_ACCESS,operator=()=>!!access&&!access.isMaster(),allowedRecord=q=>!operator()||access.canRecord("ma-006-quotations.html",q);
 const toISO=v=>{
  const raw=String(v||"").trim(),d=new Date(raw);
  if(!Number.isFinite(d.valueOf()))return "";
@@ -44,6 +45,7 @@ function setProduct(b,prodId){
  b.productId=prodId;b.quantity=1;b.options=p.type==="config"?{...p.defaults}:{};
 }
 function newBuilder(sourceId="",direct=false){
+ if(direct&&operator()){explain("Master Admin only","Direct orders are reserved for Master Admin in this demo.");return;}
  const q=makeBlank();if(direct)q.directOrderDraft=true;
  window.CPQ_COMMERCIAL_SETTINGS.applyToNew(q,new Date(),direct);
  const src=opportunity(sourceId);
@@ -80,6 +82,7 @@ function existingBuilder(mode="edit",step=0){
 function saveBuilder(){
  const b=state.builder;if(!b)return;
  const q=b.quote;
+ if(operator()&&(q.directOrderDraft||!allowedRecord(q)||!access.customerVisible("ma-006-quotations.html",customer(q.customerId)))){explain("Assigned location required","Choose an existing customer linked to your granted company and branch before saving.");return;}
  const validCust=customer(q.customerId);
  const isGoodBuyer=!!master.companies.find(x=>x.customerId===q.customerId&&x.id===q.buyerId);
  const scope=validCust?.links||[];
@@ -249,6 +252,7 @@ function demoStamp(){return new Date().toLocaleString("en-GB",{day:"2-digit",mon
 function labels(q){return {customer:customer(q.customerId)?.name,buyer:buyer(q.buyerId)?.name,seller:entity(q.companyId)?.name,branch:branch(q.branchId)?.name};}
 function orderLabels(q){return {...labels(q),owner:employee(q.ownerId)?.name,contact:contact(q.contactId)?.name,site:site(q.siteId)?.name,project:project(q.projectId)?.name};}
 function openOrderDraft(){
+ if(operator()){explain("Master Admin only","Order creation is reserved for Master Admin.");return;}
  const q=quote(state.selected);if(!q)return;
  try{const existing=orders.linked(q.id);if(existing){window.location.href="ma-007-orders.html?order="+encodeURIComponent(existing.id);return;}
   if(!orders.available(q))throw Error("A reviewed, dispatched and accepted current revision is required.");
@@ -257,6 +261,7 @@ function openOrderDraft(){
  }catch(err){explain("Cannot create order",esc(err.message));}
 }
 function openDirectOrder(id){
+ if(operator()){explain("Master Admin only","Direct orders are reserved for Master Admin.");return;}
  if(!id){newBuilder("",true);return;}
  const o=orders.find(id);
  if(!o||o.source!=="Direct Order"||o.status!=="Draft"){window.location.href="ma-007-orders.html";return;}
@@ -280,6 +285,7 @@ function submitDemoReview(){
  }catch(error){explain("Review cannot start",esc(error.message));}
 }
 function openDemoDecision(role){
+ if(operator()){explain("Master Admin only","This action is reserved for Master Admin in Phase 1.");return;}
  const q=quote(state.selected);if(role!=="master"||!policy.phase1Pending(q))return;
  modal("Master Admin review","Phase 1 · Browser simulation",
  '<div class="ma6-note">Check the customer offer, BOQ, GST, costs and commercial terms. This simulates a Master Admin decision; no authenticated approval or real issuance occurs.</div>'+
@@ -287,6 +293,7 @@ function openDemoDecision(role){
  '<div class="ma6a-demo-decision-buttons">'+[["changes","Request changes"],["rejected","Reject (demo)"],["approved","Mark demo approved"]].map(([k,l])=>'<button type="button" class="btn '+(k==="approved"?"primary":"")+'" data-action="record-demo-review" data-role="master" data-decision="'+k+'">'+l+'</button>').join("")+'</div>');
 }
 function recordDemoDecision(role,decision){
+ if(operator()){explain("Master Admin only","This action is reserved for Master Admin in Phase 1.");return;}
  const q=quote(state.selected);if(!q||role!=="master")return;
  try{
   const candidate=copy(q),status=policy.phase1Decide(candidate,decision,$("demo-review-comment")?.value.trim()||"",demoStamp());
@@ -327,6 +334,7 @@ function localISO(){
  return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-");
 }
 function openDemoDispatch(){
+ if(operator()){explain("Master Admin only","This action is reserved for Master Admin in Phase 1.");return;}
  const q=quote(state.selected);
  if(!q||q.status!=="Draft"||q.demoDispatch?.state==="Sent in demo")return;
  if(!policy.phase1Reviewed(q)||a.demoReadiness(q).length){
@@ -343,6 +351,7 @@ function openDemoDispatch(){
   '<div class="ma6a-demo-decision-buttons"><button class="btn primary" type="button" data-action="record-demo-dispatch">Save simulated dispatch</button></div>');
 }
 function recordDemoDispatch(){
+ if(operator()){explain("Master Admin only","This action is reserved for Master Admin in Phase 1.");return;}
  const q=quote(state.selected);
  if(!q||q.status!=="Draft"||q.demoDispatch?.state==="Sent in demo"||
     !policy.phase1Reviewed(q)||a.demoReadiness(q).length)return;
@@ -361,6 +370,7 @@ function recordDemoDispatch(){
  closeModal();state.tab="documents";render();toast("Simulated dispatch saved. Nothing was actually sent.");
 }
 function openDemoResponse(){
+ if(operator()){explain("Master Admin only","This action is reserved for Master Admin in Phase 1.");return;}
  const q=quote(state.selected);
  if(!q||orders.linked(q.id)||(q.demoDispatch?.state!=="Sent in demo"&&q.status!=="Sent"))return;
  const response=q.demoDispatch?.response||{};
@@ -378,6 +388,7 @@ function openDemoResponse(){
   '<div class="ma6a-demo-decision-buttons"><button class="btn primary" type="button" data-action="save-demo-response">Save demo response</button></div>');
 }
 function saveDemoResponse(){
+ if(operator()){explain("Master Admin only","This action is reserved for Master Admin in Phase 1.");return;}
  const q=quote(state.selected);
  if(!q||orders.linked(q.id)||(q.demoDispatch?.state!=="Sent in demo"&&q.status!=="Sent"))return;
  const decision=$("demo-response-decision")?.value||"";
@@ -424,6 +435,7 @@ function selectLinkedSellingScope(q,scope){
  if(changed)toast("Selling company and branch selected. Choose the responsible employee and review any supplier rates for this company.");
 }
 function handleAction(action,target){
+ if(operator()&&["link-selling-scope","refresh-customer-scope","simulate-review","record-demo-review","open-demo-dispatch","record-demo-dispatch","open-demo-response","save-demo-response","create-order-draft"].includes(action)){explain("Master Admin only","This action is reserved for Master Admin.");return;}
  if(["save-custom-boq","cancel-custom-boq","edit-custom-boq"].includes(action)){handleCustom(action,target);return;}
  if(action==="link-selling-scope"&&state.builder){
   const q=state.builder.quote;
@@ -629,6 +641,7 @@ function openConfigurationHandoff(raw,fromSaved=false){
  typeof c.name!=="string"||!Array.isArray(c.items)||c.items.length<1||c.items.length>25)return false;
  const lines=[],catalog=window.CPQ_MA006A_CATALOG;
  const storedConfig=window.CPQ_MA006A_DATA?.configurations?.find(x=>x.id===c.configId&&x.revision===c.revision);
+ if(operator()&&(!fromSaved||!storedConfig||!allowedRecord(storedConfig)||!access.canRecord("ma-006a-configuration.html",storedConfig)))return false;
  if(fromSaved&&storedConfig&&req.errors(storedConfig).length)return false;
  const quotedServices=flow.normalized(storedConfig?.serviceIds||c.serviceIds||[],false);
  if(c.serviceIds&&(!Array.isArray(c.serviceIds)||quotedServices.length!==c.serviceIds.length))return false;

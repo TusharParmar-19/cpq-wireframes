@@ -4,11 +4,13 @@
 const $=id=>document.getElementById(id);
 const esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const db=JSON.parse(JSON.stringify(window.CPQ_MA006_DATA));
+const access=window.CPQ_DEMO_ACCESS,workspaceFile="ma-006-quotations.html",operator=!!access&&!access.isMaster();
+const allowedRecord=q=>!operator||access.canRecord(workspaceFile,q),allowedCustomer=c=>!operator||access.customerVisible(workspaceFile,c);
 const flow=window.CPQ_FLOW;
 const pricing=window.CPQ_PRICING,custom=window.CPQ_CUSTOM_BOQ,req=window.CPQ_REQUIREMENTS,policy=window.CPQ_POLICY,orders=window.CPQ_ORDERS;
-const master=window.CPQ_MA004_DATA, org=window.CPQ_MA002_DATA, staff=window.CPQ_MA003_USERS, enquiries=window.CPQ_MA005_DATA.opportunities;
+const master=window.CPQ_MA004_DATA, org=operator?access.organizationsFor(workspaceFile,window.CPQ_MA002_DATA):window.CPQ_MA002_DATA, staff=window.CPQ_MA003_USERS, enquiries=window.CPQ_MA005_DATA.opportunities;
 const state={selected:"QT-2026-014",tab:"summary",mode:"register",company:"all",branch:"all",status:"all",owner:"all",search:"",listExpanded:false,builder:null,history:[]};
-const quote=id=>db.quotations.find(q=>q.id===id);
+const quote=id=>db.quotations.find(q=>q.id===id&&allowedRecord(q));
 const customer=id=>master.customers.find(x=>x.id===id);
 const buyer=id=>master.companies.find(x=>x.id===id);
 const contact=id=>master.contacts.find(x=>x.id===id);
@@ -17,7 +19,7 @@ const project=id=>master.projects.find(x=>x.id===id);
 const employee=id=>staff.find(x=>x.id===id);
 const entity=id=>org.find(x=>x.id===id);
 const branch=id=>org.flatMap(x=>x.branches.map(b=>({...b,companyId:x.id}))).find(x=>x.id===id);
-const opportunity=id=>enquiries.find(x=>x.id===id);
+const opportunity=id=>enquiries.find(x=>x.id===id&&allowedRecord(x));
 const product=id=>{
  const old=db.products.find(x=>x.id===id);if(old)return old;
  const service=flow.service(id);
@@ -76,7 +78,7 @@ function lineConfig(line){
  if(line.type!=="config"||!p)return "No option configuration";
  return Object.entries(p.options).map(([k,v])=>v.label+": "+(line.options?.[k]||"—")).join(" · ");
 }
-function isScopeMatch(q){return(state.company==="all"||q.companyId===state.company)&&(state.branch==="all"||q.branchId===state.branch);}
+function isScopeMatch(q){return allowedRecord(q)&&(state.company==="all"||q.companyId===state.company)&&(state.branch==="all"||q.branchId===state.branch);}
 function visible(){
  const s=state.search.trim().toLowerCase();
  return db.quotations.filter(q=>isScopeMatch(q)&&
@@ -286,7 +288,7 @@ function approvals(q){
  '<div class="ma6-kvs">'+kv("Invoice total",money(t.total))+kv("Combined discount",discount.toFixed(2)+"%")+kv("Estimated margin",t.margin==null?"Unavailable":t.margin.toFixed(2)+"%")+kv("Review authority","Master Admin (demo)")+'</div>'+
  (!policy.locked(q)?'<div class="ma6a-review-next"><div><b>'+(missing.length?"Complete quotation details":"Ready for Master Admin review")+'</b><p>'+esc(missing.join(" · ")||"Submit the current revision for a single demo review.")+'</p></div>'+
  (missing.length?'<button class="btn" data-action="edit-builder">Complete Draft</button>':'<button class="btn primary" type="button" data-action="submit-demo-review">Submit Demo Review</button>')+'</div>':
- '<div class="ma6a-review-next"><div><b>'+(ready?"Master Admin review complete (demo)":pending?"Awaiting Master Admin decision":"Revision locked for review / history")+'</b><p>'+esc(ready?"Continue to PDF & Response for simulated dispatch.":pending?"Review the quotation and choose a decision.":!simple&&d?.state==="In review"?"Prior policy-based review retained. Create a new revision to use the Phase 1 review.":"Create a new revision for corrections; historical data is preserved.")+'</p></div>'+
+ '<div class="ma6a-review-next"><div><b>'+(ready?"Master Admin review complete (demo)":pending?"Awaiting Master Admin decision":"Revision locked for review / history")+'</b><p>'+esc(ready?"Continue to PDF & Response for simulated dispatch.":pending?(operator?"Submitted. Only Master Admin can record a review decision.":"Review the quotation and choose a decision."):!simple&&d?.state==="In review"?"Prior policy-based review retained. Create a new revision to use the Phase 1 review.":"Create a new revision for corrections; historical data is preserved.")+'</p></div>'+
  (pending?'<button class="btn primary" data-action="simulate-review" data-role="master">Review Quotation</button>':ready?'<button class="btn primary" data-action="go-demo-documents">Continue to PDF &amp; Response</button>':policy.canRevise(q)?'<button class="btn" data-action="create-revision">Create New Revision</button>':'')+'</div>')+
  ruleNotices(q)+'<details class="ma6a-quote-more"><summary>Quotation checks ('+passed+' of '+checks.length+')</summary><div class="ma6-checklist">'+checks.map(([title,done,desc])=>'<div class="ma6-check-item"><span class="ma6-check-icon">'+(done?'✓':'!')+'</span><div><b>'+esc(title)+'</b><small>'+esc(desc)+'</small></div></div>').join("")+'</div></details>'+
  '<details class="ma6a-quote-more"><summary>Demo review history ('+events.length+')</summary>'+(events.length?'<div class="ma6a-review-history">'+[...events].reverse().map(ev=>'<div class="ma6a-review-event"><strong>'+esc(ev.action)+'</strong><small>'+esc(ev.at)+' · '+esc(ev.actor)+' · '+esc(ev.revision||q.rev)+'</small><p>'+esc(ev.comment||"")+'</p></div>').join("")+'</div>':blank("No demo review actions recorded yet."))+'</details>'+
@@ -319,8 +321,8 @@ function paper(q){
 function documents(q){
  const dispatch=q.demoDispatch||null, events=dispatch?.events||[];
  const simulated=dispatch?.state==="Sent in demo", historical=["Sent","Won","Lost"].includes(q.status);
- const canSimulate=q.status==="Draft"&&!simulated&&policy.phase1Reviewed(q)&&demoReadiness(q).length===0;
- const linkedOrder=orders.linked(q.id),canRespond=!linkedOrder&&(simulated||q.status==="Sent");
+ const canSimulate=!operator&&q.status==="Draft"&&!simulated&&policy.phase1Reviewed(q)&&demoReadiness(q).length===0;
+ const linkedOrder=orders.linked(q.id),canRespond=!operator&&!linkedOrder&&(simulated||q.status==="Sent");
  const currentResponse=dispatch?.response?.decision?dispatch.response.decision+" (demo)":q.response||"Not recorded";
  const dispatchLabel=simulated?"Sent in demo":historical?"Historical sample (unverified)":"Not dispatched";
  const formatEvent=ev=>'<div class="ma6a-review-event"><strong>'+esc(ev.action)+'</strong><small>'+esc(ev.at||"")+' · '+esc(ev.actor||"Demo user")+' · '+esc(ev.revision||q.rev)+'</small>'+
@@ -335,16 +337,16 @@ function documents(q){
  '<p>Production: lock an authorized revision, create the issued PDF, and capture recipient, channel and proof of sending.</p>'+
  (canSimulate?'<button type="button" class="btn primary" data-action="open-demo-dispatch">Simulate dispatch</button>':
  simulated?'<div class="ma6a-dispatch-meta"><b>Recipient:</b> '+esc(dispatch.recipient||"Not recorded")+'<br><b>Channel:</b> '+esc(dispatch.channel||"Not recorded")+'<br><b>Reference:</b> '+esc(dispatch.reference||"Not recorded")+'<br><b>Date:</b> '+esc(dispatch.date||"Not recorded")+'</div>':
- q.status==="Draft"?'<div class="ma6a-dispatch-help">Complete the Master Admin demo review and essential terms first. <button type="button" class="btn" data-action="go-demo-approvals">Open Reviews</button></div>':
+ q.status==="Draft"?operator?'<p class="ma6a-dispatch-muted">Master Admin records dispatch after reviewing the draft.</p>':'<div class="ma6a-dispatch-help">Complete the Master Admin demo review and essential terms first. <button type="button" class="btn" data-action="go-demo-approvals">Open Reviews</button></div>':
  '<p class="ma6a-dispatch-muted">Existing sample status only. No actual dispatch or authorization can be verified here.</p>')+
  '</section>'+
  '<section class="ma6a-dispatch-card"><div class="ma6a-dispatch-card-title"><b>2 · Customer response</b><span class="ma6a-demo-state">'+esc(currentResponse)+'</span></div>'+
  '<p>Record Accepted, Rejected or Changes Requested, with the reply source, date, reference and notes.</p>'+
  (canRespond?'<button type="button" class="btn primary" data-action="open-demo-response">'+(dispatch?.response?"Update demo response":"Record demo response")+'</button>':
- '<p class="ma6a-dispatch-muted">'+(linkedOrder?"Response locked because an order is linked.":"Available after simulated dispatch, or for a historical Sent sample.")+'</p>')+
+ '<p class="ma6a-dispatch-muted">'+(linkedOrder?"Response locked because an order is linked.":operator?"Master Admin records customer responses in this demo.":"Available after simulated dispatch, or for a historical Sent sample.")+'</p>')+
  (dispatch?.response?'<div class="ma6a-dispatch-meta"><b>Source:</b> '+esc(dispatch.response.source)+'<br><b>Received:</b> '+esc(dispatch.response.date)+'<br><b>Evidence:</b> '+esc(dispatch.response.reference||"Not recorded")+'</div>':'')+
  '</section></div>'+
- (linkedOrder?note('<b>Linked order:</b> '+esc(linkedOrder.id)+' · '+esc(linkedOrder.status)+' (demo). <a class="btn" href="ma-007-orders.html?order='+encodeURIComponent(linkedOrder.id)+'">View Order</a>'):dispatch?.response?.decision==="Accepted"?note('Sample acceptance recorded. '+(orders.available(q)?'<button type="button" class="btn primary" data-action="create-order-draft">Create Order Draft</button>':'A valid reviewed and dispatched revision with dated acceptance evidence is required.')):'')+
+ (linkedOrder?note('<b>Linked order:</b> '+esc(linkedOrder.id)+' · '+esc(linkedOrder.status)+' (demo). <a class="btn" href="ma-007-orders.html?order='+encodeURIComponent(linkedOrder.id)+'">View Order</a>'):dispatch?.response?.decision==="Accepted"?note('Sample acceptance recorded. '+(operator?"Master Admin handles order registration.":orders.available(q)?'<button type="button" class="btn primary" data-action="create-order-draft">Create Order Draft</button>':'A valid reviewed and dispatched revision with dated acceptance evidence is required.')):'')+
  (dispatch?.response?.decision==="Changes Requested"?note('Customer requested changes. In production create a new controlled quotation revision; never overwrite a sent revision.',true):'')+
  '<details class="ma6a-quote-more"><summary>Dispatch and response demo history ('+events.length+')</summary>'+
  (events.length?'<div class="ma6a-review-history">'+[...events].reverse().map(formatEvent).join("")+'</div>':
@@ -377,7 +379,7 @@ function formArea(id,label,value="",full=true){
 }
 function contextBuilder(q){
  const links=customer(q.customerId)?.links||[];
- const customers=master.customers.filter(x=>x.status!=="Archived").map(x=>[x.id,x.name+" · "+x.type]);
+ const customers=master.customers.filter(x=>x.status!=="Archived"&&allowedCustomer(x)).map(x=>[x.id,x.name+" · "+x.type]);
  const bs=master.companies.filter(x=>x.customerId===q.customerId).map(x=>[x.id,x.name]);
  const contacts=master.contacts.filter(x=>x.customerId===q.customerId&&x.companyId===q.buyerId).map(x=>[x.id,x.name]);
  const sites=master.sites.filter(x=>x.customerId===q.customerId&&x.companyId===q.buyerId).map(x=>[x.id,x.name]);
@@ -385,7 +387,7 @@ function contextBuilder(q){
  const comps=window.CPQ_SCOPE_DEFAULTS.companies(org,links).map(e=>[e.id,e.name]);
  const branches=window.CPQ_SCOPE_DEFAULTS.branches(org,q.companyId,links).map(x=>[x.id,x.name+" · "+x.city]);
  const owners=staff.filter(u=>u.status==="Active"&&(u.assignments||[]).some(x=>x.companyId===q.companyId&&x.branches.includes(q.branchId))).map(x=>[x.id,x.name]);
- const opps=enquiries.filter(x=>x.customerId===q.customerId&&x.buyerId===q.buyerId).map(x=>[x.id,x.id+" · "+x.title]);
+ const opps=enquiries.filter(x=>allowedRecord(x)&&x.customerId===q.customerId&&x.buyerId===q.buyerId).map(x=>[x.id,x.id+" · "+x.title]);
  const companyHelp=q.customerId?
   (comps.length===1?'One eligible company — automatically selected when choosing the customer.':comps.length?'Showing '+comps.length+' linked internal companies.':'No active company/branch is linked to this customer yet.')+
   '<div class="ma6-scope-links"><button class="btn ma6-scope-refresh" type="button" data-action="link-selling-scope">+ Use another company / branch</button></div><details class="ma6-scope-links"><summary>Manage existing links</summary><a href="ma-004-customers.html?customer='+encodeURIComponent(q.customerId)+'" target="_blank" rel="noopener">Open customer ↗</a> <button class="btn ma6-scope-refresh" type="button" data-action="refresh-customer-scope">Refresh links</button></details>'

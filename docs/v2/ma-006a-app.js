@@ -6,8 +6,10 @@ const $=id=>document.getElementById(id);
 const esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const clone=x=>JSON.parse(JSON.stringify(x));
 const records=clone(window.CPQ_MA006A_DATA.configurations);
+const access=window.CPQ_DEMO_ACCESS,workspaceFile="ma-006a-configuration.html",operator=!!access&&!access.isMaster();
+const allowedRecord=c=>!operator||access.canRecord(workspaceFile,c),allowedCustomer=c=>!operator||access.customerVisible(workspaceFile,c);
 const flow=window.CPQ_FLOW,custom=window.CPQ_CUSTOM_BOQ,req=window.CPQ_REQUIREMENTS;
-const products=window.CPQ_MA006_DATA.products,org=window.CPQ_MA002_DATA,staff=window.CPQ_MA003_USERS,master=window.CPQ_MA004_DATA,opps=window.CPQ_MA005_DATA.opportunities;
+const products=window.CPQ_MA006_DATA.products,org=operator?access.organizationsFor(workspaceFile,window.CPQ_MA002_DATA):window.CPQ_MA002_DATA,staff=window.CPQ_MA003_USERS,master=window.CPQ_MA004_DATA,opps=window.CPQ_MA005_DATA.opportunities;
 const state={selected:"CF-2026-003",tab:"overview",mode:"register",company:"all",branch:"all",search:"",status:"all",builder:null};
 const catalog=()=>window.CPQ_MA006A_CATALOG_UI?.db||window.CPQ_MA006A_CATALOG;
 const catalogVariant=id=>catalog().variants.find(x=>x.id===id);
@@ -20,13 +22,13 @@ function itemProduct(id){
  return {id:v.id,name:flow.productName(f,v),type:f?.type==="service"?"service":"standard",unit:f?.unit||"Nos",
  model:v.model||"",displayModel:flow.variantLabel(v),sku:v.sku,manufacturer:flow.manufacturerLabel(v,m),capacity:v.capacity,solarKind:f?.solarKind||"general",variant:v};
 }
-const record=id=>records.find(c=>c.id===id);
+const record=id=>records.find(c=>c.id===id&&allowedRecord(c));
 const customer=id=>master.customers.find(c=>c.id===id);
 const buyer=id=>master.companies.find(c=>c.id===id);
 const entity=id=>org.find(c=>c.id===id);
 const branch=id=>org.flatMap(c=>c.branches.map(b=>({...b,companyId:c.id}))).find(b=>b.id===id);
 const owner=id=>staff.find(x=>x.id===id);
-const opportunity=id=>opps.find(x=>x.id===id);
+const opportunity=id=>opps.find(x=>x.id===id&&allowedRecord(x));
 const opts=(values,selected)=>values.map(([v,label])=>'<option value="'+esc(v)+'"'+(String(v)===String(selected)?' selected':'')+'>'+esc(label)+'</option>').join("");
 const kv=(label,value)=>'<div class="ma6-kv"><small>'+esc(label)+'</small><strong>'+esc(value||"Not linked")+'</strong></div>';
 const panel=(title,sub)=>'<div class="ma6-panel-head"><div><h3>'+esc(title)+'</h3><p>'+esc(sub)+'</p></div></div>';
@@ -123,7 +125,7 @@ const status=c=>review(c).ok?"Demo check passed":"Needs changes";
 const badge=c=>review(c).ok?'<span class="ma6a-chip-ok">Demo check passed</span>':'<span class="ma6a-chip-bad">Needs changes</span>';
 function scopeMatch(c){
  const comp=state.company==="all"||c.companyId===state.company,br=state.branch==="all"||c.branchId===state.branch;
- return comp&&br;
+ return allowedRecord(c)&&comp&&br;
 }
 function visible(){
  const term=state.search.trim().toLowerCase();
@@ -251,6 +253,7 @@ function setProduct(b,id){
  if(!p)return;b.productId=id;b.quantity=1;b.itemNote="";b.options=p.type==="config"?{...p.defaults}:{};
 }
 function newBuilder(original=null,duplicate=false){
+ if(original&&!allowedRecord(original)){dialog("Access unavailable","This configuration is outside your assigned demo locations.");return;}
  const c=original?clone(original):emptyConfig();
  if(duplicate){c.id="";c.quoteId="";delete c.history;c.revision="C0";c.updated="New copy (demo)";c.name=c.name+" — Copy";}
  const b={value:c,isNew:!original||duplicate,step:0,productId:"",quantity:1,options:{},itemNote:"",customSpec:"",productGroup:c.solutionType==="solar"?"solar":"other",catalogSearch:""};
@@ -277,7 +280,7 @@ function solarOverview(c){
  '<p class="ma6a-compact-help">Only simple module/inverter totals are shown. Electrical matching, structural fit, shading and expected energy yield need engineering verification.</p></div>';
 }
 function renderContext(c){
- const customers=master.customers.filter(x=>x.status!=="Archived").map(x=>[x.id,x.name]);
+ const customers=master.customers.filter(x=>x.status!=="Archived"&&allowedCustomer(x)).map(x=>[x.id,x.name]);
  const buyers=master.companies.filter(x=>x.customerId===c.customerId).map(x=>[x.id,x.name]);
  const contactOptions=master.contacts.filter(x=>x.customerId===c.customerId&&x.companyId===c.buyerId).map(x=>[x.id,x.name]);
  const siteOptions=master.sites.filter(x=>x.customerId===c.customerId&&x.companyId===c.buyerId).map(x=>[x.id,x.name]);
@@ -286,7 +289,7 @@ function renderContext(c){
  const companies=window.CPQ_SCOPE_DEFAULTS.companies(org,links).map(x=>[x.id,x.name]);
  const branches=window.CPQ_SCOPE_DEFAULTS.branches(org,c.companyId,links).map(x=>[x.id,x.name]);
  const users=staff.filter(x=>x.status==="Active"&&(x.assignments||[]).some(a=>a.companyId===c.companyId&&a.branches.includes(c.branchId))).map(x=>[x.id,x.name]);
- const enq=opps.filter(x=>x.customerId===c.customerId&&x.buyerId===c.buyerId).map(x=>[x.id,x.title+" · "+x.id]);
+ const enq=opps.filter(x=>allowedRecord(x)&&x.customerId===c.customerId&&x.buyerId===c.buyerId).map(x=>[x.id,x.title+" · "+x.id]);
  return panel("1 · Project & Configuration Basics","Start with the essentials. Optional site, electricity and engineering details are expandable.")+
  '<div class="ma6-field-grid">'+field("name","Configuration / Project Name *",c.name,true)+
  select("solutionType","What are you configuring?",[["solar","Solar System / Project"],["general","Single Product / Other"]],c.solutionType||"general")+
@@ -434,6 +437,7 @@ function closeDialog(){
 }
 function save(){
  const b=state.builder;if(!b)return;const c=b.value,r=review(c);
+ if(operator&&(!allowedRecord(c)||(c.customerId&&!allowedCustomer(customer(c.customerId))))){dialog("Assigned location required","Choose your granted company and branch under Customer project links & internal ownership. If using a customer, it must be linked to that location.");return;}
  if(!String(c.name||"").trim()){dialog("Name needed","Enter a configuration name to save this draft.");return;}
  const requirementsIssues=req.errors(c);if(requirementsIssues.length){dialog("Check customer requirements",esc(requirementsIssues[0]));return;}
  c.updated=new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})+" (demo)";
