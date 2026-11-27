@@ -202,3 +202,16 @@ window.CPQ_MA003_ROLES.forEach(r=>{
  r.pages=[...(window.CPQ_MA003_ROLE_PAGE_DEFAULTS[r.id]||[])];
  r.perms=[...new Set([...r.perms,...(window.CPQ_MA003_ROLE_EXTRA_GRANTS[r.id]||[])])];
 });
+
+/* Explicit working-demo bundles; existing saved roles never receive automatic grants. */
+window.CPQ_MA003_DEMO_BUNDLES={
+ "ma-006a-configuration.html":{label:"Products & Configuration",grant:"demo.workspace.catalog",pages:["dashboard","product-catalog","product-templates","product-documents","configuration-workspace"],actions:["catalog.view","catalog.manage","catalog.manufacturers.manage","catalog.parts.manage","catalog.prices.manage","product.sku.manual","product.templates.manage","product.specs.edit","product.warranty.edit","product.documents.view","product.documents.upload","product.documents.archive","configurations.view","configurations.create","configurations.edit","configurations.handoff","selling.view","cost.view"]},
+ "ma-006-quotations.html":{label:"Quotations & BOQ",grant:"demo.workspace.quotes",pages:["dashboard","quote-register","quote-builder","pricing-workspace","quote-revisions","quote-pdf","quote-dispatch"],actions:["quotes.view","quotes.create","quotes.edit","quotes.duplicate","quotes.revise","quotes.pdf","selling.view","cost.view","margin.view","pricing.view","pricing.override","pricing.costs.edit","pricing.markup.apply","vendorquotes.use_rate"]}
+};
+const cpqCatalogPage=window.CPQ_MA003_PAGE_CATALOG.find(p=>p.id==="product-catalog");
+for(const id of ["selling.view","cost.view","demo.workspace.catalog"])if(!cpqCatalogPage.actions.includes(id))cpqCatalogPage.actions.push(id);
+window.CPQ_MA003_PAGE_CATALOG.find(p=>p.id==="quote-builder").actions.push("demo.workspace.quotes");
+window.CPQ_MA003_PERMISSIONS.push(
+ {id:"demo.workspace.catalog",name:"Use full working Products & Configuration demo",group:"Phase 1 working modules",sensitive:true},
+ {id:"demo.workspace.quotes",name:"Use full working Quotation draft demo (includes costs and margins)",group:"Phase 1 working modules",sensitive:true}
+);

@@ -1,12 +1,24 @@
 (()=>{
 "use strict";
-const d=window.CPQ_MA001_DEMO,$=id=>document.getElementById(id);
+const d=window.CPQ_MA001_DEMO,$=id=>document.getElementById(id),A=window.CPQ_DEMO_ACCESS,operator=!!A&&!A.isMaster();
+if(operator){
+ const ss=A.workspaceScopes(),inScope=(e,b)=>ss.some(s=>s.companyId===e&&s.branchId===b);
+ d.entities=d.entities.map(e=>({...e,branches:e.branches.filter(b=>inScope(e.id,b[0]))})).filter(e=>e.branches.length);
+ d.quotations=d.quotations.filter(q=>A.canRecord("ma-006-quotations.html",{companyId:q[2],branchId:q[3]}));
+ d.employees=[];d.customers=[];d.opportunities=[];d.orders=[];d.tasks=[];d.activities=[];
+ document.title="CPQ Dashboard | Version 2";document.querySelector(".hero h1").textContent="CPQ Dashboard";document.querySelector(".hero .overline").textContent="Workspace / MA-001";document.querySelector(".top b").textContent="CPQ Dashboard";document.querySelector(".hero .muted").textContent="Your assigned locations and permitted working modules.";
+ const grid=document.querySelector(".quick-grid");grid.replaceChildren();
+ for(const [f,b] of Object.entries(A.bundles))if(A.canOpen(f)){const l=document.createElement("a"),t=document.createElement("b"),h=document.createElement("small");l.className="quick-link";l.href=f;t.textContent=b.label;h.textContent=f.includes("006a")?"Enter products or prepare a configuration":"Create quotation drafts";l.append(t,h);grid.append(l);}
+ const profile=document.createElement("a");profile.className="quick-link";profile.href="account.html";profile.textContent="My profile & access";grid.append(profile);
+ $("task-rows").closest("section").hidden=true;$("activity-list").closest("section").hidden=true;
+ if(!A.canOpen("ma-006-quotations.html"))$("pipeline").closest("section").hidden=true;
+}
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const state={entity:"all",branch:"all",type:"all"};
 const legal=id=>d.entities.find(e=>e.id===id)?.name||"";
 const branchName=(e,id)=>d.entities.find(x=>x.id===e)?.branches.find(b=>b[0]===id)?.[1]||"";
 const scoped=(rows,ei=2,bi=3)=>rows.filter(r=>(state.entity==="all"||r[ei]===state.entity)&&(state.branch==="all"||r[bi]===state.branch));
-const tile=(name,n,desc,key,icon)=>'<button type="button" class="card stat" data-view="'+key+'"><span>'+esc(name)+' <span style="float:right;color:#3575a2">'+icon+'</span></span><strong>'+String(n).padStart(2,"0")+'</strong><small>'+esc(desc)+'</small><em>View sample records →</em></button>';
+const tile=(name,n,desc,key,icon)=>operator&&(!['entities','branches','drafts','approvals'].includes(key)||(['drafts','approvals'].includes(key)&&!A.canOpen('ma-006-quotations.html')))?'':'<button type="button" class="card stat" data-view="'+key+'"><span>'+esc(name)+' <span style="float:right;color:#3575a2">'+icon+'</span></span><strong>'+String(n).padStart(2,"0")+'</strong><small>'+esc(desc)+'</small><em>View sample records →</em></button>';
 function branches(){
  const list=d.entities.filter(e=>state.entity==="all"||e.id===state.entity).flatMap(e=>e.branches.map(b=>[b[0],(state.entity==="all"?e.name+" / ":"")+b[1]]));
  if(!list.some(x=>x[0]===state.branch))state.branch="all";

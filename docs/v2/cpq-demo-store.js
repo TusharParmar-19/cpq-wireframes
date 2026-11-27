@@ -34,6 +34,7 @@
  }
  let storageOK=true;
  function saveMany(changes){
+  if(window.CPQ_DEMO_ACCESS&&Object.keys(changes||{}).some(k=>!window.CPQ_DEMO_ACCESS.canWriteModule(k)))return false;
   const doc=read();
   for(const [name,value] of Object.entries(changes||{})){
    if(!(name in modules)||!usable(name,value))continue;
@@ -174,11 +175,13 @@
    missingReferences:missing};
  }
  function reset(){
+  if(window.CPQ_DEMO_ACCESS&&!window.CPQ_DEMO_ACCESS.isMaster())return;
   if(!window.confirm("Reset CPQ DEMO data in this browser? All saved sample edits, quotes and simulated responses will be discarded."))return;
   try{window.localStorage.removeItem(KEY);}catch(_){}
   window.location.href=window.location.pathname;
  }
  function mountReset(){
+  if(window.CPQ_DEMO_ACCESS&&!window.CPQ_DEMO_ACCESS.isMaster())return;
   if(document.getElementById("cpq-demo-reset"))return;
   const main=document.querySelector(".content,main,.main-content")||document.body;
   const button=document.createElement("button");

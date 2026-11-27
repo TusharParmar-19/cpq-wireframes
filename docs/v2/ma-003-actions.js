@@ -185,9 +185,9 @@ function customRoleForm(source=null,copy=false,restoredDraft=null){
   [["own","Own records"],["assigned","Own / assigned records"],["team","Own / assigned / team records"],["all","All authorized records inside assigned branches"]].map(([id,label])=>'<option value="'+id+'"'+(base.visibility===id?' selected':'')+'>'+label+'</option>').join("")+'</select></div>'+
   '<div class="ma3-form-item full"><label for="ma3-role-description">Role purpose</label><textarea name="description" id="ma3-role-description">'+esc(base.description||"")+'</textarea></div>'+
   '<div class="ma3-form-item full"><details class="ma3-config-section" data-config-anchor="pages" open><summary><span>1. Pages this role can open</span><span class="ma3-config-count" id="ma3-page-count">'+base.pages.length+' of '+a.pages.length+' selected</span></summary>'+
-  '<p class="ma3-scope-intro">These control the menu and direct page access. Planned pages are included for future phases but do not exist yet.</p>'+pageFields+'</details></div>'+
+  '<p class="ma3-scope-intro">Page grants are previewed here. Combined working product and quotation screens require complete Phase 1 working-module grants and all-record visibility inside assigned branches.</p>'+pageFields+'</details></div>'+
   '<div class="ma3-form-item full"><details class="ma3-config-section" data-config-anchor="actions"><summary><span>2. Actions &amp; sensitive data</span><span class="ma3-config-count" id="ma3-action-count">'+base.perms.length+' of '+perms.length+' selected</span></summary>'+
-  '<p class="ma3-scope-intro">Select view/create/edit/archive, quotation actions, RFQs, reports and confidential-data grants. Opening a page does not enable these actions.</p><div class="ma3-dependency-summary" id="ma3-dependency-summary" role="status" aria-live="polite" hidden></div>'+capabilityFields+'</details></div>'+
+  '<p class="ma3-scope-intro">The CPQ Operator template includes internal costs and margins because these combined screens display them. Removing a required grant disables that working module. More granular working access needs backend development.</p><div class="ma3-dependency-summary" id="ma3-dependency-summary" role="status" aria-live="polite" hidden></div>'+capabilityFields+'</details></div>'+
   '<div class="ma3-form-item full"><div class="ma3-review-impact" data-config-anchor="impact"><b>3. Employees and approval impact</b><p>'+(
    affected.length?'This role is assigned in '+affected.length+' company context(s). Changes would affect '+new Set(affected.map(x=>x.name)).size+' employee(s) wherever this role is assigned, but never grant access to an unassigned company.':
    'This role currently has no assigned employees. You can assign it to selected companies and branches in Add/Edit Employee.')+
@@ -314,6 +314,7 @@ function setPreview(values){
 }
 $("new-user").addEventListener("click",()=>employeeForm());
 $("new-role").addEventListener("click",()=>customRoleForm());
+$("new-operator-role").addEventListener("click",()=>customRoleForm(null,false,window.CPQ_DEMO_ACCESS.operatorTemplate()));
 for(const key of ["users","roles","preview"])$("tab-"+key).addEventListener("click",()=>setTab(key));
 $("user-search").addEventListener("input",e=>{state.filters.q=e.target.value;render()});
 $("user-role-filter").addEventListener("change",e=>{state.filters.role=e.target.value;render()});
