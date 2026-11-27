@@ -45,7 +45,7 @@ window.CPQ_MA003_USERS=[
 {id:"U009",name:"Operations User",email:"operations@example.com",mobile:"+91 00000 00109",designation:"Project Engineer",department:"Operations",roles:["technical"],branches:["e2v"],status:"Active",created:"02 Nov 2026",updated:"04 Nov 2026"},
 {id:"U010",name:"Service Manager",email:"service-manager@example.com",mobile:"+91 00000 00110",designation:"Service Manager",department:"Services",roles:["manager"],branches:["e3r"],status:"Active",created:"01 Nov 2026",updated:"04 Nov 2026"},
 {id:"U011",name:"Owner / Director",email:"director@example.com",mobile:"+91 00000 00111",designation:"Director",department:"Leadership",roles:["owner"],branches:["*"],status:"Active",created:"01 Nov 2026",updated:"06 Nov 2026"},
-{id:"U012",name:"Invited User",email:"invited@example.com",mobile:"+91 00000 00112",designation:"Assistant",department:"Operations",roles:["read"],branches:["e1s"],status:"Invited",created:"06 Nov 2026",updated:"06 Nov 2026"}
+{id:"U012",name:"Pending Setup User",email:"invited@example.com",mobile:"+91 00000 00112",designation:"Assistant",department:"Operations",roles:["read"],branches:["e1s"],status:"Pending first login",created:"06 Nov 2026",updated:"06 Nov 2026"}
 ];
 
 /* An employee may have different role grants in each legal entity.
@@ -168,7 +168,7 @@ window.CPQ_MA003_PERMISSIONS.push(
  {id:"commercial.manage",name:"Edit permitted non-sensitive settings",group:"Administration"},
  {id:"reports.export",name:"Export authorized reports",group:"Administration",sensitive:true},
  {id:"audit.view",name:"View authorized audit activity",group:"Administration"},
- {id:"users.invite",name:"Prepare secure employee invitation",group:"Administration"}
+ {id:"users.invite",name:"Create login / reset temporary password (Master Admin only)",group:"Administration"}
 );
 window.CPQ_MA003_ROLE_PAGE_DEFAULTS={
  master:["dashboard","organization","users","customers","opportunities","service-master","product-catalog","product-templates","product-documents","product-rules","configuration-workspace","quote-register","pricing-workspace","quote-builder","quote-revisions","quote-pdf","quote-dispatch","vendor-rfqs","documents","orders","approvals","commercial","reports","audit"],

@@ -1,7 +1,9 @@
 /* MA-003: interactive, in-memory role and employee demonstration; no network calls or stored credentials. */
 (()=>{
 "use strict";
-const a=window.CPQ_MA003,{users,roles,perms,entities,state,$,esc,userBy,roleBy,render}=a;
+const a=window.CPQ_MA003,{users,roles,perms,entities,state,$,esc,userBy,roleBy,render}=a,A=window.CPQ_DEMO_ACCESS;
+function persist(){return A.isMaster()&&window.CPQ_SHARED?.saveMany({users,roles});}
+function saveError(){toast("Demo data could not be saved. Refresh and try again.");}
 let saveHandler=null,cancelHandler=null,restoreFocus=null,userCounter=Math.max(0,...users.map(u=>Number(String(u.id).replace(/\D/g,""))||0)),roleCounter=Math.max(0,...roles.filter(r=>/^custom\d+$/.test(r.id)).map(r=>Number(r.id.slice(6))));
 const branchItems=entities.flatMap(e=>e.branches.map(b=>({id:b.id,companyId:e.id,companyName:e.name,name:b.name})));
 function open(title,subtitle,body,handler=null,label="Save demo"){
@@ -51,7 +53,7 @@ function checkbox(name,id,label,checked=false,meta=""){
 }
 function employeeForm(u=null){
  const creating=!u;
- const person=u||{name:"",email:"",mobile:"",designation:"",department:"",roles:[],branches:[],assignments:[],status:"Invited"};
+ const person=u||{name:"",email:"",mobile:"",designation:"",department:"",roles:[],branches:[],assignments:[],status:A.PENDING};
  const scopeHtml=entities.map(e=>{
   const assigned=person.assignments.find(a=>a.companyId===e.id)||{roles:[],branches:[]};
   const rolesHtml=roles.map(r=>checkbox("scopeRole",e.id+":"+r.id,r.name,assigned.roles.includes(r.id))).join("");
@@ -63,10 +65,10 @@ function employeeForm(u=null){
    '<div class="ma3-scope-heading">Roles in '+esc(e.name)+'</div><div class="ma3-checkbox-grid">'+rolesHtml+'</div>'+
    '<div class="ma3-scope-heading">Allowed operating branches</div><div class="ma3-checkbox-grid">'+branchesHtml+'</div></details>';
  }).join("");
- const notice='<div class="ma3-dialog-warning">Browser-only example. Real employees activate through a secure invitation. Each company has its own selected roles and branches: a manager role in Company A does not automatically apply in Company B. No email is sent or password collected.</div>';
+ const notice='<div class="ma3-dialog-warning">Master Admin creates this fictional account and shares its login ID and generated temporary sample password. The employee must change it on first login. Each company has independent roles and branches. Never enter real credentials.</div>';
  const html=notice+'<form id="ma3-editor"><div class="ma3-form">'+
  field("name","Employee full name","text",person.name,true)+
- field("email","Work email","email",person.email,true)+
+ field("email","Work email / login ID","email",person.email,true)+
  field("mobile","Mobile number","tel",person.mobile)+
  field("designation","Designation","text",person.designation)+
  field("department","Department","text",person.department)+
@@ -74,11 +76,12 @@ function employeeForm(u=null){
  '<div class="ma3-form-item full"><label>Company-specific role &amp; branch assignments *</label>'+
  '<p class="ma3-scope-intro">For each company select one or more roles AND one or more branches. Roles are never automatically copied into another company.</p>'+
  scopeHtml+'</div>'+
- (creating?'<div class="ma3-form-item full"><label>Initial account status</label><input type="text" value="Invited — secure account setup required" readonly></div>':
+ (creating?'<div class="ma3-form-item full"><label>Temporary password (demo)</label><input type="text" value="Generated when account is saved" readonly><small>Public sample code for this employee. Copy the login details after saving. Production will use securely generated or admin-set temporary passwords.</small></div><div class="ma3-form-item full"><label>Initial account status</label><input type="text" value="Pending first login — password change required" readonly></div>':
  '<div class="ma3-form-item full"><label>Current status</label><input type="text" value="'+esc(person.status)+' (use the dedicated status action to change)" readonly></div>')+
  '<div class="ma3-form-error" id="ma3-form-error" role="alert"></div>'+
  '</div></form>';
- open(creating?"Add Employee (demo)":"Edit Employee & Access",creating?"Prepare a fictional employee invitation":"Edit role and branch assignments independently for each company",html,()=>{
+ open(creating?"Add Employee (demo)":"Edit Employee & Access",creating?"Create a fictional employee login":"Edit role and branch assignments independently for each company",html,()=>{
+  if(!A.isMaster()){formError("Master Admin only.");return;}
   const form=$("ma3-editor");if(!form.reportValidity())return;
   const fd=new FormData(form);
   const roleValues=fd.getAll("scopeRole").map(String);
@@ -102,15 +105,18 @@ function employeeForm(u=null){
   const change={name,email,mobile:String(fd.get("mobile")||"").trim(),designation:String(fd.get("designation")||"").trim(),
    department:String(fd.get("department")||"").trim(),assignments,roles:newRoles,
    branches:[...new Set(assignments.flatMap(a=>a.branches))],updated:"07 Nov 2026 (demo)"};
-  if(u){Object.assign(u,change);audit("Company role assignments updated",u.name+" · "+u.id);}
+  const previous=u?{...u}:null;
+  if(u){Object.assign(u,change);}
   else{
    userCounter=Math.max(userCounter,...users.map(u=>Number(String(u.id).replace(/\D/g,""))||0))+1;
-   const created={...change,id:"U"+String(userCounter).padStart(3,"0"),created:"07 Nov 2026 (demo)",status:"Invited"};
+   const created={...change,id:"U"+String(userCounter).padStart(3,"0"),created:new Date().toISOString(),status:A.PENDING,credentialVersion:0};
    users.push(created);state.selectedUser=created.id;state.filters={q:"",role:"all",company:"all",status:"all"};
    $("user-search").value="";$("user-role-filter").value="all";$("user-company-filter").value="all";$("user-status-filter").value="all";
-   audit("Employee invitation prepared",created.name+" · "+created.id);
+   A.accountEvent(created,"Employee login created",A.current().name+" (demo)");
   }
-  close();render();toast("Scoped employee roles updated in this browser.");if(creating)window.CPQ_QUICK_CREATE?.saved("employee",state.selectedUser);
+  if(!persist()){if(previous)Object.assign(u,previous);else users.pop();formError("Could not save the account. No login was created.");return;}
+  if(!creating)audit("Company role assignments updated",u.name+" · "+u.id);
+  close();render();toast(creating?"Employee login created. First-login password change required.":"Scoped employee roles updated in this browser.");if(creating){window.CPQ_QUICK_CREATE?.saved("employee",state.selectedUser);showLoginDetails(state.selectedUser);}
  });
  $("ma3-editor").addEventListener("submit",e=>{e.preventDefault();saveHandler?.()});
  $("ma3-editor").addEventListener("change",e=>{
@@ -141,7 +147,7 @@ function showEffectivePermissions(id){
   const groupHtml=groups.map(g=>'<section class="ma3-role-group"><h3>'+esc(g)+'</h3>'+
    perms.filter(p=>p.group===g).map(p=>'<div class="ma3-perm-row"><label>'+esc(p.name)+(p.sensitive?' <span class="ma3-sensitive">· Sensitive</span>':'')+'</label><span class="ma3-tag '+(grants.has(p.id)?"good":"neutral")+'">'+(grants.has(p.id)?"✓ Role grant":"— Not granted")+'</span></div>').join("")+'</section>').join("");
   return '<div class="ma3-effective-context"><b>Assigned role(s) in this company:</b> '+esc(roleIds.map(r=>roleBy(r)?.name||r).join(", ")||"None")+
-  '<br><b>Record scope:</b> '+esc(a.visibility(u,c.companyId,c.branchId))+'<br><b>Account:</b> '+esc(u.status)+(u.status!=='Active'?' — cannot log in or open any page until activated':'')+'</div>'+pagesHtml+groupHtml+
+  '<br><b>Record scope:</b> '+esc(a.visibility(u,c.companyId,c.branchId))+'<br><b>Account:</b> '+esc(u.status)+(u.status!=='Active'?' — no workspace access until first-login setup is complete or account is reactivated':'')+'</div>'+pagesHtml+groupHtml+
   '<div class="ma3-inline-note"><b>Access applies only in this selected company/branch.</b> Roles in another company cannot grant actions here. All record ownership, sensitive-field and approval checks still apply independently in the production backend.</div>';
  };
  const html='<div class="ma3-dialog-warning"><b>Employee:</b> '+esc(u.name)+' · '+esc(u.status)+
@@ -226,7 +232,7 @@ function customRoleForm(source=null,copy=false,restoredDraft=null){
    if(inactiveActions.length)return; // Inconsistent role grants must not be saved.
    if(editing){Object.assign(source,record);state.selectedRole=source.id;audit("Role page & action policy updated",record.name+" · "+record.pages.length+" pages / "+record.perms.length+" actions");}
    else{roleCounter=Math.max(roleCounter,...roles.filter(r=>/^custom\d+$/.test(r.id)).map(r=>Number(r.id.slice(6))))+1;const id="custom"+roleCounter;roles.push({id,...record});state.selectedRole=id;audit("Custom role created",record.name+" · "+record.pages.length+" pages / "+record.perms.length+" actions");}
-   state.roleView="pages";close();refreshRoleFilters();render();toast("Role page and action policy updated in this browser.");if(!editing)window.CPQ_QUICK_CREATE?.saved("role",state.selectedRole);
+   if(!persist()){saveError();location.reload();return;}state.roleView="pages";close();refreshRoleFilters();render();toast("Role page and action policy updated in this browser.");if(!editing)window.CPQ_QUICK_CREATE?.saved("role",state.selectedRole);
   },"Confirm demo changes");
   $("modal-save").disabled=inactiveActions.length>0;
   if(inactiveActions.length)$("modal-save").title="Resolve all ineffective action grants before confirming";
@@ -283,18 +289,30 @@ function customRoleForm(source=null,copy=false,restoredDraft=null){
  $("ma3-editor").addEventListener("submit",e=>{e.preventDefault();saveHandler?.()});
  updateCounters();
 }
+function showLoginDetails(id){
+ const u=userBy(id);if(!A.isMaster()||!u||u.status!==A.PENDING)return;
+ const details="Login ID: "+u.email+"\nTemporary sample password: "+A.samplePassword(u)+"\nLogin URL: "+new URL("login.html",window.location.href).href;
+ open("Temporary login details (demo)","Share these fictional details with the employee",
+  '<div class="ma3-dialog-warning">Public demo code only. The employee must change the sample password before opening the workspace. Production must share temporary credentials securely and never expose an existing password.</div><div class="ma3-form-item full"><label for="ma3-login-details">Login details</label><textarea id="ma3-login-details" rows="5" readonly>'+esc(details)+'</textarea></div><button class="btn" type="button" id="ma3-copy-login">Copy demo login details</button>');
+ $("ma3-copy-login").addEventListener("click",async()=>{try{await navigator.clipboard.writeText(details);toast("Demo login details copied.");}catch(_){$("ma3-login-details").select();toast("Select and copy the displayed details.");}});
+}
+function changeAccount(id,mode){
+ const u=userBy(id);if(!u)return;
+ const check=A.resetAccount(u,users,mode);
+ if(!check.ok){msg("Account action unavailable",esc(check.error));return;}
+ const disabling=mode==="disable";
+ const title=disabling?"Deactivate employee?":mode==="reactivate"?"Reactivate employee?":"Reset temporary password?";
+ open(title,"Master Admin · Account status demonstration",
+ '<div class="ma3-dialog-warning">'+(disabling?"Workspace access is blocked without deleting employee history.":"The old sample password and session become invalid. The employee must complete first-login setup with the new temporary sample password.")+'</div><p><b>'+esc(u.name)+'</b> · '+esc(u.email)+'</p>',()=>{
+  const result=A.resetAccount(u,users,mode);if(!result.ok){msg("Account action unavailable",esc(result.error));return;}
+  const previous={...u};Object.assign(u,result.record);if(!persist()){Object.assign(u,previous);saveError();return;}
+  close();render();toast(disabling?"Account deactivated.":"Temporary sample password generated.");
+  if(!disabling)showLoginDetails(id);
+ },disabling?"Confirm deactivation (demo)":"Confirm & generate temporary password");
+}
 function updateAccountStatus(id){
  const u=userBy(id);if(!u)return;
- if(u.status==="Invited"){msg("Invitation requires acceptance","In the real CPQ, invited employees must complete a secure setup before activation. This prototype does not send invitations or bypass acceptance.");return;}
- const deactivating=u.status==="Active";
- if(deactivating&&u.roles.includes("master")&&!users.some(x=>x.id!==u.id&&x.status==="Active"&&x.roles.includes("master"))){
-  msg("Master Admin cannot be deactivated","This is the only active business Master Admin in the fictional example. At least one active administrator must be retained.");return;
- }
- const next=deactivating?"Inactive":"Active";
- open(deactivating?"Deactivate employee?":"Reactivate employee?","Account status demonstration",
-  '<div class="ma3-dialog-warning">'+(deactivating?"Access would be blocked without deleting the employee's audit history or references.":"Restoring login access must use verified credentials in production.")+'</div><p style="font-size:13px;color:#2d4c66"><b>'+esc(u.name)+'</b> · '+esc(u.email)+'</p>',
- ()=>{u.status=next;u.updated="06 Nov 2026 (demo)";audit("Account "+next.toLowerCase(),u.name+" · "+u.id);close();render();toast("Account status changed in local sample only.");},
- deactivating?"Confirm deactivation (demo)":"Confirm reactivation (demo)");
+ changeAccount(id,["Active",A.PENDING].includes(u.status)?"disable":"reactivate");
 }
 function refreshRoleFilters(){
  const value=state.filters.role;
@@ -339,12 +357,14 @@ const presets={
  "sales-admin-page":{user:"U002",page:"organization",action:"__open__",company:"e1",branch:"e1a",relation:"own"}
 };
 document.addEventListener("click",event=>{
- const t=event.target.closest("[data-select-user],[data-edit-user],[data-toggle-user],[data-effective-user],[data-preview-for],[data-select-role],[data-role-view],[data-edit-role],[data-copy-role],[data-scenario],[data-planned]");
+ const t=event.target.closest("[data-select-user],[data-edit-user],[data-toggle-user],[data-reset-password],[data-login-details],[data-effective-user],[data-preview-for],[data-select-role],[data-role-view],[data-edit-role],[data-copy-role],[data-scenario],[data-planned]");
  if(!t)return;
  const d=t.dataset;
  if(d.selectUser){state.selectedUser=d.selectUser;render();return;}
  if(d.editUser){employeeForm(userBy(d.editUser));return;}
  if(d.toggleUser){updateAccountStatus(d.toggleUser);return;}
+ if(d.resetPassword){changeAccount(d.resetPassword,"reset");return;}
+ if(d.loginDetails){showLoginDetails(d.loginDetails);return;}
  if(d.effectiveUser){showEffectivePermissions(d.effectiveUser);return;}
  if(d.previewFor){const u=userBy(d.previewFor),b=u?.branches.includes("*")?entities[0].branches[0]:a.scopeBranches(u)[0];setPreview({user:d.previewFor,page:"quote-register",company:b?.companyId||"e1",branch:b?.id||"e1a",action:"quotes.view",relation:"own"});return;}
  if(d.selectRole){state.selectedRole=d.selectRole;state.roleView="pages";render();return;}

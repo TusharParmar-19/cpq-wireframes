@@ -76,6 +76,7 @@
   for(const [key,globalName] of Object.entries(modules)){
    if(Object.prototype.hasOwnProperty.call(window,globalName)&&usable(key,doc.modules[key])){
     window[globalName]=copy(doc.modules[key]);
+    if(key==="users"&&window.CPQ_DEMO_ACCESS)window[globalName]=window[globalName].map(window.CPQ_DEMO_ACCESS.normalizeUser);
    }
   }
  }

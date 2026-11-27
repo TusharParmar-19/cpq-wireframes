@@ -92,7 +92,7 @@ function label(type,r){
 function eligible(type,r,ctx,activeOnly=false){
  if(!r)return "The new record could not be read from the shared master.";
  if(type==="vendor"&&(r.status!=="Active"||(ctx.companyId&&!r.companyIds?.includes(ctx.companyId))))return "Vendor saved, but not active for the selected company. Review the supplier master before selection.";
- if(type==="employee"&&r.status!=="Active")return "Employee saved as "+r.status+". Activate the account and assign the required branch before selecting it as owner.";
+ if(type==="employee"&&r.status!=="Active")return "Employee saved as "+r.status+". Complete first-login password setup and assign the required branch before selecting it as owner.";
  if(type==="product"&&activeOnly&&r.status!=="Active")return "Product model saved as "+r.status+". Complete the existing catalog review before selecting it for a configuration, quotation or service link.";
  if(type==="service"&&activeOnly&&r.status!=="Active")return "Service saved as "+r.status+". Activate it in Service Management before selecting it for a new enquiry or quotation.";
  if(type==="buyer"&&r.customerId!==ctx.customerId)return "Buyer saved, but it belongs to a different customer account.";

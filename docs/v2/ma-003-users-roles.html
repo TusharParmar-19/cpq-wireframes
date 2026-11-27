@@ -5,7 +5,7 @@
 <title>MA-003 — Users, Roles &amp; Permissions | CPQ</title>
 <link rel="stylesheet" href="ma-001.css"><link rel="stylesheet" href="ma-003.css">
 <link rel="stylesheet" href="cpq-quick-create.css">
-<link rel="stylesheet" href="cpq-demo-access.css?v=operator-2"><script src="ma-002-data.js"></script><script src="ma-003-data.js?v=operator-2"></script><script src="cpq-demo-access.js?v=operator-2" data-mode="workspace"></script></head><body>
+<link rel="stylesheet" href="cpq-demo-access.css?v=credentials-1"><script src="ma-002-data.js"></script><script src="ma-003-data.js?v=credentials-1"></script><script src="cpq-demo-access.js?v=credentials-1" data-mode="workspace"></script></head><body>
 <div class="layout">
 <aside class="sidebar">
  <div class="logo"><span>CP</span><div>CPQ Platform<small>Master Admin Workspace</small></div></div>
@@ -39,7 +39,7 @@
  <div><div class="overline">MASTER ADMIN / MA-003</div><h1>Users, Roles &amp; Permissions</h1><p class="muted">Manage employees, page access, role actions, sensitive data and company-specific permissions.</p></div>
  <div class="actions"><a class="btn" href="ma-002-organization.html">Companies &amp; Branches</a><button type="button" class="btn primary" id="new-user">+ Add Employee</button></div>
 </div>
-<div class="info"><b>WIREFRAME ONLY · All employees and access examples are fictional.</b> Demo edits persist in this browser and supply employee/role choices to other CPQ pages, but do not enforce actual access. It does not create accounts, send invitations, change production access or enforce security.</div>
+<div class="info"><b>WIREFRAME ONLY · All employees and access examples are fictional.</b> Demo edits persist in this browser and supply employee/role choices to other CPQ pages, but do not enforce actual access. It demonstrates account creation and password setup with public sample codes, not production access or security.</div>
 <section class="ma3-explainer" aria-label="How employee access works">
  <div class="ma3-explainer-title"><span class="ma3-mark"><span>✓</span></span><div><strong>How access is determined</strong><p>All checks must pass together. Selecting a company or branch never grants access by itself.</p></div></div>
  <div class="ma3-access-flow">
@@ -63,7 +63,7 @@
     <div class="ma3-filter-wide"><label for="user-search">Search employee / email</label><input type="search" id="user-search" placeholder="Name, email or ID" autocomplete="off"></div>
     <div><label for="user-role-filter">Role</label><select id="user-role-filter"><option value="all">All roles</option></select></div>
     <div><label for="user-company-filter">Legal entity</label><select id="user-company-filter"><option value="all">All companies</option></select></div>
-    <div><label for="user-status-filter">Status</label><select id="user-status-filter"><option value="all">All statuses</option><option value="Active">Active</option><option value="Invited">Invited</option><option value="Inactive">Inactive</option></select></div>
+    <div><label for="user-status-filter">Status</label><select id="user-status-filter"><option value="all">All statuses</option><option value="Active">Active</option><option value="Pending first login">Pending first login</option><option value="Locked">Locked</option><option value="Inactive">Inactive</option></select></div>
    </div>
    <div class="ma3-table-scroller"><table class="ma3-employee-table">
     <thead><tr><th>Employee</th><th>Role(s)</th><th>Company / branch scope</th><th>Status</th><th>Action</th></tr></thead>
@@ -114,7 +114,7 @@
  </div>
  <div class="ma3-inline-note"><b>Simulation only.</b> These outcomes explain the proposed permission model, not actual authorization. Production must recheck tenant, company/branch, page, action, record ownership, sensitive field access and approval policy on every server request. Hiding a menu item is not security.</div>
 </section>
-<div class="ma3-bottom-note"><b>Access rules:</b> Inactive or unaccepted invited accounts cannot log in. User deactivation must preserve audit history. Customer/vendor portal accounts and platform-level Super Admin access are outside this business-account screen.</div>
+<div class="ma3-bottom-note"><b>Access rules:</b> Pending accounts must complete the first-login password change before entering the workspace. Inactive or locked accounts cannot sign in. Only Master Admin creates accounts and resets temporary passwords. User deactivation must preserve audit history. Customer/vendor portal accounts and platform-level Super Admin access are outside this business-account screen.</div>
 <footer class="footer">CPQ · MA-003 Users, Roles &amp; Permissions · Fictional employees · No production backend</footer>
 </main></div></div>
 <div class="overlay" id="overlay" aria-hidden="true">
@@ -128,8 +128,8 @@
 <div role="status" id="toast" class="ma3-toast" aria-live="polite" hidden></div>
 
 
-<script src="cpq-demo-store.js?v=operator-2"></script>
-<script src="ma-003-render.js"></script>
-<script src="ma-003-actions.js?v=operator-2"></script>
-<script src="cpq-quick-create.js?v=operator-2"></script>
+<script src="cpq-demo-store.js?v=credentials-1"></script>
+<script src="ma-003-render.js?v=credentials-1"></script>
+<script src="ma-003-actions.js?v=credentials-1"></script>
+<script src="cpq-quick-create.js?v=credentials-1"></script>
 </body></html>

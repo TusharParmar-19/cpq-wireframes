@@ -2,7 +2,7 @@
 (()=>{
 "use strict";
 const entities=window.CPQ_MA002_DATA.map(e=>({id:e.id,name:e.name,branches:e.branches.map(b=>({id:b.id,name:b.name,city:b.city,status:b.status}))}));
-const users=window.CPQ_MA003_USERS.map(u=>({...u,roles:[...u.roles],branches:[...u.branches],assignments:u.assignments.map(a=>({...a,branches:[...a.branches],roles:[...a.roles]}))}));
+const users=window.CPQ_MA003_USERS.map(u=>({...window.CPQ_DEMO_ACCESS.normalizeUser(u),roles:[...u.roles],branches:[...u.branches],assignments:u.assignments.map(a=>({...a,branches:[...a.branches],roles:[...a.roles]}))}));
 const roles=window.CPQ_MA003_ROLES.map(r=>({...r,perms:[...r.perms],pages:[...r.pages]}));
 const pages=window.CPQ_MA003_PAGE_CATALOG.map(p=>({...p,actions:[...p.actions]}));
 const perms=window.CPQ_MA003_PERMISSIONS.map(p=>({...p}));
@@ -32,7 +32,7 @@ const visibility=(u,companyId,branchId)=>{
  return "none";
 };
 const isRoleMember=(u,id,companyId=null)=>companyId?assignmentsAt(u,companyId).some(a=>a.roles.includes(id)):u.roles.includes(id);
-const badge=(v)=>'<span class="ma3-tag '+(v==="Active"?"good":v==="Invited"?"warn":v==="Inactive"?"danger":"neutral")+'">'+esc(v)+'</span>';
+const badge=(v)=>'<span class="ma3-tag '+(v==="Active"?"good":v==="Pending first login"?"warn":["Inactive","Locked"].includes(v)?"danger":"neutral")+'">'+esc(v)+'</span>';
 const roleChips=u=>'<span class="ma3-badges">'+u.roles.map(id=>'<span class="ma3-tag">'+esc(roleName(id))+'</span>').join("")+'</span>';
 const shortScope=u=>{
  if(!u.assignments.length)return '<b>No access assigned</b>';
@@ -69,6 +69,7 @@ function assess(input){
   {label:"Correct business account (demo tenant)",pass:tenantOk},
   {label:"Assigned legal entity and branch",pass:locationOk},
   {label:"Page access granted in this company",pass:pageOk},
+  {label:"Master Admin account management",pass:targetPage.id!=="users"||window.CPQ_DEMO_ACCESS.master(u)},
   {label:openOnly?"Page-opening request (no additional action)":"Role grants this action on the selected page",pass:grantOk},
   {label:"Permitted record relationship",pass:recordOk}
  ];
@@ -85,7 +86,7 @@ function renderStats(){
  const figures=[
   ["Employee accounts",users.length,"All fictional staff profiles"],
   ["Active employees",users.filter(u=>u.status==="Active").length,"Able to log in after real setup"],
-  ["Invited / inactive",users.filter(u=>u.status!=="Active").length,"Not allowed to log in"],
+  ["Pending / disabled",users.filter(u=>u.status!=="Active").length,"First login required or access disabled"],
   ["Role templates",roles.length,"Multiple roles can be assigned"]
  ];
  $("summary-cards").innerHTML=figures.map(([a,b,c])=>'<div class="card ma3-stat"><span>'+a+'</span><strong>'+String(b).padStart(2,"0")+'</strong><small>'+c+'</small></div>').join("");
@@ -114,17 +115,17 @@ function renderProfile(){
  '<div class="ma3-panel-title"><div><h2>Employee profile</h2><p class="muted">Identity, roles and access scope</p></div>'+badge(u.status)+'</div>'+
  '<div class="ma3-profile-content"><div class="ma3-profile-head"><div class="ma3-avatar">'+esc(u.name.split(" ").map(x=>x[0]).join("").slice(0,2))+'</div><div><h3>'+esc(u.name)+'</h3><p>'+esc(u.designation||u.department)+'</p></div></div>'+
  '<div class="ma3-key-values">'+
- ['Email',u.email,'Department',u.department,'Roles (all companies)',roleChips(u),'Roles by company',scopedRoles,'Legal entities',scopeEntities(u).map(id=>companyBy(id)?.name).join(", "),'Branches',branches.map(b=>b.companyName+" / "+b.name).join(", "),'Record visibility','Depends on selected company and role','Last updated',u.updated||"Not recorded"].reduce((out,item,i,arr)=>{
+ ['Login ID / work email',u.email,'Department',u.department,'Roles (all companies)',roleChips(u),'Roles by company',scopedRoles,'Legal entities',scopeEntities(u).map(id=>companyBy(id)?.name).join(", "),'Branches',branches.map(b=>b.companyName+" / "+b.name).join(", "),'Record visibility','Depends on selected company and role','Last updated',u.updated||"Not recorded"].reduce((out,item,i,arr)=>{
   if(i%2)return out;const label=arr[i],val=arr[i+1];return out+'<div class="ma3-kv"><label>'+esc(label)+'</label><strong>'+(label==="Roles (all companies)"?val:esc(val||"Not assigned"))+'</strong></div>';
  },"")+'</div>'+
- '<div class="ma3-profile-actions"><button type="button" class="btn primary" data-edit-user="'+esc(u.id)+'">Edit Employee &amp; Access</button><button type="button" class="btn" data-effective-user="'+esc(u.id)+'">Effective Permissions</button><button type="button" class="btn" data-preview-for="'+esc(u.id)+'">Preview Access</button><button type="button" class="btn" data-toggle-user="'+esc(u.id)+'">'+(u.status==="Active"?"Deactivate":u.status==="Invited"?"Invitation Details":"Reactivate")+' (demo)</button></div>'+
- '<p class="ma3-profile-note">This account belongs to the demo business tenant. Deactivation keeps historical employee and quotation references. Password setup uses secure invitations in the real system.</p></div>';
+ '<div class="ma3-profile-actions"><button type="button" class="btn primary" data-edit-user="'+esc(u.id)+'">Edit Employee &amp; Access</button><button type="button" class="btn" data-effective-user="'+esc(u.id)+'">Effective Permissions</button><button type="button" class="btn" data-preview-for="'+esc(u.id)+'">Preview Access</button><button type="button" class="btn" data-toggle-user="'+esc(u.id)+'">'+(["Active","Pending first login"].includes(u.status)?"Deactivate":"Reactivate")+' (demo)</button>'+ (u.id!==window.CPQ_DEMO_ACCESS.current()?.id&&["Active","Pending first login"].includes(u.status)?'<button type="button" class="btn" data-reset-password="'+esc(u.id)+'">Reset temporary password (demo)</button>':'')+(u.status==="Pending first login"?'<button type="button" class="btn" data-login-details="'+esc(u.id)+'">Temporary login details (demo)</button>':'')+'</div>'+
+ '<p class="ma3-profile-note">This account belongs to the demo business tenant. Deactivation keeps historical employee and quotation references. Master Admin creates accounts and resets temporary passwords. Existing personal passwords are not displayed. This demo uses public sample codes only.</p></div>';
 }
 function renderAudit(){
- const entries=state.history;
+ const entries=[...state.history,...users.flatMap(u=>(u.accountEvents||[]).map(e=>({title:e.action,detail:e.actor+" · "+e.at+" · "+u.name+" · "+u.id})))].slice(0,30);
  $("access-history").innerHTML='<div class="ma3-audit-list">'+(entries.length?
  entries.map(x=>'<div class="ma3-audit-event"><b>'+esc(x.title)+'</b><span>'+esc(x.detail)+'</span></div>').join(""):
- '<div class="ma3-empty">No access changes in this browser session. Demonstration edits will appear here until refresh.</div>')+'</div>';
+ '<div class="ma3-empty">No access changes recorded yet. Account setup events are saved in this browser.</div>')+'</div>';
 }
 function renderRoleList(){
  const roleRows=roles.map(r=>{
@@ -189,7 +190,6 @@ function renderPreviewResult(){
  '<div class="ma3-inline-note">Selected record: '+esc(companyBy(state.preview.company)?.name||"—")+' / '+esc(branchBy(state.preview.branch)?.name||"—")+'. Record relationship: '+esc(state.preview.relation)+'. No real database record or financial data is accessed.</div>';
 }
 function render(){
- if(window.CPQ_SHARED)window.CPQ_SHARED.saveMany({users,roles});
  renderStats();
  for(const key of ["users","roles","preview"]){
   const on=state.panel===key;
