@@ -50,3 +50,28 @@ map.set(A.STORE,JSON.stringify({schema:1,modules:sample}));
 assert.equal(A.canOpen("ma-006-quotations.html"),false);assert.equal(A.canOpen("ma-006a-configuration.html"),true);
 assert.equal(A.signIn("U001").master,true);
 console.log("Shared operator workspace assertions passed");
+
+// Test the real shared store with an operator and a stale other-branch snapshot.
+opRole.perms=[...A.operatorTemplate().perms];
+const inside={id:"QT-OP",companyId:"e1",branchId:"e1a",title:"Before"},
+ outside={id:"QT-OTHER",companyId:"e1",branchId:"e1s",title:"Latest other-branch data"};
+sample.quotations={quotations:[inside,outside],revisionSnapshots:[{quoteId:outside.id,rev:"R0",quote:{...outside}}]};
+map.set(A.STORE,JSON.stringify({schema:1,modules:sample}));
+assert.equal(A.signIn(op.id).working,true);
+W.addEventListener=()=>{};
+const D={readyState:"loading",addEventListener:()=>{}};
+new Function("window","document",fs.readFileSync(path.join(__dirname,"cpq-demo-store.js"),"utf8"))(W,D);
+const S=W.CPQ_SHARED;
+assert.equal(S.save("users",[]),false);
+assert.equal(S.save("roles",[]),false);
+assert.equal(S.save("orders",{orders:[]}),false);
+assert.equal(S.save("quotations",{quotations:[{...inside,title:"Operator saved"},{...outside,title:"Stale outside"}],revisionSnapshots:[]}),true);
+assert.equal(S.read().modules.quotations.quotations.find(q=>q.id===outside.id).title,"Latest other-branch data");
+assert.equal(S.read().modules.quotations.quotations.find(q=>q.id===inside.id).title,"Operator saved");
+assert.equal(S.read().modules.quotations.revisionSnapshots.length,1);
+assert.equal(S.save("quotations",{quotations:[{...outside,branchId:"e1a"}]}),false);
+assert.equal(A.signOut(),true);
+assert.equal(S.save("quotations",{quotations:[]}),false);
+assert.equal(A.signIn("U001").master,true);
+assert.equal(S.read().modules.quotations.quotations.length,2);
+console.log("Shared store permission and other-scope snapshot assertions passed");
