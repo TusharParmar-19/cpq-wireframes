@@ -35,7 +35,24 @@
  let storageOK=true;
  function saveMany(changes){
   if(window.CPQ_DEMO_ACCESS&&Object.keys(changes||{}).some(k=>!window.CPQ_DEMO_ACCESS.canWriteModule(k)))return false;
-  const doc=read();
+  const doc=read(),access=window.CPQ_DEMO_ACCESS;
+  if(access&&!access.isMaster()){
+   const adjusted={...changes};
+   for(const [name,file,key] of [["configurations","ma-006a-configuration.html","configurations"],["quotations","ma-006-quotations.html","quotations"]]){
+    if(!adjusted[name]||!Array.isArray(adjusted[name][key]))continue;
+    const incoming=adjusted[name],latest=doc.modules[name];
+    if(!latest||!Array.isArray(latest[key]))continue;
+    const permitted=r=>access.canRecord(file,r),others=latest[key].filter(r=>!permitted(r)),own=incoming[key].filter(permitted);
+    if(own.some(r=>others.some(o=>o.id===r.id)))return false;
+    const next={...incoming,[key]:own.concat(others)};
+    if(name==="quotations"){
+     const inScope=s=>permitted(s.quote);
+     next.revisionSnapshots=(incoming.revisionSnapshots||[]).filter(inScope).concat((latest.revisionSnapshots||[]).filter(s=>!inScope(s)));
+    }
+    adjusted[name]=next;
+   }
+   changes=adjusted;
+  }
   for(const [name,value] of Object.entries(changes||{})){
    if(!(name in modules)||!usable(name,value))continue;
    doc.modules[name]=copy(value);

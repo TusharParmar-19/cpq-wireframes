@@ -79,7 +79,12 @@ if(mode==="workspace")doc.addEventListener("DOMContentLoaded",()=>{
  if(!check())return;
  const u=current(),admin=isMaster(),avatar=doc.querySelector(".top .avatar");
  if(!admin){
-  for(const link of doc.querySelectorAll(".sidebar nav a[href],.quick-grid a[href],.hero a[href]")){const target=link.getAttribute("href");if(operational.includes(fileOf(target))&&!canOpen(target))link.hidden=true;}
+  function restrictLinks(root){
+   const links=[...(root.matches?.("a[href]")?[root]:[]),...(root.querySelectorAll?.("a[href]")||[])];
+   for(const link of links){const target=link.getAttribute("href");if(operational.includes(fileOf(target))&&!canOpen(target))link.hidden=true;}
+  }
+  restrictLinks(doc);
+  if(W.MutationObserver)new W.MutationObserver(entries=>{for(const entry of entries)for(const node of entry.addedNodes)if(node.nodeType===1)restrictLinks(node);}).observe(doc.body,{childList:true,subtree:true});
   for(const section of doc.querySelectorAll(".sidebar nav .nav-title")){let n=section.nextElementSibling,show=false;while(n&&!n.classList.contains("nav-title")){if(!n.hidden&&n.matches("a"))show=true;n=n.nextElementSibling;}if(!show)section.hidden=true;}
   for(const el of doc.querySelectorAll(".sidebar .logo small"))el.textContent="CPQ Workspace";
   const foot=doc.querySelector(".sidebar-foot");if(foot)foot.textContent="Employee workspace · Fictional demo only";
